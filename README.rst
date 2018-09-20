@@ -286,8 +286,6 @@ Guide
 From the Guide page you are able to:
 
 Search for a program
-    .. image:: https://imgur.com/9ihawH4.png
-Browse the guide
     .. image:: https://i.imgur.com/gpUnq3g.png
 Start playing a channel
     .. image:: https://i.imgur.com/wOxdgFM.png
