@@ -1,0 +1,14 @@
+                                <li id="${program_li_id_prefix}_programLi_${program_li_input_label_span_id_suffix}">
+                                    <input class="w3-radio"
+                                           id="${program_li_id_prefix}_radioButton_${program_li_input_label_span_id_suffix}"
+                                           name="${program_li_id_prefix}_programRadioButton_${program_li_input_name_suffix}"
+                                           onchange="GuideModule.enableClearAndRecordButtons('${program_li_id_prefix}', '${program_li_input_name_suffix}')"
+                                           title="Select recording"
+                                           type="radio"
+                                           value='${program_li_input_value}' />
+                                    <label for="${program_li_id_prefix}_radioButton_${program_li_input_label_span_id_suffix}"
+                                           id="${program_li_id_prefix}_label_${program_li_input_label_span_id_suffix}">${program_li_label_start_time} - ${program_li_label_end_time} | ${program_li_label_program_title}</label>
+                                    <br />
+                                    <span class="w3-tiny"
+                                          id="${program_li_id_prefix}_span_${program_li_input_label_span_id_suffix}">${program_li_span_description}</span>
+                                </li>

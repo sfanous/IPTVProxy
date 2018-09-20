@@ -1,0 +1,15 @@
+BTrees >= 4.5.0
+ZODB >= 5.4.0
+cerberus >= 1.1
+configobj >= 5.0.6
+cryptography >= 2.1.4
+enum34 >=1.1.6; python_version < '3.4'
+ijson >=2.3
+lxml >=4.2.1
+m3u8 >= 0.3.5
+persistent >= 4.2.4.2
+pytz >= 2018.3
+requests >= 2.18.4
+transaction >= 2.2.1
+tzlocal >= 1.5.1
+watchdog >= 0.8.3

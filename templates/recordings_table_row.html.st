@@ -1,0 +1,20 @@
+                        <tr>
+                            <td>
+                                <input class="w3-cell-middle"
+                                       onchange="RecordingsModule.enableClearAndActionButtons()"
+                                       name="recordingsRadioButton"
+                                       title="Select recording"
+                                       type="radio"
+                                       value="${recording_id}" />
+                                <span style="${spacing_span_display} width: 4px;"></span>
+                                <span class="w3-cell-middle fa fa-play"
+                                      data-json='${recording_source_data_json}'
+                                      onclick="VideoPlayerModule.controlVideo(event)"
+                                      style="cursor: pointer; ${control_span_display}"></span>
+                            </td>
+                            <td>${recording_channel_number}</td>
+                            <td>${recording_channel_name}</td>
+                            <td>${recording_program_title}</td>
+                            <td>${recording_start_date_time_in_utc}</td>
+                            <td>${recording_end_date_time_in_utc}</td>
+                        </tr>
