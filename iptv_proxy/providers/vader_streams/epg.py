@@ -214,7 +214,8 @@ class VaderStreamsEPG():
         categories_map = {}
 
         categories_json_stream = cls._request_epg_json(VADER_STREAMS_CATEGORIES_PATH,
-                                                       VADER_STREAMS_CATEGORIES_JSON_FILE_NAME)
+                                                       VADER_STREAMS_CATEGORIES_JSON_FILE_NAME,
+                                                       {})
 
         ijson_parser = ijson.parse(categories_json_stream)
 
@@ -226,60 +227,62 @@ class VaderStreamsEPG():
 
     @classmethod
     def _parse_channels_json(cls, db, categories_map, source_channel_id_to_channel_number):
-        channels_json_stream = cls._request_epg_json(VADER_STREAMS_CHANNELS_PATH,
-                                                     VADER_STREAMS_CHANNELS_JSON_FILE_NAME)
+        for category_id in categories_map:
+            channels_json_stream = cls._request_epg_json(VADER_STREAMS_CHANNELS_PATH,
+                                                         VADER_STREAMS_CHANNELS_JSON_FILE_NAME,
+                                                         dict(category_id=category_id))
 
-        channel_category_id = None
-        channel_icon_url = None
-        channel_id = None
-        channel_name = ''
-        channel_number = None
+            channel_category_id = None
+            channel_icon_url = None
+            channel_id = None
+            channel_name = ''
+            channel_number = None
 
-        programs = PersistentList()
+            programs = PersistentList()
 
-        ijson_parser = ijson.parse(channels_json_stream)
+            ijson_parser = ijson.parse(channels_json_stream)
 
-        for (prefix, event, value) in ijson_parser:
-            if (prefix, event) == ('item', 'end_map'):
-                try:
-                    channel_group = 'VaderStreams - {0}'.format(categories_map[channel_category_id])
-                    cls._groups.add(channel_group)
+            for (prefix, event, value) in ijson_parser:
+                if (prefix, event) == ('item', 'end_map'):
+                    try:
+                        channel_group = 'VaderStreams - {0}'.format(categories_map[channel_category_id])
+                        cls._groups.add(channel_group)
 
-                    channel = IPTVProxyEPGChannel(channel_group,
-                                                  channel_icon_url,
-                                                  '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
-                                                                          '{0} - (VaderStreams)'.format(
-                                                                              channel_number))),
-                                                  channel_name,
-                                                  channel_number)
-                    channel.programs = programs
+                        channel = IPTVProxyEPGChannel(channel_group,
+                                                      channel_icon_url,
+                                                      '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
+                                                                              '{0} - (VaderStreams)'.format(
+                                                                                  channel_number))),
+                                                      channel_name,
+                                                      channel_number)
+                        channel.programs = programs
 
-                    cls._apply_optional_settings(channel)
+                        cls._apply_optional_settings(channel)
 
-                    db.persist(['epg', channel.number], channel)
-                    db.savepoint(1 + len(programs))
+                        db.persist(['epg', channel.number], channel)
+                        db.savepoint(1 + len(programs))
 
-                    source_channel_id_to_channel_number[channel_id] = channel.number
-                except KeyError:
-                    pass
-                finally:
-                    channel_category_id = None
-                    channel_icon_url = None
-                    channel_id = None
-                    channel_name = None
-                    channel_number = None
+                        source_channel_id_to_channel_number[channel_id] = channel.number
+                    except KeyError:
+                        pass
+                    finally:
+                        channel_category_id = None
+                        channel_icon_url = None
+                        channel_id = None
+                        channel_name = None
+                        channel_number = None
 
-                    programs = PersistentList()
-            elif (prefix, event) == ('item.id', 'number'):
-                channel_number = value
-            elif (prefix, event) == ('item.stream_icon', 'string'):
-                channel_icon_url = xml.sax.saxutils.unescape(value)
-            elif (prefix, event) == ('item.channel_id', 'string'):
-                channel_id = xml.sax.saxutils.unescape(value)
-            elif (prefix, event) == ('item.stream_display_name', 'string'):
-                channel_name = xml.sax.saxutils.unescape(value)
-            elif (prefix, event) == ('item.category_id', 'number'):
-                channel_category_id = value
+                        programs = PersistentList()
+                elif (prefix, event) == ('item.id', 'number'):
+                    channel_number = value
+                elif (prefix, event) == ('item.stream_icon', 'string'):
+                    channel_icon_url = xml.sax.saxutils.unescape(value)
+                elif (prefix, event) == ('item.channel_id', 'string'):
+                    channel_id = xml.sax.saxutils.unescape(value)
+                elif (prefix, event) == ('item.stream_display_name', 'string'):
+                    channel_name = xml.sax.saxutils.unescape(value)
+                elif (prefix, event) == ('item.category_id', 'number'):
+                    channel_category_id = value
 
     @classmethod
     def _parse_epg_json(cls, db, source_channel_id_to_channel_number):
@@ -346,7 +349,7 @@ class VaderStreamsEPG():
         cls._generate_epg()
 
     @classmethod
-    def _request_epg_json(cls, epg_json_path, epg_json_file_name):
+    def _request_epg_json(cls, epg_json_path, epg_json_file_name, request_parameters):
         username = IPTVProxyConfiguration.get_configuration_parameter('VADER_STREAMS_USERNAME')
         password = IPTVProxySecurityManager.decrypt_password(
             IPTVProxyConfiguration.get_configuration_parameter('VADER_STREAMS_PASSWORD')).decode()
@@ -357,14 +360,20 @@ class VaderStreamsEPG():
                      'URL => {1}\n'
                      '  Parameters\n'
                      '    username => {2}\n'
-                     '    password => {3}'.format(epg_json_file_name, url, username, '\u2022' * len(password)))
+                     '    password => {3}{4}'.format(epg_json_file_name,
+                                                     url,
+                                                     username,
+                                                     '\u2022' * len(password),
+                                                     '' if not request_parameters else '\n    category => {0}'.format(
+                                                         request_parameters['category_id'])))
 
         session = requests.Session()
         response = IPTVProxyUtility.make_http_request(session.get,
                                                       url,
                                                       params={
                                                           'username': username,
-                                                          'password': password
+                                                          'password': password,
+                                                          **request_parameters
                                                       },
                                                       headers=session.headers,
                                                       cookies=session.cookies.get_dict(),
@@ -454,8 +463,6 @@ class VaderStreamsEPG():
         cls._initialize_refresh_epg_timer()
 
         db = VaderStreamsDB()
-
-        epg = db.retrieve(['epg'])
 
         try:
             cls._groups = {channel.group for channel in db.retrieve(['epg']).values()}

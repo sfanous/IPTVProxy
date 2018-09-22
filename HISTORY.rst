@@ -2,6 +2,10 @@
 
 Release History
 ===============
+5.1.0 (22-09-2018)
+------------------
+* Fix VaderStreams EPG
+
 5.0.0 (15-05-2018)
 ------------------
 * Project renamed to IPTVProxy
