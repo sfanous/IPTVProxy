@@ -236,7 +236,7 @@ class SmoothStreamsEPG():
 
                     for subElement in list(element):
                         if subElement.tag == 'display-name':
-                            channel_name = xml.sax.saxutils.unescape(subElement.text)
+                            channel_name = xml.sax.saxutils.unescape(subElement.text).strip()
                         elif subElement.tag == 'icon':
                             channel_icon_url = subElement.get('src')
                             channel_number = int(re.search('.*/([0-9]+)\.png', channel_icon_url).group(1))
@@ -365,7 +365,7 @@ class SmoothStreamsEPG():
 
                 programs = PersistentList()
             elif (prefix, event) == ('data.{0}.name'.format(data_id), 'string'):
-                channel_name = xml.sax.saxutils.unescape(value)
+                channel_name = xml.sax.saxutils.unescape(value).strip()
             elif (prefix, event) == ('data.{0}.number'.format(data_id), 'string'):
                 channel_number = int(value)
 
