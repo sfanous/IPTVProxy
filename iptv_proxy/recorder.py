@@ -560,8 +560,6 @@ class IPTVProxyRecordingThread(Thread):
                             id_,
                             playlist_file,
                             status):
-        db = IPTVProxyDB()
-
         manifest_file_path = os.path.join(self._recording_directory_path, '.MANIFEST')
 
         try:
@@ -592,8 +590,6 @@ class IPTVProxyRecordingThread(Thread):
         except OSError:
             (type_, value_, traceback_) = sys.exc_info()
             logger.error('\n'.join(traceback.format_exception(type_, value_, traceback_)))
-
-        db.close()
 
     def _save_playlist_file(self, playlist_file_name, playlist_file_content):
         playlist_file_path = os.path.join(self._recording_directory_path, 'playlist', playlist_file_name)
