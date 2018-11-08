@@ -495,6 +495,8 @@ class IPTVProxyRecordingThread(Thread):
     def __init__(self, recording):
         Thread.__init__(self)
 
+        db = IPTVProxyDB()
+
         self._id = uuid.uuid3(uuid.NAMESPACE_OID, 'IPTVProxyRecordingThread')
         self._recording = recording
         self._recording_directory_path = None
@@ -506,9 +508,13 @@ class IPTVProxyRecordingThread(Thread):
         self._stop_recording_timer.daemon = True
         self._stop_recording_timer.start()
 
+        db.close()
+
         self.start()
 
     def _create_recording_directory_tree(self):
+        db = IPTVProxyDB()
+
         recording_directory_suffix_counter = 0
         recording_directory_suffix = ''
 
@@ -535,12 +541,12 @@ class IPTVProxyRecordingThread(Thread):
                     did_make_directory = True
                     self._recording_directory_path = recording_directory_path
 
-                    db = IPTVProxyDB()
                     self._recording.base_recording_directory = os.path.split(recording_directory_path)[-1]
-                    db.close(do_commit_transaction=True)
 
                     logger.debug('Created recording directory tree for {0}\n'
                                  'Path => {1}'.format(self._recording.program_title, recording_directory_path))
+
+                    db.close(do_commit_transaction=True)
                 except OSError:
                     logger.error('Failed to create recording directory tree for {0}\n'
                                  'Path => {1}'.format(self._recording.program_title, recording_directory_path))
@@ -554,6 +560,8 @@ class IPTVProxyRecordingThread(Thread):
                             id_,
                             playlist_file,
                             status):
+        db = IPTVProxyDB()
+
         manifest_file_path = os.path.join(self._recording_directory_path, '.MANIFEST')
 
         try:
@@ -585,6 +593,8 @@ class IPTVProxyRecordingThread(Thread):
             (type_, value_, traceback_) = sys.exc_info()
             logger.error('\n'.join(traceback.format_exception(type_, value_, traceback_)))
 
+        db.close()
+
     def _save_playlist_file(self, playlist_file_name, playlist_file_content):
         playlist_file_path = os.path.join(self._recording_directory_path, 'playlist', playlist_file_name)
 
@@ -614,6 +624,8 @@ class IPTVProxyRecordingThread(Thread):
     def _set_stop_recording_event(self):
         self._stop_recording_event.set()
 
+        db = IPTVProxyDB()
+
         logger.info('Stopping recording\n'
                     'Provider          => {0}\n'
                     'Channel name      => {1}\n'
@@ -629,10 +641,14 @@ class IPTVProxyRecordingThread(Thread):
                                                       self._recording.end_date_time_in_utc.astimezone(
                                                           tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S')))
 
+        db.close()
+
     def force_stop(self):
         self._set_stop_recording_event()
 
     def run(self):
+        db = IPTVProxyDB()
+
         logger.info('Starting recording\n'
                     'Provider          => {0}\n'
                     'Channel name      => {1}\n'
@@ -714,6 +730,8 @@ class IPTVProxyRecordingThread(Thread):
                                      persisted_recording_id,
                                      None,
                                      'Canceled')
+
+            db.close()
 
             return
 
@@ -814,3 +832,5 @@ class IPTVProxyRecordingThread(Thread):
                                                           tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S'),
                                                       self._recording.end_date_time_in_utc.astimezone(
                                                           tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S')))
+
+        db.close()
