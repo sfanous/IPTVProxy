@@ -1,10 +1,10 @@
 import copy
 import functools
+import html
 import logging
 import os
 import re
 import uuid
-import xml.sax.saxutils
 from datetime import datetime
 from datetime import timedelta
 from gzip import GzipFile
@@ -115,9 +115,9 @@ class VaderStreamsEPG():
 
             channel_xml_template_fields = {
                 'channel_id': channel.id,
-                'channel_name': xml.sax.saxutils.escape(channel.name),
+                'channel_name': html.escape(channel.name),
                 'channel_icon': '        <icon src="{0}" />\n'.format(
-                    xml.sax.saxutils.escape(
+                    html.escape(
                         channel.icon_url.format('s' if is_server_secure else '',
                                                 server_hostname,
                                                 server_port,
@@ -136,11 +136,11 @@ class VaderStreamsEPG():
                         'programme_channel': channel.id,
                         'programme_start': program.start_date_time_in_utc.strftime('%Y%m%d%H%M%S %z'),
                         'programme_stop': program.end_date_time_in_utc.strftime('%Y%m%d%H%M%S %z'),
-                        'programme_title': xml.sax.saxutils.escape(program.title),
+                        'programme_title': html.escape(program.title),
                         'programme_sub_title': '        <sub-title>{0}</sub-title>\n'.format(
-                            xml.sax.saxutils.escape(program.sub_title)) if program.sub_title else '',
+                            html.escape(program.sub_title)) if program.sub_title else '',
                         'programme_description': '        <desc>{0}</desc>\n'.format(
-                            xml.sax.saxutils.escape(program.description)) if program.description else ''
+                            html.escape(program.description)) if program.description else ''
                     }
 
                     xmltv_elements.append(
@@ -276,11 +276,11 @@ class VaderStreamsEPG():
                 elif (prefix, event) == ('item.id', 'number'):
                     channel_number = value
                 elif (prefix, event) == ('item.stream_icon', 'string'):
-                    channel_icon_url = xml.sax.saxutils.unescape(value)
+                    channel_icon_url = html.unescape(value)
                 elif (prefix, event) == ('item.channel_id', 'string'):
-                    channel_id = xml.sax.saxutils.unescape(value)
+                    channel_id = html.unescape(value)
                 elif (prefix, event) == ('item.stream_display_name', 'string'):
-                    channel_name = xml.sax.saxutils.unescape(value)
+                    channel_name = html.unescape(value)
                 elif (prefix, event) == ('item.category_id', 'number'):
                     channel_category_id = value
 
@@ -322,11 +322,11 @@ class VaderStreamsEPG():
 
                             for subElement in list(element):
                                 if subElement.tag == 'desc' and subElement.text:
-                                    program.description = xml.sax.saxutils.unescape(subElement.text)
+                                    program.description = html.unescape(subElement.text)
                                 elif subElement.tag == 'sub-title' and subElement.text:
-                                    program.sub_title = xml.sax.saxutils.unescape(subElement.text)
+                                    program.sub_title = html.unescape(subElement.text)
                                 elif subElement.tag == 'title' and subElement.text:
-                                    program.title = xml.sax.saxutils.unescape(subElement.text)
+                                    program.title = html.unescape(subElement.text)
 
                             channel.add_program(program)
                             db.savepoint(1)

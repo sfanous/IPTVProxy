@@ -1,7 +1,7 @@
 import copy
 import functools
+import html
 import logging
-import xml.sax.saxutils
 from datetime import datetime
 from datetime import timedelta
 from threading import RLock
@@ -68,9 +68,9 @@ class IPTVProxyEPG():
 
                 channel_xml_template_fields = {
                     'channel_id': channel.id,
-                    'channel_name': xml.sax.saxutils.escape(channel.name),
+                    'channel_name': html.escape(channel.name),
                     'channel_icon': '        <icon src="{0}" />\n'.format(
-                        xml.sax.saxutils.escape(
+                        html.escape(
                             channel.icon_url.format(
                                 's' if is_server_secure else '',
                                 server_hostname,
@@ -89,11 +89,11 @@ class IPTVProxyEPG():
                             'programme_channel': channel.id,
                             'programme_start': program.start_date_time_in_utc.strftime('%Y%m%d%H%M%S %z'),
                             'programme_stop': program.end_date_time_in_utc.strftime('%Y%m%d%H%M%S %z'),
-                            'programme_title': xml.sax.saxutils.escape(program.title),
+                            'programme_title': html.escape(program.title),
                             'programme_sub_title': '        <sub-title>{0}</sub-title>\n'.format(
-                                xml.sax.saxutils.escape(program.sub_title)) if program.sub_title else '',
+                                html.escape(program.sub_title)) if program.sub_title else '',
                             'programme_description': '        <desc>{0}</desc>\n'.format(
-                                xml.sax.saxutils.escape(program.description)) if program.description else ''
+                                html.escape(program.description)) if program.description else ''
                         }
 
                         xmltv_elements.append('{0}\n'.format(

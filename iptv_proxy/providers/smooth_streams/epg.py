@@ -1,10 +1,10 @@
 import copy
 import functools
+import html
 import logging
 import os
 import re
 import uuid
-import xml.sax.saxutils
 from datetime import datetime
 from datetime import timedelta
 from threading import RLock
@@ -117,9 +117,9 @@ class SmoothStreamsEPG():
 
             channel_xml_template_fields = {
                 'channel_id': channel.id,
-                'channel_name': xml.sax.saxutils.escape(channel.name),
+                'channel_name': html.escape(channel.name),
                 'channel_icon': '        <icon src="{0}" />\n'.format(
-                    xml.sax.saxutils.escape(
+                    html.escape(
                         channel.icon_url.format('s' if is_server_secure else '',
                                                 server_hostname,
                                                 server_port,
@@ -138,11 +138,11 @@ class SmoothStreamsEPG():
                         'programme_channel': channel.id,
                         'programme_start': program.start_date_time_in_utc.strftime('%Y%m%d%H%M%S %z'),
                         'programme_stop': program.end_date_time_in_utc.strftime('%Y%m%d%H%M%S %z'),
-                        'programme_title': xml.sax.saxutils.escape(program.title),
+                        'programme_title': html.escape(program.title),
                         'programme_sub_title': '        <sub-title>{0}</sub-title>\n'.format(
-                            xml.sax.saxutils.escape(program.sub_title)) if program.sub_title else '',
+                            html.escape(program.sub_title)) if program.sub_title else '',
                         'programme_description': '        <desc>{0}</desc>\n'.format(
-                            xml.sax.saxutils.escape(program.description)) if program.description else ''
+                            html.escape(program.description)) if program.description else ''
                     }
 
                     xmltv_elements.append(
@@ -236,7 +236,7 @@ class SmoothStreamsEPG():
 
                     for subElement in list(element):
                         if subElement.tag == 'display-name':
-                            channel_name = xml.sax.saxutils.unescape(subElement.text).strip()
+                            channel_name = html.unescape(subElement.text).strip()
                         elif subElement.tag == 'icon':
                             channel_icon_url = subElement.get('src')
                             channel_number = int(re.search('.*/([0-9]+)\.png', channel_icon_url).group(1))
@@ -270,11 +270,11 @@ class SmoothStreamsEPG():
 
                     for subElement in list(element):
                         if subElement.tag == 'desc' and subElement.text:
-                            program.description = xml.sax.saxutils.unescape(subElement.text)
+                            program.description = html.unescape(subElement.text)
                         if subElement.tag == 'sub-title' and subElement.text:
-                            program.sub_title = xml.sax.saxutils.unescape(subElement.text)
+                            program.sub_title = html.unescape(subElement.text)
                         elif subElement.tag == 'title' and subElement.text:
-                            program.title = xml.sax.saxutils.unescape(subElement.text)
+                            program.title = html.unescape(subElement.text)
 
                     db.retrieve(['epg', channel_number]).add_program(program)
                     db.savepoint(1)
@@ -334,9 +334,9 @@ class SmoothStreamsEPG():
                 program_title = ''
                 program_start_date_time_in_utc = None
             elif (prefix, event) == ('data.{0}.events.{1}.description'.format(data_id, events_id), 'string'):
-                program_description = xml.sax.saxutils.unescape(value)
+                program_description = html.unescape(value)
             elif (prefix, event) == ('data.{0}.events.{1}.name'.format(data_id, events_id), 'string'):
-                program_title = xml.sax.saxutils.unescape(value)
+                program_title = html.unescape(value)
             elif (prefix, event) == ('data.{0}.events.{1}.runtime'.format(data_id, events_id), 'number'):
                 program_runtime = value
             elif (prefix, event) == ('data.{0}.events.{1}.runtime'.format(data_id, events_id), 'string'):
@@ -365,7 +365,7 @@ class SmoothStreamsEPG():
 
                 programs = PersistentList()
             elif (prefix, event) == ('data.{0}.name'.format(data_id), 'string'):
-                channel_name = xml.sax.saxutils.unescape(value).strip()
+                channel_name = html.unescape(value).strip()
             elif (prefix, event) == ('data.{0}.number'.format(data_id), 'string'):
                 channel_number = int(value)
 
