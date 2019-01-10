@@ -141,6 +141,14 @@ class VaderStreams(IPTVProxyProvider):
 
             IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
 
+            match = re.search('http://(.*)\.vaders\.tv(:[0-9]+)?/(.*)/tracks-v1a1/.*', chunks_m3u8)
+            if match is not None:
+                server = match.group(1)
+                port = match.group(2) if match.group(2) is not None and len(match.groups()) == 3 else ':80'
+                channel_name = match.group(3) if len(match.groups()) == 3 else match.group(2)
+
+            chunks_m3u8 = re.sub('.*/tracks-v1a1/', '', chunks_m3u8)
+
             return re.sub('.ts\?token=(.*)',
                           r'.ts?'
                           r'authorization_token=\1&'
@@ -208,10 +216,12 @@ class VaderStreams(IPTVProxyProvider):
                                                                                  is_content_text=True,
                                                                                  do_print_content=True))
 
-                match = re.search('http://(.*)\.vaders\.tv(:[0-9]+)?/(.*)/index.m3u8.*', response.request.url)
+                match = re.search('http://(.*)\.vaders\.tv(:[0-9]+)?/(.*)/tracks-v1a1/.*', response.text)
+                if match is None:
+                    match = re.search('http://(.*)\.vaders\.tv(:[0-9]+)?/(.*)/index.m3u8.*', response.request.url)
 
                 server = match.group(1)
-                port = match.group(2) if len(match.groups()) == 3 else ':80'
+                port = match.group(2) if match.group(2) is not None and len(match.groups()) == 3 else ':80'
                 channel_name = match.group(3) if len(match.groups()) == 3 else match.group(2)
 
                 return re.sub('tracks-v1a1/mono.m3u8\?token=(.*)',
@@ -228,7 +238,7 @@ class VaderStreams(IPTVProxyProvider):
                                                   urllib.parse.quote(http_token) if http_token else '',
                                                   urllib.parse.quote(port),
                                                   urllib.parse.quote(server)),
-                              response.text)
+                              re.sub('.*/tracks-v1a1/', 'tracks-v1a1/', response.text))
             else:
                 logger.error(IPTVProxyUtility.assemble_response_from_log_message(response))
 
