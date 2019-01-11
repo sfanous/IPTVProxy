@@ -443,7 +443,7 @@ class VaderStreams(IPTVProxyProvider):
                         'm3u8' if playlist_protocol == 'hls' else 'ts',
                         cls._calculate_token()))
 
-            tracks['{0} {1}'.format(channel_name, channel_number)] = ''.join(track_information)
+            tracks['{0} {1} {2}'.format(channel_group, channel_name, channel_number)] = ''.join(track_information)
 
         db.close()
 

@@ -42,7 +42,7 @@ class IPTVProxy():
                 server_hostname,
                 server_port)]
 
-            for (provider_name, provider) in providers.items():
+            for (provider_name, provider) in sorted(list(providers.items())):
                 provider_protocol = playlist_protocol
                 provider_type = playlist_type
 
