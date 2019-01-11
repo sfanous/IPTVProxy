@@ -2,9 +2,13 @@
 
 Release History
 ===============
+5.3.1 (11-01-2019)
+------------------
+* Fix VaderStreams playlist bug where only one channel with the same name was included
+
 5.3.0 (10-01-2019)
 ------------------
-* Aesthetic changes to VaderStreams playlists
+* Aesthetic changes to VaderStreams playlist
 
 5.2.0 (10-01-2019)
 ------------------
