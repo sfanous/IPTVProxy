@@ -44,7 +44,7 @@ RESOURCES_DIRECTORY_PATH = os.path.abspath('resources')
 TEMPLATES_DIRECTORY_PATH = os.path.abspath('templates')
 TRACE = 5
 VALID_LOGGING_LEVEL_VALUES = ['ERROR', 'INFO', 'DEBUG', 'TRACE']
-VERSION = '5.3.0'
+VERSION = '5.3.1'
 XML_TV_TEMPLATES = {
     'tv_header.xml.st': None,
     'channel.xml.st': None,
