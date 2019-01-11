@@ -2,6 +2,14 @@
 
 Release History
 ===============
+5.3.0 (10-01-2019)
+------------------
+* Aesthetic changes to VaderStreams playlists
+
+5.2.0 (10-01-2019)
+------------------
+* Fix VaderStreams streaming
+
 5.1.0 (22-09-2018)
 ------------------
 * Fix VaderStreams EPG

@@ -395,12 +395,14 @@ class VaderStreams(IPTVProxyProvider):
         if playlist_type not in VALID_VADER_STREAMS_PLAYLIST_TYPE_VALUES:
             playlist_type = IPTVProxyConfiguration.get_configuration_parameter('VADER_STREAMS_PLAYLIST_TYPE')
 
-        tracks = []
+        tracks = {}
 
         db = VaderStreamsDB()
         epg = db.retrieve(['epg'])
 
         for channel in epg.values():
+            track_information = []
+
             channel_icon = channel.icon_url.format(
                 's' if is_server_secure else '',
                 server_hostname,
@@ -412,7 +414,7 @@ class VaderStreams(IPTVProxyProvider):
             channel_name = channel.name
             channel_number = channel.number
 
-            tracks.append(
+            track_information.append(
                 '#EXTINF:-1 group-title="{0}" '
                 'tvg-id="{1}" '
                 'tvg-name="{2}" '
@@ -432,18 +434,20 @@ class VaderStreams(IPTVProxyProvider):
                                                                 server_hostname=server_hostname,
                                                                 server_port=server_port)
 
-                tracks.append('{0}\n'.format(
+                track_information.append('{0}\n'.format(
                     cls.generate_playlist_m3u8_track_url(generate_playlist_m3u8_track_url_mapping)))
             elif playlist_type == 'static':
-                tracks.append(
+                track_information.append(
                     'http://vapi.vaders.tv/play/{0:02}.{1}?token={2}\n'.format(
                         channel_number,
                         'm3u8' if playlist_protocol == 'hls' else 'ts',
                         cls._calculate_token()))
 
+            tracks[channel_name] = ''.join(track_information)
+
         db.close()
 
-        return tracks
+        return [tracks[channel_name] for channel_name in sorted(tracks, key=lambda channel_name_: channel_name_.lower())]
 
     @classmethod
     def get_supported_protocols(cls):

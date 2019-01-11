@@ -245,7 +245,12 @@ class VaderStreamsEPG():
             for (prefix, event, value) in ijson_parser:
                 if (prefix, event) == ('item', 'end_map'):
                     try:
-                        channel_group = 'VaderStreams - {0}'.format(categories_map[channel_category_id])
+                        if 'sport' in channel_name.lower():
+                            channel_group = 'VaderStreams - Sports'
+                        elif 'movie' in channel_name.lower():
+                            channel_group = 'VaderStreams - Premium Movies'
+                        else:
+                            channel_group = 'VaderStreams - {0}'.format(categories_map[channel_category_id])
                         cls._groups.add(channel_group)
 
                         channel = IPTVProxyEPGChannel(channel_group,
@@ -281,6 +286,7 @@ class VaderStreamsEPG():
                     channel_id = html.unescape(value)
                 elif (prefix, event) == ('item.stream_display_name', 'string'):
                     channel_name = html.unescape(value)
+
                 elif (prefix, event) == ('item.category_id', 'number'):
                     channel_category_id = value
 
