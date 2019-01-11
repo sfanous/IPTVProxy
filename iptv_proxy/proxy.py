@@ -67,7 +67,7 @@ class IPTVProxy():
                 playlist_m3u8.append(
                     ''.join(provider['api'].generate_playlist_m3u8_tracks(generate_playlist_m3u8_tracks_mapping)))
 
-            logger.debug('Generated live SmoothStreams playlist.m3u8')
+            logger.debug('Generated live IPTVProxy playlist.m3u8')
 
             return ''.join(playlist_m3u8)
         except (KeyError, ValueError):
