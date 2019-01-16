@@ -83,7 +83,7 @@ class IPTVProxyUtility():
         ip_address_location = None
 
         try:
-            response = requests.get('https://api.ipdata.co', headers={'Accept': 'application/json'})
+            response = requests.get('http://ip-api.com/json', headers={'Accept': 'application/json'})
 
             if response.status_code == requests.codes.OK:
                 ip_address_location = response.json()

@@ -2,6 +2,10 @@
 
 Release History
 ===============
+5.5.0 (16-01-2019)
+------------------
+* Change IP location provider
+
 5.4.0 (11-01-2019)
 ------------------
 * Aesthetic changes to main playlist

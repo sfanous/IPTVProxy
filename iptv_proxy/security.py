@@ -110,7 +110,7 @@ class IPTVProxySecurityManager():
 
         current_date_time_in_utc = datetime.now(pytz.utc)
 
-        subject = issuer = x509.Name([x509.NameAttribute(NameOID.COUNTRY_NAME, ip_address_location['country_code']),
+        subject = issuer = x509.Name([x509.NameAttribute(NameOID.COUNTRY_NAME, ip_address_location['countryCode']),
                                       x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, ip_address_location['region']),
                                       x509.NameAttribute(NameOID.LOCALITY_NAME, ip_address_location['city']),
                                       x509.NameAttribute(NameOID.ORGANIZATION_NAME, 'IPTVProxy'),
