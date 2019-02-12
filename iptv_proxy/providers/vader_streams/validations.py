@@ -7,7 +7,7 @@ from .constants import VALID_VADER_STREAMS_SERVER_VALUES
 logger = logging.getLogger(__name__)
 
 
-class VaderStreamsValidations():
+class VaderStreamsValidations(object):
     __slots__ = []
 
     @classmethod

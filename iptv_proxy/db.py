@@ -15,7 +15,7 @@ from .constants import MAXIMUM_NUMBER_OF_CHANGED_OBJECTS
 logger = logging.getLogger(__name__)
 
 
-class IPTVProxyDB():
+class IPTVProxyDB(object):
     __slots__ = ['_connection', '_number_of_changed_objects', '_root']
 
     _db = None

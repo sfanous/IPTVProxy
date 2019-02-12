@@ -30,7 +30,9 @@ from .formatters import IPTVProxyMultiLineFormatter
 logger = logging.getLogger(__name__)
 
 
-class IPTVProxyUtility():
+class IPTVProxyUtility(object):
+    __slots__ = []
+
     @classmethod
     def assemble_response_from_log_message(cls,
                                            response,

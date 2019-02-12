@@ -24,6 +24,8 @@ from .constants import VADER_STREAMS_CATEGORIES_PATH
 from .constants import VADER_STREAMS_CHANNELS_JSON_FILE_NAME
 from .constants import VADER_STREAMS_CHANNELS_PATH
 from .constants import VADER_STREAMS_EPG_BASE_URL
+from .constants import VADER_STREAMS_MATCHCENTER_SCHEDULE_JSON_FILE_NAME
+from .constants import VADER_STREAMS_MATCHCENTER_SCHEDULE_PATH
 from .constants import VADER_STREAMS_XML_EPG_FILE_NAME
 from .db import VaderStreamsDB
 from ...configuration import IPTVProxyConfiguration
@@ -39,7 +41,7 @@ from ...utilities import IPTVProxyUtility
 logger = logging.getLogger(__name__)
 
 
-class VaderStreamsEPG():
+class VaderStreamsEPG(object):
     __slots__ = []
 
     _channel_name_map = {}
@@ -174,7 +176,7 @@ class VaderStreamsEPG():
             finally:
                 db.close(do_commit_transaction=do_commit_transaction)
 
-            cls._initialize_refresh_epg_timer()
+                cls._initialize_refresh_epg_timer()
 
     @classmethod
     def _initialize_refresh_epg_timer(cls):
@@ -294,10 +296,12 @@ class VaderStreamsEPG():
     def _parse_epg_json(cls, db, source_channel_id_to_channel_number):
         categories_map = cls._parse_categories_json()
         cls._parse_channels_json(db, categories_map, source_channel_id_to_channel_number)
+        cls._parse_matchcenter_schedule_json(db)
 
         logger.debug('Processed VaderStreams JSON EPG\n'
-                     'File names     => {0} & {1}'.format(VADER_STREAMS_CATEGORIES_JSON_FILE_NAME,
-                                                          VADER_STREAMS_CHANNELS_JSON_FILE_NAME))
+                     'File names     => {0}, {1}, & {2}'.format(VADER_STREAMS_CATEGORIES_JSON_FILE_NAME,
+                                                                VADER_STREAMS_CHANNELS_JSON_FILE_NAME,
+                                                                VADER_STREAMS_MATCHCENTER_SCHEDULE_JSON_FILE_NAME))
 
     @classmethod
     def _parse_epg_xml(cls, db, source_channel_id_to_channel_number):
@@ -349,6 +353,47 @@ class VaderStreamsEPG():
                          'File name      => {0}'.format(VADER_STREAMS_XML_EPG_FILE_NAME))
 
     @classmethod
+    def _parse_matchcenter_schedule_json(cls, db):
+        current_date_time_in_utc = datetime.now(pytz.utc)
+
+        matchcenter_schedule_json_stream = cls._request_epg_json(
+            VADER_STREAMS_MATCHCENTER_SCHEDULE_PATH,
+            VADER_STREAMS_MATCHCENTER_SCHEDULE_JSON_FILE_NAME,
+            dict(start=int(current_date_time_in_utc.timestamp()),
+                 end=int(current_date_time_in_utc.timestamp()) + 172800))
+
+        channel_ids = []
+        program = IPTVProxyEPGProgram()
+
+        ijson_parser = ijson.parse(matchcenter_schedule_json_stream)
+
+        for (prefix, event, value) in ijson_parser:
+            if (prefix, event) == ('item', 'start_map'):
+                program = IPTVProxyEPGProgram()
+            elif (prefix, event) == ('item.streams', 'start_array'):
+                channel_ids = []
+            elif (prefix, event) == ('item.streams.item.id', 'number'):
+                channel_ids.append(value)
+            elif (prefix, event) == ('item.description', 'string'):
+                program.description = html.unescape(value)
+            elif (prefix, event) == ('item.title', 'string'):
+                program.title = html.unescape(value)
+            elif (prefix, event) == ('item.startTime', 'string'):
+                program.start_date_time_in_utc = datetime.strptime(value[:-3] + value[-2:], '%Y-%m-%dT%H:%M:%S%z')
+            elif (prefix, event) == ('item.endTime', 'string'):
+                program.end_date_time_in_utc = datetime.strptime(value[:-3] + value[-2:], '%Y-%m-%dT%H:%M:%S%z')
+            elif (prefix, event) == ('item', 'end_map'):
+                for channel_id in channel_ids:
+                    try:
+                        channel = db.retrieve(['epg', channel_id])
+
+                        if 'MatchCenter' in channel.group:
+                            channel.add_program(program)
+                    except KeyError:
+                        pass
+                db.savepoint(1)
+
+    @classmethod
     def _refresh_epg(cls):
         logger.debug('VaderStreams EPG refresh timer triggered')
 
@@ -362,16 +407,17 @@ class VaderStreamsEPG():
 
         url = '{0}{1}'.format(VADER_STREAMS_BASE_URL, epg_json_path)
 
-        logger.debug('Downloading {0}\n'
-                     'URL => {1}\n'
-                     '  Parameters\n'
-                     '    username => {2}\n'
-                     '    password => {3}{4}'.format(epg_json_file_name,
-                                                     url,
-                                                     username,
-                                                     '\u2022' * len(password),
-                                                     '' if not request_parameters else '\n    category => {0}'.format(
-                                                         request_parameters['category_id'])))
+        logger.debug(
+            'Downloading {0}\n'
+            'URL => {1}\n'
+            '  Parameters\n'
+            '    username => {2}\n'
+            '    password => {3}{4}'.format(epg_json_file_name,
+                                            url,
+                                            username,
+                                            '\u2022' * len(password),
+                                            '' if request_parameters is None or 'category_id' not in request_parameters
+                                            else '\n    category => {0}'.format(request_parameters['category_id'])))
 
         session = requests.Session()
         response = IPTVProxyUtility.make_http_request(session.get,

@@ -13,7 +13,7 @@ from .enums import IPTVProxyCacheResponseType
 logger = logging.getLogger(__name__)
 
 
-class IPTVProxyCacheEntry():
+class IPTVProxyCacheEntry(object):
     __slots__ = ['_creation_date_time_in_utc', '_expiry_date_time_in_utc', '_primed_event', '_segment_file_content']
 
     def __init__(self):

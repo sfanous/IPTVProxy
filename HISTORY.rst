@@ -2,6 +2,11 @@
 
 Release History
 ===============
+5.6.0 (11-02-2019)
+------------------
+* Populate EPG for VaderStreams MatchCenter channels
+* Various bug fixes
+
 5.5.0 (16-01-2019)
 ------------------
 * Change IP location provider

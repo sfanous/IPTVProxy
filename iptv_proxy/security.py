@@ -26,7 +26,7 @@ from .utilities import IPTVProxyUtility
 logger = logging.getLogger(__name__)
 
 
-class IPTVProxySecurityManager():
+class IPTVProxySecurityManager(object):
     __slots__ = []
 
     _auto_generate_self_signed_certificate = True

@@ -15,7 +15,7 @@ from .validations import SmoothStreamsValidations
 logger = logging.getLogger(__name__)
 
 
-class SmoothStreamsConfiguration():
+class SmoothStreamsConfiguration(object):
     __slots__ = []
 
     @classmethod

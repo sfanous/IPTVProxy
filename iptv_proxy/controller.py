@@ -22,7 +22,9 @@ from .utilities import IPTVProxyUtility
 logger = logging.getLogger(__name__)
 
 
-class IPTVProxyController():
+class IPTVProxyController(object):
+    __slots__ = []
+
     _http_server_thread = None
     _https_server_thread = None
     _shutdown_proxy_event = Event()

@@ -9,7 +9,9 @@ from .utilities import IPTVProxyUtility
 logger = logging.getLogger(__name__)
 
 
-class IPTVProxy():
+class IPTVProxy(object):
+    __slots__ = []
+
     _serviceable_clients = {}
     _serviceable_clients_lock = RLock()
 

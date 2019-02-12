@@ -35,7 +35,7 @@ from ...utilities import IPTVProxyUtility
 logger = logging.getLogger(__name__)
 
 
-class SmoothStreamsEPG():
+class SmoothStreamsEPG(object):
     __slots__ = []
 
     _channel_name_map = {}
@@ -181,7 +181,7 @@ class SmoothStreamsEPG():
             finally:
                 db.close(do_commit_transaction=do_commit_transaction)
 
-            cls._initialize_refresh_epg_timer()
+                cls._initialize_refresh_epg_timer()
 
     @classmethod
     def _initialize_refresh_epg_timer(cls):

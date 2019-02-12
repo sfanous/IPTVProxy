@@ -21,7 +21,7 @@ from .utilities import IPTVProxyUtility
 logger = logging.getLogger(__name__)
 
 
-class IPTVProxyConfiguration():
+class IPTVProxyConfiguration(object):
     __slots__ = []
 
     _configuration = {}

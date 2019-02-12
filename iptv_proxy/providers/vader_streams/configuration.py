@@ -10,7 +10,7 @@ from .validations import VaderStreamsValidations
 logger = logging.getLogger(__name__)
 
 
-class VaderStreamsConfiguration():
+class VaderStreamsConfiguration(object):
     __slots__ = []
 
     @classmethod

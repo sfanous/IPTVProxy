@@ -19,7 +19,7 @@ from .utilities import IPTVProxyUtility
 logger = logging.getLogger(__name__)
 
 
-class IPTVProxyEPG():
+class IPTVProxyEPG(object):
     __slots__ = []
 
     _lock = RLock()

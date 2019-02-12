@@ -33,7 +33,7 @@ from .utilities import IPTVProxyUtility
 logger = logging.getLogger(__name__)
 
 
-class IPTVProxyPVR():
+class IPTVProxyPVR(object):
     __slots__ = []
 
     _live_recordings_to_recording_thread = {}

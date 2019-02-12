@@ -22,7 +22,7 @@ from .validators import IPTVProxyCerberusValidator
 logger = logging.getLogger(__name__)
 
 
-class IPTVProxyJSONAPI():
+class IPTVProxyJSONAPI(object):
     __slots__ = ['_http_request', '_json_api_response', '_type']
 
     def __init__(self, http_request, type_):
@@ -108,7 +108,7 @@ class IPTVProxyJSONAPI():
         return is_query_string_empty
 
 
-class IPTVProxyJSONAPIResponse():
+class IPTVProxyJSONAPIResponse(object):
     __slots__ = ['_content', '_status_code']
 
     def __init__(self):

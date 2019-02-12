@@ -9,7 +9,7 @@ from .constants import VALID_SMOOTH_STREAMS_SERVICE_VALUES
 logger = logging.getLogger(__name__)
 
 
-class SmoothStreamsValidations():
+class SmoothStreamsValidations(object):
     __slots__ = []
 
     @classmethod
