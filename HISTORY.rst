@@ -2,6 +2,10 @@
 
 Release History
 ===============
+5.7.0 (12-02-2019)
+------------------
+* Parse channels.json before processing Fog's EPG
+
 5.6.0 (11-02-2019)
 ------------------
 * Populate EPG for VaderStreams MatchCenter channels

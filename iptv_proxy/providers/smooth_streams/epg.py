@@ -19,8 +19,9 @@ from persistent.list import PersistentList
 
 from .constants import SMOOTH_STREAMS_EPG_BASE_URL
 from .constants import SMOOTH_STREAMS_EPG_FILE_NAME
+from .constants import SMOOTH_STREAMS_FOG_CHANNELS_JSON_FILE_NAME
 from .constants import SMOOTH_STREAMS_FOG_EPG_BASE_URL
-from .constants import SMOOTH_STREAMS_FOG_EPG_FILE_NAME
+from .constants import SMOOTH_STREAMS_FOG_EPG_XML_FILE_NAME
 from .db import SmoothStreamsDB
 from ...configuration import IPTVProxyConfiguration
 from ...constants import CHANNEL_ICONS_DIRECTORY_PATH
@@ -79,7 +80,7 @@ class SmoothStreamsEPG(object):
         current_date_time_in_utc = datetime.now(pytz.utc)
 
         if cls._source == IPTVProxyEPGSource.FOG.value:
-            tv_source_data_url = '{0}{1}'.format(SMOOTH_STREAMS_FOG_EPG_BASE_URL, SMOOTH_STREAMS_FOG_EPG_FILE_NAME)
+            tv_source_data_url = '{0}{1}'.format(SMOOTH_STREAMS_FOG_EPG_BASE_URL, SMOOTH_STREAMS_FOG_EPG_XML_FILE_NAME)
         else:
             tv_source_data_url = '{0}{1}'.format(SMOOTH_STREAMS_EPG_BASE_URL, SMOOTH_STREAMS_EPG_FILE_NAME)
 
@@ -163,6 +164,7 @@ class SmoothStreamsEPG(object):
             try:
                 if IPTVProxyConfiguration.get_configuration_parameter('SMOOTH_STREAMS_EPG_SOURCE') == \
                         IPTVProxyEPGSource.FOG.value:
+                    cls._parse_fog_channels_json(db)
                     cls._parse_fog_epg_xml(db)
 
                     cls._source = IPTVProxyEPGSource.FOG.value
@@ -217,6 +219,45 @@ class SmoothStreamsEPG(object):
             cls._generate_epg()
 
     @classmethod
+    def _parse_fog_channels_json(cls, db):
+        epg_json_stream = cls._request_fog_channels_json()
+
+        key = None
+        channel_icon_url = None
+        channel_name = ''
+        channel_number = None
+
+        ijson_parser = ijson.parse(epg_json_stream)
+
+        for (prefix, event, value) in ijson_parser:
+            if prefix.isdigit() and (event, value) == ('start_map', None):
+                key = prefix
+                channel_icon_url = None
+                channel_name = ''
+                channel_number = None
+            elif (prefix, event) == ('{0}.channum'.format(key), 'string'):
+                channel_number = int(value)
+            elif (prefix, event) == ('{0}.channame'.format(key), 'string'):
+                channel_name = html.unescape(value).strip()
+            elif (prefix, event) == ('{0}.icon'.format(key), 'string'):
+                channel_icon_url = value
+            elif (prefix, event) == (key, 'end_map'):
+                channel = IPTVProxyEPGChannel('SmoothStreams',
+                                              channel_icon_url,
+                                              '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
+                                                                      '{0} - (SmoothStreams)'.format(channel_number))),
+                                              channel_name,
+                                              channel_number)
+
+                cls._apply_optional_settings(channel)
+
+                db.persist(['epg', channel.number], channel)
+                db.savepoint(1)
+
+        logger.debug('Processed Fog JSON channels\n'
+                     'File name      => {0}'.format(SMOOTH_STREAMS_FOG_CHANNELS_JSON_FILE_NAME))
+
+    @classmethod
     def _parse_fog_epg_xml(cls, db):
         epg_xml_stream = cls._request_fog_epg_xml()
 
@@ -229,32 +270,13 @@ class SmoothStreamsEPG(object):
                                               tag=('channel', 'programme', 'tv')):
             if event == 'end':
                 if element.tag == 'channel':
-                    channel_icon_url = '',
                     channel_id = element.get('id')
-                    channel_name = ''
-                    channel_number = ''
 
                     for subElement in list(element):
-                        if subElement.tag == 'display-name':
-                            channel_name = html.unescape(subElement.text).strip()
-                        elif subElement.tag == 'icon':
-                            channel_icon_url = subElement.get('src')
-                            channel_number = int(re.search('.*/([0-9]+)\.png', channel_icon_url).group(1))
+                        if subElement.tag == 'icon':
+                            channel_number = int(re.search('.*/([0-9]+)\.png', subElement.get('src')).group(1))
 
                             source_channel_id_to_channel_number[channel_id] = channel_number
-
-                    channel = IPTVProxyEPGChannel('SmoothStreams',
-                                                  channel_icon_url,
-                                                  '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
-                                                                          '{0} - (SmoothStreams)'.format(
-                                                                              channel_number))),
-                                                  channel_name,
-                                                  channel_number)
-
-                    cls._apply_optional_settings(channel)
-
-                    db.persist(['epg', channel.number], channel)
-                    db.savepoint(1)
 
                     element.clear()
                     tv_element.clear()
@@ -289,7 +311,7 @@ class SmoothStreamsEPG(object):
 
         logger.debug('Processed Fog XML EPG\n'
                      'File name      => {0}\n'
-                     'Generated on   => {1}'.format(SMOOTH_STREAMS_FOG_EPG_FILE_NAME,
+                     'Generated on   => {1}'.format(SMOOTH_STREAMS_FOG_EPG_XML_FILE_NAME,
                                                     tv_date))
 
     @classmethod
@@ -381,11 +403,33 @@ class SmoothStreamsEPG(object):
         cls._generate_epg()
 
     @classmethod
-    def _request_fog_epg_xml(cls):
-        url = '{0}{1}'.format(SMOOTH_STREAMS_FOG_EPG_BASE_URL, SMOOTH_STREAMS_FOG_EPG_FILE_NAME)
+    def _request_fog_channels_json(cls):
+        url = '{0}{1}'.format(SMOOTH_STREAMS_FOG_EPG_BASE_URL, SMOOTH_STREAMS_FOG_CHANNELS_JSON_FILE_NAME)
 
         logger.debug('Downloading {0}\n'
-                     'URL => {1}'.format(SMOOTH_STREAMS_FOG_EPG_FILE_NAME, url))
+                     'URL => {1}'.format(SMOOTH_STREAMS_FOG_CHANNELS_JSON_FILE_NAME, url))
+
+        session = requests.Session()
+        response = IPTVProxyUtility.make_http_request(session.get, url, headers=session.headers, stream=True)
+
+        if response.status_code == requests.codes.OK:
+            response.raw.decode_content = True
+
+            # noinspection PyUnresolvedReferences
+            logger.trace(IPTVProxyUtility.assemble_response_from_log_message(response))
+
+            return response.raw
+        else:
+            logger.error(IPTVProxyUtility.assemble_response_from_log_message(response))
+
+            response.raise_for_status()
+
+    @classmethod
+    def _request_fog_epg_xml(cls):
+        url = '{0}{1}'.format(SMOOTH_STREAMS_FOG_EPG_BASE_URL, SMOOTH_STREAMS_FOG_EPG_XML_FILE_NAME)
+
+        logger.debug('Downloading {0}\n'
+                     'URL => {1}'.format(SMOOTH_STREAMS_FOG_EPG_XML_FILE_NAME, url))
 
         session = requests.Session()
         response = IPTVProxyUtility.make_http_request(session.get, url, headers=session.headers, stream=True)
