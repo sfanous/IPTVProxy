@@ -26,6 +26,12 @@ class VaderStreamsDB(IPTVProxyDB):
 
         return IPTVProxyDB.has_keys(self, ['VaderStreams'] + keys)
 
+    def delete(self, keys):
+        if not keys:
+            raise ValueError
+
+        IPTVProxyDB.delete(self, ['VaderStreams'] + keys)
+
     def persist(self, keys, value):
         if not keys:
             raise ValueError

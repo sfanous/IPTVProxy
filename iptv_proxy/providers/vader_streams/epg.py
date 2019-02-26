@@ -80,6 +80,23 @@ class VaderStreamsEPG(object):
             cls._refresh_epg_timer = None
 
     @classmethod
+    def _cleanup_epg(cls, db, source_channel_id_to_channel_number):
+        channel_numbers = []
+        for channel_id in source_channel_id_to_channel_number:
+            for channel_number in source_channel_id_to_channel_number[channel_id]:
+                channel_numbers.append(channel_number)
+
+        channel_numbers_to_delete = []
+
+        for channel_number in db.retrieve(['epg']):
+            if channel_number not in channel_numbers:
+                channel_numbers_to_delete.append(channel_number)
+
+        for channel_number in channel_numbers_to_delete:
+            db.delete(['epg', channel_number])
+            db.savepoint(1)
+
+    @classmethod
     def _convert_epg_to_xml_tv(cls, is_server_secure, authorization_required, client_ip_address, number_of_days):
         current_date_time_in_utc = datetime.now(pytz.utc)
 
@@ -167,6 +184,8 @@ class VaderStreamsEPG(object):
 
                 cls._parse_epg_json(db, source_channel_id_to_channel_number)
                 cls._parse_epg_xml(db, source_channel_id_to_channel_number)
+
+                cls._cleanup_epg(db, source_channel_id_to_channel_number)
 
                 db.persist(['channel_name_map'], cls._channel_name_map)
                 db.persist(['do_use_vader_streams_icons'], cls._do_use_vader_streams_icons)
@@ -269,7 +288,10 @@ class VaderStreamsEPG(object):
                         db.persist(['epg', channel.number], channel)
                         db.savepoint(1 + len(programs))
 
-                        source_channel_id_to_channel_number[channel_id] = channel.number
+                        if channel_id in source_channel_id_to_channel_number:
+                            source_channel_id_to_channel_number[channel_id].append(channel.number)
+                        else:
+                            source_channel_id_to_channel_number[channel_id] = [channel.number]
                     except KeyError:
                         pass
                     finally:
@@ -322,24 +344,27 @@ class VaderStreamsEPG(object):
                         channel_id = element.get('channel')
 
                         try:
-                            channel_number = source_channel_id_to_channel_number[channel_id]
-                            channel = db.retrieve(['epg', channel_number])
+                            channel_numbers = source_channel_id_to_channel_number[channel_id]
+                            for channel_number in channel_numbers:
+                                channel = db.retrieve(['epg', channel_number])
 
-                            program = IPTVProxyEPGProgram()
+                                program = IPTVProxyEPGProgram()
 
-                            program.end_date_time_in_utc = datetime.strptime(element.get('stop'), '%Y%m%d%H%M%S %z')
-                            program.start_date_time_in_utc = datetime.strptime(element.get('start'), '%Y%m%d%H%M%S %z')
+                                program.end_date_time_in_utc = datetime.strptime(element.get('stop'),
+                                                                                 '%Y%m%d%H%M%S %z')
+                                program.start_date_time_in_utc = datetime.strptime(element.get('start'),
+                                                                                   '%Y%m%d%H%M%S %z')
 
-                            for subElement in list(element):
-                                if subElement.tag == 'desc' and subElement.text:
-                                    program.description = html.unescape(subElement.text)
-                                elif subElement.tag == 'sub-title' and subElement.text:
-                                    program.sub_title = html.unescape(subElement.text)
-                                elif subElement.tag == 'title' and subElement.text:
-                                    program.title = html.unescape(subElement.text)
+                                for subElement in list(element):
+                                    if subElement.tag == 'desc' and subElement.text:
+                                        program.description = html.unescape(subElement.text)
+                                    elif subElement.tag == 'sub-title' and subElement.text:
+                                        program.sub_title = html.unescape(subElement.text)
+                                    elif subElement.tag == 'title' and subElement.text:
+                                        program.title = html.unescape(subElement.text)
 
-                            channel.add_program(program)
-                            db.savepoint(1)
+                                channel.add_program(program)
+                                db.savepoint(1)
                         except KeyError:
                             pass
                         finally:

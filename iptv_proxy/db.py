@@ -142,6 +142,14 @@ class IPTVProxyDB(object):
 
         self._connection.close()
 
+    def delete(self, keys):
+        key_to_delete = self._root['IPTVProxy']
+
+        for key in keys[:-1]:
+            key_to_delete = key_to_delete[key]
+
+        del key_to_delete[keys[-1]]
+
     def has_keys(self, keys):
         key_to_check = self._root['IPTVProxy']
 

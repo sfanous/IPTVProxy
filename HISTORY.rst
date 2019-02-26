@@ -2,6 +2,10 @@
 
 Release History
 ===============
+5.8.0 (25-02-2019)
+------------------
+* Various bug fixes for VaderStreams EPG
+
 5.7.0 (12-02-2019)
 ------------------
 * Parse channels.json before processing Fog's EPG

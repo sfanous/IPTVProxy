@@ -26,6 +26,12 @@ class SmoothStreamsDB(IPTVProxyDB):
 
         return IPTVProxyDB.has_keys(self, ['SmoothStreams'] + keys)
 
+    def delete(self, keys):
+        if not keys:
+            raise ValueError
+
+        IPTVProxyDB.delete(self, ['SmoothStreams'] + keys)
+
     def persist(self, keys, value):
         if not keys:
             raise ValueError
