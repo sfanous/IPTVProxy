@@ -52,7 +52,7 @@ class SmoothStreamsEPG(object):
 
         if not cls._do_use_smooth_streams_icons:
             for file_name in os.listdir(CHANNEL_ICONS_DIRECTORY_PATH):
-                if re.search('\A{0}.png\Z|\A{0}_|_{0}_|_{0}.png'.format(channel.number), file_name):
+                if re.search(r'\A{0}.png\Z|\A{0}_|_{0}_|_{0}.png'.format(channel.number), file_name):
                     channel_icon_file_name = file_name
                     channel_icon_file_path = os.path.join(CHANNEL_ICONS_DIRECTORY_PATH, channel_icon_file_name)
 
@@ -274,7 +274,7 @@ class SmoothStreamsEPG(object):
 
                     for subElement in list(element):
                         if subElement.tag == 'icon':
-                            channel_number = int(re.search('.*/([0-9]+)\.png', subElement.get('src')).group(1))
+                            channel_number = int(re.search(r'.*/([0-9]+)\.png', subElement.get('src')).group(1))
 
                             source_channel_id_to_channel_number[channel_id] = channel_number
 

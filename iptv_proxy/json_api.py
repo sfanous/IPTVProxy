@@ -222,15 +222,15 @@ class IPTVProxyConfigurationJSONAPI(IPTVProxyJSONAPI):
                 is_valid_patch_request_body = False
 
                 missing_required_fields = [match.group().replace('\'', '')
-                                           for match in re.finditer('(\'[^{,\[]+\')(?=: \[\'required field\'\])',
+                                           for match in re.finditer(r'(\'[^{,\[]+\')(?=: \[\'required field\'\])',
                                                                     '{0}'.format(request_body_validator.errors))]
 
                 included_unknown_fields = [match.group().replace('\'', '')
-                                           for match in re.finditer('(\'[^{,\[]+\')(?=: \[\'unknown field\'\])',
+                                           for match in re.finditer(r'(\'[^{,\[]+\')(?=: \[\'unknown field\'\])',
                                                                     '{0}'.format(request_body_validator.errors))]
 
                 invalid_type_value = [match.group().replace('\'', '')
-                                      for match in re.finditer('(\'[^{,\[]+\')(?=: \[\'unallowed value .*\'\])',
+                                      for match in re.finditer(r'(\'[^{,\[]+\')(?=: \[\'unallowed value .*\'\])',
                                                                '{0}'.format(request_body_validator.errors))]
 
                 if missing_required_fields or included_unknown_fields:
@@ -627,42 +627,42 @@ class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
             if not request_body_validator.validate(request_body):
                 is_valid_post_request_body = False
 
-                pattern = '(\'[^{,\[]+\')(?=: \[\'required field\'\])'
+                pattern = r'(\'[^{,\[]+\')(?=: \[\'required field\'\])'
                 missing_required_fields = [match.group().replace('\'', '')
                                            for match in re.finditer(pattern,
                                                                     '{0}'.format(request_body_validator.errors))]
 
-                pattern = '(\'[^{,\[]+\')(?=: \[\'unknown field\'\])'
+                pattern = r'(\'[^{,\[]+\')(?=: \[\'unknown field\'\])'
                 included_unknown_fields = [match.group().replace('\'', '')
                                            for match in re.finditer(pattern,
                                                                     '{0}'.format(request_body_validator.errors))]
 
-                pattern = '(\'[^{,\[]+\')(?=: \[\'must be of (datetime_string|string) type\'\])'
+                pattern = r'(\'[^{,\[]+\')(?=: \[\'must be of (datetime_string|string) type\'\])'
                 incorrect_type_fields = [match.group().replace('\'', '')
                                          for match in re.finditer(pattern,
                                                                   '{0}'.format(request_body_validator.errors))]
 
-                pattern = '(\'[^{,\[]+\')(?=: \[\'unallowed value .*\'\])'
+                pattern = r'(\'[^{,\[]+\')(?=: \[\'unallowed value .*\'\])'
                 invalid_type_value = [match.group().replace('\'', '')
                                       for match in re.finditer(pattern,
                                                                '{0}'.format(request_body_validator.errors))]
 
-                pattern = '(\'[^{,\[]+\')(?=: \[\'must be between [0-9]{2,5} and [0-9]{2,5}\'\])'
+                pattern = r'(\'[^{,\[]+\')(?=: \[\'must be between [0-9]{2,5} and [0-9]{2,5}\'\])'
                 invalid_channel_number = [match.group().replace('\'', '')
                                           for match in re.finditer(pattern,
                                                                    '{0}'.format(request_body_validator.errors))]
 
-                pattern = '(\'[^{,\[]+\')(?=: \[\'must be a valid provider\'\])'
+                pattern = r'(\'[^{,\[]+\')(?=: \[\'must be a valid provider\'\])'
                 invalid_provider = [match.group().replace('\'', '')
                                     for match in re.finditer(pattern,
                                                              '{0}'.format(request_body_validator.errors))]
 
-                pattern = '(\'[^{,\[]+\')(?=: \[\'must be later than now\'\])'
+                pattern = r'(\'[^{,\[]+\')(?=: \[\'must be later than now\'\])'
                 end_date_time_in_the_future = [match.group().replace('\'', '')
                                                for match in re.finditer(pattern,
                                                                         '{0}'.format(request_body_validator.errors))]
 
-                pattern = '(\'[^{,\[]+\')(?=: \[\'must be later than start_date_time_in_utc\'\])'
+                pattern = r'(\'[^{,\[]+\')(?=: \[\'must be later than start_date_time_in_utc\'\])'
                 end_date_time_after_start_date_time = [match.group().replace('\'', '')
                                                        for match in re.finditer(pattern,
                                                                                 '{0}'.format(

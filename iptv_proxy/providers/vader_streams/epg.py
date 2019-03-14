@@ -56,7 +56,7 @@ class VaderStreamsEPG(object):
 
         if not cls._do_use_vader_streams_icons:
             for file_name in os.listdir(CHANNEL_ICONS_DIRECTORY_PATH):
-                if re.search('\A{0}.png\Z|\A{0}_|_{0}_|_{0}.png'.format(channel.number), file_name):
+                if re.search(r'\A{0}.png\Z|\A{0}_|_{0}_|_{0}.png'.format(channel.number), file_name):
                     channel_icon_file_name = file_name
                     channel_icon_file_path = os.path.join(CHANNEL_ICONS_DIRECTORY_PATH, channel_icon_file_name)
 

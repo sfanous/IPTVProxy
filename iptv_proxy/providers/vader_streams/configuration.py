@@ -105,7 +105,7 @@ class VaderStreamsConfiguration(object):
                 is_valid_section = False
 
                 error_messages.append('Could not find a password option within the [VaderStreams] section\n')
-            
+
             try:
                 playlist_section = vader_streams_section['Playlist']
 

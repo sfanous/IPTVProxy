@@ -141,7 +141,7 @@ class VaderStreams(IPTVProxyProvider):
 
             IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
 
-            match = re.search('http://(.*)\.vaders\.tv(:[0-9]+)?/(.*)/tracks-v1a1/.*', chunks_m3u8)
+            match = re.search(r'http://(.*)\.vaders\.tv(:[0-9]+)?/(.*)/tracks-v1a1/.*', chunks_m3u8)
             if match is not None:
                 server = match.group(1)
                 port = match.group(2) if match.group(2) is not None and len(match.groups()) == 3 else ':80'
@@ -149,7 +149,7 @@ class VaderStreams(IPTVProxyProvider):
 
             chunks_m3u8 = re.sub('.*/tracks-v1a1/', '', chunks_m3u8)
 
-            return re.sub('.ts\?token=(.*)',
+            return re.sub(r'.ts\?token=(.*)',
                           r'.ts?'
                           r'authorization_token=\1&'
                           'channel_name={0}&'
@@ -216,15 +216,15 @@ class VaderStreams(IPTVProxyProvider):
                                                                                  is_content_text=True,
                                                                                  do_print_content=True))
 
-                match = re.search('http://(.*)\.vaders\.tv(:[0-9]+)?/(.*)/tracks-v1a1/.*', response.text)
+                match = re.search(r'http://(.*)\.vaders\.tv(:[0-9]+)?/(.*)/tracks-v1a1/.*', response.text)
                 if match is None:
-                    match = re.search('http://(.*)\.vaders\.tv(:[0-9]+)?/(.*)/index.m3u8.*', response.request.url)
+                    match = re.search(r'http://(.*)\.vaders\.tv(:[0-9]+)?/(.*)/index.m3u8.*', response.request.url)
 
                 server = match.group(1)
                 port = match.group(2) if match.group(2) is not None and len(match.groups()) == 3 else ':80'
                 channel_name = match.group(3) if len(match.groups()) == 3 else match.group(2)
 
-                return re.sub('tracks-v1a1/mono.m3u8\?token=(.*)',
+                return re.sub(r'tracks-v1a1/mono.m3u8\?token=(.*)',
                               'chunks.m3u8?'
                               r'authorization_token=\1&'
                               'channel_name={0}&'
@@ -447,7 +447,8 @@ class VaderStreams(IPTVProxyProvider):
 
         db.close()
 
-        return [tracks[channel_name] for channel_name in sorted(tracks, key=lambda channel_name_: channel_name_.lower())]
+        return [tracks[channel_name] for channel_name in sorted(tracks,
+                                                                key=lambda channel_name_: channel_name_.lower())]
 
     @classmethod
     def get_supported_protocols(cls):

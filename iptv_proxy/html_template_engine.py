@@ -15,7 +15,6 @@ from .constants import INDEX_HTML_TEMPLATES
 from .constants import LOGIN_HTML_TEMPLATES
 from .constants import VERSION
 from .enums import IPTVProxyRecordingStatus
-from .epg import IPTVProxyEPG
 from .recorder import IPTVProxyPVR
 from .utilities import IPTVProxyUtility
 
@@ -466,8 +465,6 @@ class IPTVProxyHTMLTemplateEngine(object):
                                   guide_group,
                                   providers):
         with cls._lock:
-            # IPTVProxyEPG.generate_epg(providers)
-
             cls._configuration = IPTVProxyConfiguration.get_configuration_copy()
 
             client_ip_address_type = IPTVProxyUtility.determine_ip_address_type(client_ip_address)
@@ -502,8 +499,6 @@ class IPTVProxyHTMLTemplateEngine(object):
                               streaming_protocol,
                               providers):
         with cls._lock:
-            # IPTVProxyEPG.generate_epg(providers)
-
             cls._configuration = IPTVProxyConfiguration.get_configuration_copy()
 
             client_ip_address_type = IPTVProxyUtility.determine_ip_address_type(client_ip_address)

@@ -223,7 +223,7 @@ class IPTVProxyUtility(object):
                 is_valid_private_hostname = False
         except ValueError:
             # This is a weak attempt to differentiate between a badly input IP address and a hostname.
-            if re.match('\A[0-9]+\.[0-9]+.[0-9]+.[0-9]+\Z', hostname_private) or not \
+            if re.match(r'\A[0-9]+\.[0-9]+.[0-9]+.[0-9]+\Z', hostname_private) or not \
                     IPTVProxyUtility.is_valid_hostname(hostname_private):
                 is_valid_private_hostname = False
 
@@ -240,7 +240,7 @@ class IPTVProxyUtility(object):
                 is_valid_public_hostname = False
         except ValueError:
             # This is a weak attempt to differentiate between a badly input IP address and a hostname.
-            if re.match('\A[0-9]+\.[0-9]+.[0-9]+.[0-9]+\Z', hostname_public) or not \
+            if re.match(r'\A[0-9]+\.[0-9]+.[0-9]+.[0-9]+\Z', hostname_public) or not \
                     IPTVProxyUtility.is_valid_hostname(hostname_public):
                 is_valid_public_hostname = False
 
