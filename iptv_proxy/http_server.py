@@ -257,9 +257,9 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
         authorization = self.headers.get('Authorization')
 
         if authorization:
-            match = re.match('\ABasic '
-                             '((?:[A-Za-z0-9+/]{4}){2,}'
-                             '(?:[A-Za-z0-9+/]{2}[AEIMQUYcgkosw048]=|[A-Za-z0-9+/][AQgw]==))\Z',
+            match = re.match(r'\ABasic '
+                             r'((?:[A-Za-z0-9+/]{4}){2,}'
+                             r'(?:[A-Za-z0-9+/]{2}[AEIMQUYcgkosw048]=|[A-Za-z0-9+/][AQgw]==))\Z',
                              authorization)
 
             if match:
@@ -596,7 +596,7 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
         try:
             if self._requested_path_tokens_length == 2 and \
                     self._requested_path_tokens[0].lower() == 'recordings' and \
-                    re.match('\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\Z',
+                    re.match(r'\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\Z',
                              self._requested_path_tokens[1].lower()):
                 if self._screen_request(self._get_json_request_password()):
                     (self._response_content,
@@ -621,11 +621,11 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
 
         # noinspection PyBroadException
         try:
-            if re.match('\A(index.htm)?\Z', self._requested_path_tokens[0].lower()) and \
+            if re.match(r'\A(index.htm)?\Z', self._requested_path_tokens[0].lower()) and \
                     self._requested_path_tokens_length == 1:
                 self._response_status_code = requests.codes.FOUND
                 self._send_http_response()
-            if re.match('\A(index.html)\Z', self._requested_path_tokens[0].lower()) and \
+            if re.match(r'\A(index.html)\Z', self._requested_path_tokens[0].lower()) and \
                     self._requested_path_tokens_length == 1:
                 refresh_epg_parameter_value = self._requested_query_string_parameters.get('refresh_epg')
 
@@ -688,7 +688,7 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
                             self._send_http_response(do_log_response_content=False)
                         else:
                             invalid_query_string = True
-            elif re.match('\A(.+)\.png\Z', self._requested_path_tokens[0].lower()) \
+            elif re.match(r'\A(.+)\.png\Z', self._requested_path_tokens[0].lower()) \
                     and self._requested_path_tokens_length == 1:
                 http_token_parameter_value = self._requested_query_string_parameters.get('http_token')
 
@@ -928,7 +928,7 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
                     if self._screen_request(self._get_json_request_password()):
                         (self._response_content,
                          self._response_status_code) = IPTVProxyRecordingsJSONAPI(self).process_get_request()
-                elif re.match('\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\Z',
+                elif re.match(r'\A[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\Z',
                               self._requested_path_tokens[1].lower()) and self._requested_path_tokens_length == 2:
                     if self._screen_request(self._get_json_request_password()):
                         (self._response_content,
@@ -1057,12 +1057,12 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
 
         # noinspection PyBroadException
         try:
-            if re.match('\A(index.html)\Z', self._requested_path_tokens[0].lower()) and \
+            if re.match(r'\A(index.html)\Z', self._requested_path_tokens[0].lower()) and \
                     self._requested_path_tokens_length == 1:
                 bad_post_index_html_request = False
 
                 if self._request_body:
-                    match = re.match('\ApasswordInput=(.*)\Z', self._request_body)
+                    match = re.match(r'\ApasswordInput=(.*)\Z', self._request_body)
 
                     if match:
                         password = urllib.parse.unquote(match.group(1))
@@ -1191,7 +1191,6 @@ class IPTVProxyHTTPServerThread(Thread):
                 server_side=True)
 
         self.daemon = True
-        self.start()
 
     def run(self):
         server_hostname_loopback = IPTVProxyConfiguration.get_configuration_parameter(

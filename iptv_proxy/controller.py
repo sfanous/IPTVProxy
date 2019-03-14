@@ -42,7 +42,10 @@ class IPTVProxyController(object):
 
         server_address = ('', int(server_port))
 
-        return IPTVProxyHTTPServerThread(server_address, is_secure=is_secure)
+        server_thread = IPTVProxyHTTPServerThread(server_address, is_secure=is_secure)
+        server_thread.start()
+
+        return server_thread
 
     @classmethod
     def read_optional_settings(cls):
@@ -94,7 +97,7 @@ class IPTVProxyController(object):
                 SmoothStreamsEPG.set_do_use_smooth_streams_icons(optional_settings['use_smooth_streams_icons'])
             except KeyError:
                 pass
-            
+
             try:
                 VaderStreamsEPG.set_do_use_vader_streams_icons(optional_settings['use_vader_streams_icons'])
             except KeyError:

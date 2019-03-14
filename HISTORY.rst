@@ -2,6 +2,14 @@
 
 Release History
 ===============
+5.9.0 (14-03-2019)
+------------------
+* Optimizations to recording
+    * Check cache if segment is already downloaded
+    * Add retry mechanism in case of failure while downloading chunks.m3u8
+* Fix simultaneous recordings bug
+* Various bug fixes
+
 5.8.0 (25-02-2019)
 ------------------
 * Various bug fixes for VaderStreams EPG

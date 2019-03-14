@@ -23,8 +23,10 @@ import requests
 import tzlocal
 from persistent import Persistent
 
+from .cache import IPTVProxyCacheManager
 from .configuration import IPTVProxyConfiguration
 from .db import IPTVProxyDB
+from .enums import IPTVProxyCacheResponseType
 from .enums import IPTVProxyRecordingStatus
 from .exceptions import IPTVProxyDuplicateRecordingError
 from .exceptions import IPTVProxyRecordingNotFoundError
@@ -112,6 +114,7 @@ class IPTVProxyPVR(object):
         for recording in db.retrieve(['recordings']):
             if recording.status == IPTVProxyRecordingStatus.LIVE.value:
                 live_recordings_to_recording_thread[recording.id] = IPTVProxyRecordingThread(recording)
+                live_recordings_to_recording_thread[recording.id].start()
 
         db.close()
 
@@ -141,6 +144,7 @@ class IPTVProxyPVR(object):
                     with cls._live_recordings_to_recording_thread_lock:
                         cls._live_recordings_to_recording_thread[
                             scheduled_recording.id] = IPTVProxyRecordingThread(scheduled_recording)
+                        cls._live_recordings_to_recording_thread[scheduled_recording.id].start()
                 elif not soonest_scheduled_recording_start_date_time_in_utc:
                     soonest_scheduled_recording_start_date_time_in_utc = scheduled_recording_start_date_time_in_utc
                 elif soonest_scheduled_recording_start_date_time_in_utc > scheduled_recording_start_date_time_in_utc:
@@ -174,6 +178,7 @@ class IPTVProxyPVR(object):
                 with cls._live_recordings_to_recording_thread_lock:
                     cls._live_recordings_to_recording_thread[
                         scheduled_recording.id] = IPTVProxyRecordingThread(scheduled_recording)
+                    cls._live_recordings_to_recording_thread[scheduled_recording.id].start()
 
         cls._set_start_recording_timer()
 
@@ -306,32 +311,15 @@ class IPTVProxyPVR(object):
         db = IPTVProxyDB()
         recordings = db.retrieve(['recordings'])
 
-        for (recording_index, recording) in enumerate(recordings[:]):
+        recordings_to_delete = []
+
+        for recording in recordings:
             current_date_time_in_utc = datetime.now(pytz.utc)
 
             if current_date_time_in_utc >= recording.end_date_time_in_utc:
                 do_commit_transaction = True
 
-                recordings.pop(recording_index)
-
-                deleted_recordings_log_message.append(
-                    'Provider          => {0}\n'
-                    'Channel name      => {1}\n'
-                    'Channel number    => {2}\n'
-                    'Program title     => {3}\n'
-                    'Start date & time => {4}\n'
-                    'End date & time   => {5}\n'
-                    'Status            => {6}\n'.format(recording.provider,
-                                                        recording.channel_name,
-                                                        recording.channel_number,
-                                                        recording.program_title,
-                                                        recording.start_date_time_in_utc.astimezone(
-                                                            tzlocal.get_localzone()).strftime(
-                                                            '%Y-%m-%d %H:%M:%S'),
-                                                        recording.end_date_time_in_utc.astimezone(
-                                                            tzlocal.get_localzone()).strftime(
-                                                            '%Y-%m-%d %H:%M:%S'),
-                                                        recording.status))
+                recordings_to_delete.append(recording)
             else:
                 loaded_recordings_log_message.append(
                     'Provider          => {0}\n'
@@ -351,6 +339,28 @@ class IPTVProxyPVR(object):
                                                             tzlocal.get_localzone()).strftime(
                                                             '%Y-%m-%d %H:%M:%S'),
                                                         recording.status))
+
+        for recording_to_delete in recordings_to_delete:
+            recordings.remove(recording_to_delete)
+
+            deleted_recordings_log_message.append(
+                'Provider          => {0}\n'
+                'Channel name      => {1}\n'
+                'Channel number    => {2}\n'
+                'Program title     => {3}\n'
+                'Start date & time => {4}\n'
+                'End date & time   => {5}\n'
+                'Status            => {6}\n'.format(recording_to_delete.provider,
+                                                    recording_to_delete.channel_name,
+                                                    recording_to_delete.channel_number,
+                                                    recording_to_delete.program_title,
+                                                    recording_to_delete.start_date_time_in_utc.astimezone(
+                                                        tzlocal.get_localzone()).strftime(
+                                                        '%Y-%m-%d %H:%M:%S'),
+                                                    recording_to_delete.end_date_time_in_utc.astimezone(
+                                                        tzlocal.get_localzone()).strftime(
+                                                        '%Y-%m-%d %H:%M:%S'),
+                                                    recording_to_delete.status))
 
         db.close(do_commit_transaction=do_commit_transaction)
 
@@ -510,8 +520,6 @@ class IPTVProxyRecordingThread(Thread):
 
         db.close()
 
-        self.start()
-
     def _create_recording_directory_tree(self):
         db = IPTVProxyDB()
 
@@ -618,8 +626,6 @@ class IPTVProxyRecordingThread(Thread):
             logger.error('\n'.join(traceback.format_exception(type_, value_, traceback_)))
 
     def _set_stop_recording_event(self):
-        self._stop_recording_event.set()
-
         db = IPTVProxyDB()
 
         logger.info('Stopping recording\n'
@@ -638,6 +644,8 @@ class IPTVProxyRecordingThread(Thread):
                                                           tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S')))
 
         db.close()
+
+        self._stop_recording_event.set()
 
     def force_stop(self):
         self._set_stop_recording_event()
@@ -734,7 +742,11 @@ class IPTVProxyRecordingThread(Thread):
         vod_playlist_m3u8_object = None
         downloaded_segment_file_names = []
 
+        number_of_times_attempted_to_download_chunks_m3u8 = 0
+
         while not self._stop_recording_event.is_set():
+            number_of_times_attempted_to_download_chunks_m3u8 += 1
+
             try:
                 # <editor-fold desc="Download chunks.m3u8">
                 chunks_url_components = urllib.parse.urlparse(chunks_url)
@@ -744,6 +756,9 @@ class IPTVProxyRecordingThread(Thread):
                                                                            self._id,
                                                                            chunks_url_components.path,
                                                                            chunks_query_string_parameters)
+
+                number_of_times_attempted_to_download_chunks_m3u8 = 0
+
                 # </editor-fold>
                 chunks_m3u8_download_date_time_in_utc = datetime.now(pytz.utc)
                 chunks_m3u8_total_duration = 0
@@ -761,16 +776,44 @@ class IPTVProxyRecordingThread(Thread):
 
                     chunks_m3u8_total_duration += segment.duration
 
+                    ts_file_content = None
+
                     if segment_file_name not in downloaded_segment_file_names:
                         try:
-                            # <editor-fold desc="Download ts file">
-                            ts_file_content = provider['api'].download_ts_file('127.0.0.1',
-                                                                               self._id,
-                                                                               segment_url_components.path,
-                                                                               segment_query_string_parameters)
-                            # </editor-fold>
-                            logger.debug('Downloaded segment\n'
-                                         'Segment => {0}'.format(segment_file_name))
+                            do_download_file = True
+
+                            if IPTVProxyCacheManager.get_do_cache_downloaded_segments():
+                                cache_response = IPTVProxyCacheManager.query_cache(self._recording.channel_number,
+                                                                                   segment_file_name.lower())
+
+                                if cache_response.response_type == IPTVProxyCacheResponseType.HARD_HIT:
+                                    do_download_file = False
+
+                                    ts_file_content = cache_response.entry.segment_file_content
+                                elif cache_response.response_type == IPTVProxyCacheResponseType.SOFT_HIT:
+                                    cache_response.entry.primed_event.wait(5)
+
+                                    cache_response = IPTVProxyCacheManager.query_cache(self._recording.channel_number,
+                                                                                       segment_file_name.lower())
+
+                                    if cache_response.response_type == IPTVProxyCacheResponseType.HARD_HIT:
+                                        do_download_file = False
+
+                                        ts_file_content = cache_response.entry.segment_file_content
+                                    else:
+                                        do_download_file = True
+                                else:
+                                    do_download_file = True
+
+                            if do_download_file:
+                                # <editor-fold desc="Download ts file">
+                                ts_file_content = provider['api'].download_ts_file('127.0.0.1',
+                                                                                   self._id,
+                                                                                   segment_url_components.path,
+                                                                                   segment_query_string_parameters)
+                                # </editor-fold>
+                                logger.debug('Downloaded segment\n'
+                                             'Segment => {0}'.format(segment_file_name))
 
                             downloaded_segment_file_names.append(segment_file_name)
                             self._save_segment_file(segment_file_name, ts_file_content)
@@ -792,16 +835,43 @@ class IPTVProxyRecordingThread(Thread):
 
                 for segment_index_to_delete in indices_of_skipped_segments:
                     del chunks_m3u8_object.segments[segment_index_to_delete]
+
+                current_date_time_in_utc = datetime.now(pytz.utc)
+                wait_duration = chunks_m3u8_total_duration - (
+                        current_date_time_in_utc - chunks_m3u8_download_date_time_in_utc).total_seconds()
+                if wait_duration > 0:
+                    self._stop_recording_event.wait(wait_duration)
             except requests.exceptions.HTTPError:
-                logger.error('Failed to download chunks.m3u8')
+                time_to_sleep_before_next_attempt = math.ceil(number_of_times_attempted_to_download_chunks_m3u8 / 2) * 2
 
-                return
+                logger.error('Attempt #{0}\n'
+                             'Failed to download chunks.m3u8\n'
+                             'Will try again in {1} seconds'.format(number_of_times_attempted_to_download_chunks_m3u8,
+                                                                    time_to_sleep_before_next_attempt))
 
-            current_date_time_in_utc = datetime.now(pytz.utc)
-            wait_duration = chunks_m3u8_total_duration - (
-                    current_date_time_in_utc - chunks_m3u8_download_date_time_in_utc).total_seconds()
-            if wait_duration > 0:
-                self._stop_recording_event.wait(wait_duration)
+                time.sleep(time_to_sleep_before_next_attempt)
+
+                if number_of_times_attempted_to_download_chunks_m3u8 == 10:
+                    logger.error('Exhausted attempts to download chunks.m3u8')
+
+                    logger.info('Canceling recording\n'
+                                'Provider          => {0}\n'
+                                'Channel name      => {1}\n'
+                                'Channel number    => {2}\n'
+                                'Program title     => {3}\n'
+                                'Start date & time => {4}\n'
+                                'End date & time   => {5}'.format(self._recording.provider,
+                                                                  self._recording.channel_name,
+                                                                  self._recording.channel_number,
+                                                                  self._recording.program_title,
+                                                                  self._recording.start_date_time_in_utc.astimezone(
+                                                                      tzlocal.get_localzone()).strftime(
+                                                                      '%Y-%m-%d %H:%M:%S'),
+                                                                  self._recording.end_date_time_in_utc.astimezone(
+                                                                      tzlocal.get_localzone()).strftime(
+                                                                      '%Y-%m-%d %H:%M:%S')))
+
+                    break
 
         if vod_playlist_m3u8_object:
             vod_playlist_m3u8_object.playlist_type = 'VOD'

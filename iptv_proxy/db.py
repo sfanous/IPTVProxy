@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import datetime
 from datetime import timedelta
 from threading import Timer
@@ -9,6 +10,7 @@ import tzlocal
 from ZODB.FileStorage import FileStorage
 from persistent.list import PersistentList
 from persistent.mapping import PersistentMapping
+from transaction.interfaces import TransientError
 
 from .constants import MAXIMUM_NUMBER_OF_CHANGED_OBJECTS
 
@@ -130,7 +132,20 @@ class IPTVProxyDB(object):
         self._number_of_changed_objects = 0
 
     def commit(self):
-        transaction.commit()
+        maximum_number_of_attempts = 5
+        number_of_attempts = 0
+
+        while maximum_number_of_attempts > number_of_attempts:
+            try:
+                transaction.commit()
+
+                break
+            except TransientError:
+                number_of_attempts += 1
+
+                self.abort()
+
+                time.sleep(3)
 
         self._number_of_changed_objects = 0
 
