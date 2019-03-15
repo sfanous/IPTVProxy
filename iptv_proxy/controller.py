@@ -219,8 +219,6 @@ class IPTVProxyController(object):
         IPTVProxyPVR.initialize()
         IPTVProxySecurityManager.initialize()
 
-        IPTVProxyPVR.start()
-
         for provider in IPTVProxyConfiguration.get_providers().values():
             provider['api'].initialize()
 
@@ -230,6 +228,8 @@ class IPTVProxyController(object):
 
         cls.start_http_server()
         cls.start_https_server()
+
+        IPTVProxyPVR.start()
 
         while not cls._shutdown_proxy_event.is_set():
             if cls._http_server_thread:

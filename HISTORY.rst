@@ -2,6 +2,10 @@
 
 Release History
 ===============
+5.9.1 (15-03-2019)
+------------------
+* Various bug fixes
+
 5.9.0 (14-03-2019)
 ------------------
 * Optimizations to recording

@@ -65,15 +65,13 @@ class IPTVProxyPVR(object):
                             recording = IPTVProxyRecording(recording_manifest['channel_name'],
                                                            recording_manifest['channel_number'],
                                                            datetime.strptime(
-                                                               recording_manifest[
-                                                                   'actual_end_date_time_in_utc'],
+                                                               recording_manifest['actual_end_date_time_in_utc'],
                                                                '%Y-%m-%d %H:%M:%S%z'),
                                                            recording_manifest['id'],
                                                            recording_manifest['program_title'],
                                                            recording_manifest['provider'],
                                                            datetime.strptime(
-                                                               recording_manifest[
-                                                                   'actual_start_date_time_in_utc'],
+                                                               recording_manifest['actual_start_date_time_in_utc'],
                                                                '%Y-%m-%d %H:%M:%S%z'),
                                                            IPTVProxyRecordingStatus.PERSISTED.value)
                             recording.base_recording_directory = recording_manifest['base_recording_directory']
