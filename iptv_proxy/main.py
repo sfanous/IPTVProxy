@@ -4,6 +4,7 @@ import traceback
 
 from .constants import VERSION
 from .controller import IPTVProxyController
+from.privilege import IPTVProxyPrivilege
 from .utilities import IPTVProxyUtility
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,9 @@ logger = logging.getLogger(__name__)
 def main():
     # noinspection PyBroadException
     try:
+        IPTVProxyPrivilege.initialize()
+        IPTVProxyPrivilege.become_unprivileged_user()
+
         (configuration_file_path,
          db_file_path,
          log_file_path,

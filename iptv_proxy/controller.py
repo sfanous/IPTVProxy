@@ -12,6 +12,7 @@ from .constants import OPTIONAL_SETTINGS_FILE_PATH
 from .db import IPTVProxyDB
 from .http_server import IPTVProxyHTTPRequestHandler
 from .http_server import IPTVProxyHTTPServerThread
+from .privilege import IPTVProxyPrivilege
 from .providers.smooth_streams.epg import SmoothStreamsEPG
 from .providers.vader_streams.api import VaderStreams
 from .providers.vader_streams.epg import VaderStreamsEPG
@@ -146,11 +147,14 @@ class IPTVProxyController(object):
 
     @classmethod
     def start_http_server(cls):
+        IPTVProxyPrivilege.become_privileged_user()
         cls._http_server_thread = cls._start_server(is_secure=False)
+        IPTVProxyPrivilege.become_unprivileged_user()
 
     @classmethod
     def start_https_server(cls):
         try:
+            IPTVProxyPrivilege.become_privileged_user()
             IPTVProxySecurityManager.determine_certificate_validity()
             cls._https_server_thread = cls._start_server(is_secure=True)
         except SSLError:
@@ -190,6 +194,8 @@ class IPTVProxyController(object):
                 error_message.append('\n'.join(traceback.format_exception(status, value_, traceback_)))
 
             logger.error('\n'.join(error_message))
+        finally:
+            IPTVProxyPrivilege.become_unprivileged_user()
 
     @classmethod
     def start_proxy(cls,

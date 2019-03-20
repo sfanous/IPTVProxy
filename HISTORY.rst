@@ -2,6 +2,10 @@
 
 Release History
 ===============
+5.9.2 (15-03-2019)
+------------------
+* Add IPTVProxyPrivilege class
+
 5.9.1 (15-03-2019)
 ------------------
 * Various bug fixes
