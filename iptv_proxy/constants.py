@@ -1,24 +1,25 @@
 import os
+import sys
 
 CACHE_TIME_TO_LIVE = 60
-CHANNEL_ICONS_DIRECTORY_PATH = os.path.join(os.path.abspath('resources'), 'icons', 'channels')
-DEFAULT_CHANNEL_ICON_FILE_PATH = os.path.join(os.path.abspath('resources'), 'icons', 'channels', '0.png')
-DEFAULT_CONFIGURATION_FILE_PATH = os.path.abspath('iptv_proxy.ini')
-DEFAULT_DB_DIRECTORY_PATH = os.path.abspath('db')
+CHANNEL_ICONS_DIRECTORY_PATH = os.path.join(sys.path[0], 'resources', 'icons', 'channels')
+DEFAULT_CHANNEL_ICON_FILE_PATH = os.path.join(CHANNEL_ICONS_DIRECTORY_PATH, '0.png')
+DEFAULT_CONFIGURATION_FILE_PATH = os.path.join(sys.path[0], 'iptv_proxy.ini')
+DEFAULT_DB_DIRECTORY_PATH = os.path.join(sys.path[0], 'db')
 DEFAULT_DB_FILE_PATH = os.path.join(DEFAULT_DB_DIRECTORY_PATH, 'iptv_proxy_db.fs')
 DEFAULT_HOSTNAME_LOOPBACK = 'localhost'
 DEFAULT_LOGGING_LEVEL = 'INFO'
-DEFAULT_LOG_DIRECTORY_PATH = os.path.abspath('logs')
+DEFAULT_LOG_DIRECTORY_PATH = os.path.join(sys.path[0], 'logs')
 DEFAULT_LOG_FILE_PATH = os.path.join(DEFAULT_LOG_DIRECTORY_PATH, 'iptv_proxy.log')
-DEFAULT_RECORDINGS_DIRECTORY_PATH = os.path.abspath('recordings')
-DEFAULT_SSL_DIRECTORY_PATH = os.path.abspath('ssl')
+DEFAULT_RECORDINGS_DIRECTORY_PATH = os.path.join(sys.path[0], 'recordings')
+DEFAULT_SSL_DIRECTORY_PATH = os.path.join(sys.path[0], 'ssl')
 DEFAULT_SSL_CERTIFICATE_FILE_PATH = os.path.join(DEFAULT_SSL_DIRECTORY_PATH, 'certificate', 'iptv_proxy.pem')
 DEFAULT_SSL_KEY_FILE_PATH = os.path.join(DEFAULT_SSL_DIRECTORY_PATH, 'key', 'iptv_proxy.pem')
 DEFAULT_STREAMING_PROTOCOL = 'hls'
 ERROR_HTML_TEMPLATES = {
     'errors.html.st': None
 }
-ICONS_DIRECTORY_PATH = os.path.join(os.path.abspath('resources'), 'icons')
+ICONS_DIRECTORY_PATH = os.path.join(sys.path[0], 'resources', 'icons')
 INDEX_HTML_TEMPLATES = {
     'iptv_proxy_script.js.st': None,
     'index.html.st': None,
@@ -39,12 +40,12 @@ LOGIN_HTML_TEMPLATES = {
     'login.html.st': None
 }
 MAXIMUM_NUMBER_OF_CHANGED_OBJECTS = 1024
-OPTIONAL_SETTINGS_FILE_PATH = os.path.abspath('iptv_proxy_optional_settings.json')
-RESOURCES_DIRECTORY_PATH = os.path.abspath('resources')
-TEMPLATES_DIRECTORY_PATH = os.path.abspath('templates')
+OPTIONAL_SETTINGS_FILE_PATH = os.path.join(sys.path[0], 'iptv_proxy_optional_settings.json')
+RESOURCES_DIRECTORY_PATH = os.path.join(sys.path[0], 'resources')
+TEMPLATES_DIRECTORY_PATH = os.path.join(sys.path[0], 'templates')
 TRACE = 5
 VALID_LOGGING_LEVEL_VALUES = ['ERROR', 'INFO', 'DEBUG', 'TRACE']
-VERSION = '5.9.2'
+VERSION = '5.9.3'
 XML_TV_TEMPLATES = {
     'tv_header.xml.st': None,
     'channel.xml.st': None,

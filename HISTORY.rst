@@ -2,7 +2,11 @@
 
 Release History
 ===============
-5.9.2 (15-03-2019)
+5.9.3 (23-03-2019)
+------------------
+* Replace os.path.abspath() calls with os.path.join(sys.argv[0], ... in constants.py
+
+5.9.2 (20-03-2019)
 ------------------
 * Add IPTVProxyPrivilege class
 
