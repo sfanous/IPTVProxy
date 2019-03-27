@@ -2,6 +2,10 @@
 
 Release History
 ===============
+6.0.0 (27-03-2019)
+------------------
+* Migrate from ZODB to Sqlite
+
 5.9.3 (23-03-2019)
 ------------------
 * Replace os.path.abspath() calls with os.path.join(sys.argv[0], ... in constants.py

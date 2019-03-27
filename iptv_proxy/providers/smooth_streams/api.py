@@ -1,4 +1,5 @@
 import logging
+import pickle
 import re
 import sys
 import traceback
@@ -15,10 +16,11 @@ import tzlocal
 
 from .constants import VALID_SMOOTH_STREAMS_PLAYLIST_PROTOCOL_VALUES
 from .constants import VALID_SMOOTH_STREAMS_PLAYLIST_TYPE_VALUES
-from .db import SmoothStreamsDB
+from .db import SmoothStreamsSQL
 from .epg import SmoothStreamsEPG
-from ..iptv_provider import IPTVProxyProvider
+from ..iptv_provider.api import IPTVProxyProvider
 from ...configuration import IPTVProxyConfiguration
+from ...db import IPTVProxyDatabase
 from ...proxy import IPTVProxy
 from ...security import IPTVProxySecurityManager
 from ...utilities import IPTVProxyUtility
@@ -184,7 +186,7 @@ class SmoothStreams(IPTVProxyProvider):
                             'Hash       => {0}\n'
                             'Expires On => {1}'.format(session['authorization_token'],
                                                        session['expires_on'].astimezone(
-                                                           tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S')[:-3]))
+                                                           tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S%z')))
         else:
             logger.error('Failed to retrieve SmoothStreams authorization token\n'
                          'Error => JSON response contains no [\'code\'] field')
@@ -478,20 +480,20 @@ class SmoothStreams(IPTVProxyProvider):
         did_retrieve_fresh_authorization_token = False
         tracks = []
 
-        db = SmoothStreamsDB()
-        epg = db.retrieve(['epg'])
+        db = IPTVProxyDatabase()
+        channel_records = SmoothStreamsSQL.query_channels(db)
+        db.close_connection()
 
-        for channel in epg.values():
-            channel_group = channel.group
-            channel_icon = channel.icon_url.format(
+        for channel_record in channel_records:
+            channel_group = channel_record['group']
+            channel_icon = channel_record['icon_url'].format(
                 's' if is_server_secure else '',
                 server_hostname,
                 server_port,
-                '?http_token={0}'.format(
-                    urllib.parse.quote(http_token)) if http_token else '').replace(' ', '%20')
-            channel_id = channel.id
-            channel_name = channel.name
-            channel_number = channel.number
+                '?http_token={0}'.format(urllib.parse.quote(http_token)) if http_token else '').replace(' ', '%20')
+            channel_id = channel_record['id']
+            channel_name = channel_record['name']
+            channel_number = channel_record['number']
 
             tracks.append(
                 '#EXTINF:-1 group-title="{0}" '
@@ -533,8 +535,6 @@ class SmoothStreams(IPTVProxyProvider):
                     channel_number,
                     authorization_token))
 
-        db.close()
-
         return tracks
 
     @classmethod
@@ -550,10 +550,12 @@ class SmoothStreams(IPTVProxyProvider):
             IPTVProxyConfiguration.update_configuration_file('SmoothStreams', 'password', encrypted_password)
             IPTVProxyConfiguration.set_configuration_parameter('SMOOTH_STREAMS_PASSWORD', encrypted_password)
 
-        db = SmoothStreamsDB()
+        db = IPTVProxyDatabase()
+        session_setting_records = SmoothStreamsSQL.query_setting(db, 'session')
+        db.close_connection()
 
-        try:
-            cls._session = db.retrieve(['session'])
+        if session_setting_records:
+            cls._session = pickle.loads(session_setting_records[0]['value'])
 
             current_date_time_in_utc = datetime.now(pytz.utc)
 
@@ -563,11 +565,9 @@ class SmoothStreams(IPTVProxyProvider):
                              'Expires on          => {1}'.format(cls._session['authorization_token'],
                                                                  cls._session['expires_on'].astimezone(
                                                                      tzlocal.get_localzone()).strftime(
-                                                                     '%Y-%m-%d %H:%M:%S')))
-        except KeyError:
+                                                                     '%Y-%m-%d %H:%M:%S%z')))
+        else:
             cls.refresh_session(force_refresh=True)
-
-        db.close()
 
     @classmethod
     def refresh_session(cls, force_refresh=False):
@@ -584,9 +584,10 @@ class SmoothStreams(IPTVProxyProvider):
                 if session:
                     cls._session = session
 
-                    db = SmoothStreamsDB()
-                    db.persist(['session'], cls._session)
-                    db.close(do_commit_transaction=True)
+                    db = IPTVProxyDatabase()
+                    SmoothStreamsSQL.insert_setting(db, 'session', pickle.dumps(cls._session))
+                    db.commit()
+                    db.close_connection()
 
                 if cls._refresh_session_timer:
                     cls._refresh_session_timer.cancel()

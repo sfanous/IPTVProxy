@@ -88,7 +88,7 @@ class IPTVProxyConfiguration(object):
         if cls.get_configuration_parameter('SERVER_PASSWORD') != cls._previous_configuration['SERVER_PASSWORD']:
             from .http_server import IPTVProxyHTTPRequestHandler
 
-            IPTVProxyHTTPRequestHandler.reset_active_sessions()
+            IPTVProxyHTTPRequestHandler.purge_http_sessions()
 
             logger.debug('Detected a change in the password option within the [Server] section\n'
                          'Old value => {0}\n'
@@ -361,18 +361,18 @@ class IPTVProxyConfiguration(object):
 
             if is_valid_smooth_streams_section:
                 from .providers.smooth_streams.api import SmoothStreams
-                from .providers.smooth_streams.db import SmoothStreamsDB
+                from .providers.smooth_streams.db import SmoothStreamsSQL
                 from .providers.smooth_streams.epg import SmoothStreamsEPG
 
                 cls._providers[SmoothStreams.__name__.lower()] = {}
-                cls._providers[SmoothStreams.__name__.lower()]['api'] = SmoothStreams()
-                cls._providers[SmoothStreams.__name__.lower()]['db'] = SmoothStreamsDB
-                cls._providers[SmoothStreams.__name__.lower()]['epg'] = SmoothStreamsEPG()
+                cls._providers[SmoothStreams.__name__.lower()]['api'] = SmoothStreams
+                cls._providers[SmoothStreams.__name__.lower()]['epg'] = SmoothStreamsEPG
+                cls._providers[SmoothStreams.__name__.lower()]['sql'] = SmoothStreamsSQL
             else:
                 from .providers.smooth_streams.api import SmoothStreams
 
                 if SmoothStreams.__name__.lower() in cls._providers:
-                    cls._providers[SmoothStreams.__name__.lower()]['api'].terminate()
+                    SmoothStreams.terminate()
 
                     del cls._providers[SmoothStreams.__name__.lower()]
             # </editor-fold>
@@ -389,18 +389,18 @@ class IPTVProxyConfiguration(object):
 
             if is_valid_vader_streams_section:
                 from .providers.vader_streams.api import VaderStreams
-                from .providers.vader_streams.db import VaderStreamsDB
+                from .providers.vader_streams.db import VaderStreamsSQL
                 from .providers.vader_streams.epg import VaderStreamsEPG
 
                 cls._providers[VaderStreams.__name__.lower()] = {}
-                cls._providers[VaderStreams.__name__.lower()]['api'] = VaderStreams()
-                cls._providers[VaderStreams.__name__.lower()]['db'] = VaderStreamsDB
-                cls._providers[VaderStreams.__name__.lower()]['epg'] = VaderStreamsEPG()
+                cls._providers[VaderStreams.__name__.lower()]['api'] = VaderStreams
+                cls._providers[VaderStreams.__name__.lower()]['epg'] = VaderStreamsEPG
+                cls._providers[VaderStreams.__name__.lower()]['sql'] = VaderStreamsSQL
             else:
                 from .providers.vader_streams.api import VaderStreams
 
                 if VaderStreams.__name__.lower() in cls._providers:
-                    cls._providers[VaderStreams.__name__.lower()]['api'].terminate()
+                    VaderStreams.terminate()
 
                     del cls._providers[VaderStreams.__name__.lower()]
             # </editor-fold>

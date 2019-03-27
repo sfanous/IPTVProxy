@@ -1,45 +1,65 @@
 import logging
 
-from BTrees.IOBTree import IOBTree
-from persistent.mapping import PersistentMapping
-
-from ...db import IPTVProxyDB
+from .constants import PROVIDER_NAME
+from ..iptv_provider.db import IPTVProxyProviderSQL
+from ...db import IPTVProxySQL
 
 logger = logging.getLogger(__name__)
 
 
-class SmoothStreamsDB(IPTVProxyDB):
+class SmoothStreamsSQL(IPTVProxyProviderSQL):
+    @classmethod
+    def delete_channels(cls, db, provider=PROVIDER_NAME):
+        IPTVProxyProviderSQL.delete_channels(db, provider)
 
-    def __init__(self):
-        IPTVProxyDB.__init__(self)
+    @classmethod
+    def delete_channels_temp(cls, db, provider=PROVIDER_NAME):
+        IPTVProxyProviderSQL.delete_channels_temp(db, provider)
 
-        if 'SmoothStreams' not in self._root['IPTVProxy']:
-            self._root['IPTVProxy']['SmoothStreams'] = PersistentMapping()
-        if 'epg' not in self._root['IPTVProxy']['SmoothStreams']:
-            self._root['IPTVProxy']['SmoothStreams']['epg'] = IOBTree()
+    @classmethod
+    def delete_programs(cls, db, provider=PROVIDER_NAME):
+        IPTVProxyProviderSQL.delete_programs(db, provider)
 
-            self.commit()
+    @classmethod
+    def delete_programs_temp(cls, db, provider=PROVIDER_NAME):
+        IPTVProxyProviderSQL.delete_programs_temp(db, provider)
 
-    def has_keys(self, keys):
-        if not keys:
-            raise ValueError
+    @classmethod
+    def insert_channel(cls, db, channel, provider=PROVIDER_NAME):
+        IPTVProxyProviderSQL.insert_channel(db, channel, provider)
 
-        return IPTVProxyDB.has_keys(self, ['SmoothStreams'] + keys)
+    @classmethod
+    def insert_program(cls, db, channel_id, program, provider=PROVIDER_NAME):
+        IPTVProxyProviderSQL.insert_program(db, channel_id, program, provider)
 
-    def delete(self, keys):
-        if not keys:
-            raise ValueError
+    @classmethod
+    def insert_select_channels(cls, db, provider=PROVIDER_NAME):
+        IPTVProxyProviderSQL.insert_select_channels(db, provider)
 
-        IPTVProxyDB.delete(self, ['SmoothStreams'] + keys)
+    @classmethod
+    def insert_select_programs(cls, db, provider=PROVIDER_NAME):
+        IPTVProxyProviderSQL.insert_select_programs(db, provider)
 
-    def persist(self, keys, value):
-        if not keys:
-            raise ValueError
+    @classmethod
+    def insert_setting(cls, db, name, value):
+        IPTVProxySQL.insert_setting(db, 'smooth_streams_{0}'.format(name), value)
 
-        IPTVProxyDB.persist(self, ['SmoothStreams'] + keys, value)
+    @classmethod
+    def query_channel_by_channel_number(cls, db, channel_number, provider=PROVIDER_NAME):
+        return IPTVProxyProviderSQL.query_channel_by_channel_number(db, channel_number, provider)
 
-    def retrieve(self, keys):
-        if not keys:
-            raise ValueError
+    @classmethod
+    def query_channels(cls, db, provider=PROVIDER_NAME):
+        return IPTVProxyProviderSQL.query_channels(db, provider)
 
-        return IPTVProxyDB.retrieve(self, ['SmoothStreams'] + keys)
+    @classmethod
+    def query_minimum_maximum_channel_numbers(cls, db, provider=PROVIDER_NAME):
+        return IPTVProxyProviderSQL.query_minimum_maximum_channel_numbers(db, provider)
+
+    @classmethod
+    def query_programs_by_channel_id(cls, db, channel_id, provider=PROVIDER_NAME):
+        return IPTVProxyProviderSQL.query_programs_by_channel_id(db, channel_id, provider)
+
+    @classmethod
+    def query_setting(cls, db, name):
+        return IPTVProxySQL.query_setting(db, 'smooth_streams_{0}'.format(name))

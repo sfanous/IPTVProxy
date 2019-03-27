@@ -1,4 +1,4 @@
-import logging.handlers
+import logging
 import warnings
 from datetime import datetime
 
@@ -19,7 +19,6 @@ class IPTVProxyCerberusValidator(Validator):
 
         try:
             provider = IPTVProxyConfiguration.get_provider(self.document[other].lower())
-
             if not provider['epg'].is_channel_number_in_epg(value):
                 self._error(field, 'must be between {0:02} and {1:02}'.format(
                     *provider['epg'].get_channel_numbers_range()))

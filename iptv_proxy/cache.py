@@ -128,15 +128,15 @@ class IPTVProxyCacheManager():
 
                         # noinspection PyUnresolvedReferences
                         logger.trace('Hard hit cache entry\n'
-                                     'Channel number     => {0}\n'
-                                     'Segment file name  => {1}'.format(channel_number, segment_file_name))
+                                     'Channel number    => {0}\n'
+                                     'Segment file name => {1}'.format(channel_number, segment_file_name))
                     else:
                         cache_response_type = IPTVProxyCacheResponseType.SOFT_HIT
 
                         # noinspection PyUnresolvedReferences
                         logger.trace('Soft hit cache entry\n'
-                                     'Channel number     => {0}\n'
-                                     'Segment file name  => {1}'.format(channel_number, segment_file_name))
+                                     'Channel number    => {0}\n'
+                                     'Segment file name => {1}'.format(channel_number, segment_file_name))
                 else:
                     cache_entry = None
                     cache_response_type = IPTVProxyCacheResponseType.MISS
@@ -145,8 +145,8 @@ class IPTVProxyCacheManager():
 
                     # noinspection PyUnresolvedReferences
                     logger.trace('Created cache entry\n'
-                                 'Channel number     => {0}\n'
-                                 'Segment file name  => {1}'.format(channel_number, segment_file_name))
+                                 'Channel number    => {0}\n'
+                                 'Segment file name => {1}'.format(channel_number, segment_file_name))
             else:
                 cache_entry = None
                 cache_response_type = IPTVProxyCacheResponseType.MISS
@@ -156,16 +156,16 @@ class IPTVProxyCacheManager():
 
                 # noinspection PyUnresolvedReferences
                 logger.trace('Created cache bucket & entry\n'
-                             'Channel number     => {0}\n'
-                             'Segment file name  => {1}'.format(channel_number, segment_file_name))
+                             'Channel number    => {0}\n'
+                             'Segment file name => {1}'.format(channel_number, segment_file_name))
 
             # noinspection PyUnresolvedReferences
             logger.trace('Query cache\n'
-                         'Channel number     => {0}\n'
-                         'Segment file name  => {1}\n'
-                         'Result             => {2}'.format(channel_number,
-                                                            segment_file_name,
-                                                            cache_response_type.value))
+                         'Channel number    => {0}\n'
+                         'Segment file name => {1}\n'
+                         'Result            => {2}'.format(channel_number,
+                                                           segment_file_name,
+                                                           cache_response_type.value))
 
             return IPTVProxyCacheResponse(cache_entry, cache_response_type)
 

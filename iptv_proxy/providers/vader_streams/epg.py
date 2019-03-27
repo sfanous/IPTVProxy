@@ -1,10 +1,12 @@
 import copy
 import functools
-import html
+import hashlib
+import json
 import logging
 import os
 import re
 import uuid
+import xml.sax.saxutils
 from datetime import datetime
 from datetime import timedelta
 from gzip import GzipFile
@@ -16,7 +18,6 @@ import pytz
 import requests
 import tzlocal
 from lxml import etree
-from persistent.list import PersistentList
 
 from .constants import VADER_STREAMS_BASE_URL
 from .constants import VADER_STREAMS_CATEGORIES_JSON_FILE_NAME
@@ -27,12 +28,13 @@ from .constants import VADER_STREAMS_EPG_BASE_URL
 from .constants import VADER_STREAMS_MATCHCENTER_SCHEDULE_JSON_FILE_NAME
 from .constants import VADER_STREAMS_MATCHCENTER_SCHEDULE_PATH
 from .constants import VADER_STREAMS_XML_EPG_FILE_NAME
-from .db import VaderStreamsDB
+from .db import VaderStreamsSQL
 from ...configuration import IPTVProxyConfiguration
 from ...constants import CHANNEL_ICONS_DIRECTORY_PATH
 from ...constants import DEFAULT_CHANNEL_ICON_FILE_PATH
 from ...constants import VERSION
 from ...constants import XML_TV_TEMPLATES
+from ...db import IPTVProxyDatabase
 from ...epg import IPTVProxyEPGChannel
 from ...epg import IPTVProxyEPGProgram
 from ...security import IPTVProxySecurityManager
@@ -80,23 +82,6 @@ class VaderStreamsEPG(object):
             cls._refresh_epg_timer = None
 
     @classmethod
-    def _cleanup_epg(cls, db, source_channel_id_to_channel_number):
-        channel_numbers = []
-        for channel_id in source_channel_id_to_channel_number:
-            for channel_number in source_channel_id_to_channel_number[channel_id]:
-                channel_numbers.append(channel_number)
-
-        channel_numbers_to_delete = []
-
-        for channel_number in db.retrieve(['epg']):
-            if channel_number not in channel_numbers:
-                channel_numbers_to_delete.append(channel_number)
-
-        for channel_number in channel_numbers_to_delete:
-            db.delete(['epg', channel_number])
-            db.savepoint(1)
-
-    @classmethod
     def _convert_epg_to_xml_tv(cls, is_server_secure, authorization_required, client_ip_address, number_of_days):
         current_date_time_in_utc = datetime.now(pytz.utc)
 
@@ -126,48 +111,63 @@ class VaderStreamsEPG(object):
             microsecond=0) + timedelta(days=int(number_of_days) + 1)
         cutoff_date_time_in_utc = cutoff_date_time_in_local.astimezone(pytz.utc)
 
-        db = VaderStreamsDB()
-        epg = db.retrieve(['epg'])
+        db = IPTVProxyDatabase()
+        channel_records = VaderStreamsSQL.query_channels(db)
+        db.close_connection()
 
-        for channel in epg.values():
+        for channel_record in channel_records:
             xmltv_elements = []
 
             channel_xml_template_fields = {
-                'channel_id': channel.id,
-                'channel_name': html.escape(channel.name),
+                'channel_id': channel_record['id'],
+                'channel_name': xml.sax.saxutils.escape(channel_record['name']),
                 'channel_icon': '        <icon src="{0}" />\n'.format(
-                    html.escape(
-                        channel.icon_url.format('s' if is_server_secure else '',
-                                                server_hostname,
-                                                server_port,
-                                                '?http_token={0}'.format(
-                                                    IPTVProxyConfiguration.get_configuration_parameter(
-                                                        'SERVER_PASSWORD')) if authorization_required else '')))
-                if channel.icon_url else ''
+                    xml.sax.saxutils.escape(
+                        channel_record['icon_url'].format('s'
+                                                          if is_server_secure
+                                                          else '',
+                                                          server_hostname,
+                                                          server_port,
+                                                          '?http_token={0}'.format(
+                                                              IPTVProxyConfiguration.get_configuration_parameter(
+                                                                  'SERVER_PASSWORD'))
+                                                          if authorization_required
+                                                          else '')))
+                if channel_record['icon_url']
+                else ''
             }
 
             xmltv_elements.append(
                 '{0}\n'.format(xml_tv_templates['channel.xml.st'].substitute(channel_xml_template_fields)))
 
-            for program in channel.programs:
-                if cutoff_date_time_in_utc >= program.start_date_time_in_utc:
+            db = IPTVProxyDatabase()
+            program_records = VaderStreamsSQL.query_programs_by_channel_id(db, channel_record['id'])
+            db.close_connection()
+
+            for program_record in program_records:
+                if cutoff_date_time_in_utc >= datetime.strptime(program_record['start_date_time_in_utc'],
+                                                                '%Y-%m-%d %H:%M:%S%z'):
                     programme_xml_template_fields = {
-                        'programme_channel': channel.id,
-                        'programme_start': program.start_date_time_in_utc.strftime('%Y%m%d%H%M%S %z'),
-                        'programme_stop': program.end_date_time_in_utc.strftime('%Y%m%d%H%M%S %z'),
-                        'programme_title': html.escape(program.title),
+                        'programme_channel': channel_record['id'],
+                        'programme_start': datetime.strptime(program_record['start_date_time_in_utc'],
+                                                             '%Y-%m-%d %H:%M:%S%z').strftime('%Y%m%d%H%M%S %z'),
+                        'programme_stop': datetime.strptime(program_record['end_date_time_in_utc'],
+                                                            '%Y-%m-%d %H:%M:%S%z').strftime('%Y%m%d%H%M%S %z'),
+                        'programme_title': xml.sax.saxutils.escape(program_record['title']),
                         'programme_sub_title': '        <sub-title>{0}</sub-title>\n'.format(
-                            html.escape(program.sub_title)) if program.sub_title else '',
+                            xml.sax.saxutils.escape(program_record['sub_title']))
+                        if program_record['sub_title']
+                        else '',
                         'programme_description': '        <desc>{0}</desc>\n'.format(
-                            html.escape(program.description)) if program.description else ''
+                            xml.sax.saxutils.escape(program_record['description']))
+                        if program_record['description']
+                        else ''
                     }
 
                     xmltv_elements.append(
                         '{0}\n'.format(xml_tv_templates['programme.xml.st'].substitute(programme_xml_template_fields)))
 
             yield ''.join(xmltv_elements)
-
-        db.close()
 
         yield '{0}\n'.format(xml_tv_templates['tv_footer.xml.st'].substitute())
 
@@ -176,56 +176,73 @@ class VaderStreamsEPG(object):
         with cls._lock:
             cls._groups = set()
 
-            db = VaderStreamsDB()
-            do_commit_transaction = False
+            db = IPTVProxyDatabase()
+            VaderStreamsSQL.delete_programs_temp(db)
+            VaderStreamsSQL.delete_channels_temp(db)
+            db.commit()
+            db.close_connection()
 
             try:
                 source_channel_id_to_channel_number = {}
 
-                cls._parse_epg_json(db, source_channel_id_to_channel_number)
-                cls._parse_epg_xml(db, source_channel_id_to_channel_number)
+                cls._parse_epg_json(source_channel_id_to_channel_number)
+                cls._parse_epg_xml(source_channel_id_to_channel_number)
 
-                cls._cleanup_epg(db, source_channel_id_to_channel_number)
+                db = IPTVProxyDatabase()
+                VaderStreamsSQL.delete_programs(db)
+                VaderStreamsSQL.delete_channels(db)
 
-                db.persist(['channel_name_map'], cls._channel_name_map)
-                db.persist(['do_use_vader_streams_icons'], cls._do_use_vader_streams_icons)
-                db.persist(['last_epg_refresh_date_time_in_local'], datetime.now(tzlocal.get_localzone()))
+                VaderStreamsSQL.insert_select_channels(db)
+                VaderStreamsSQL.insert_select_programs(db)
 
-                do_commit_transaction = True
+                VaderStreamsSQL.delete_programs_temp(db)
+                VaderStreamsSQL.delete_channels_temp(db)
+
+                VaderStreamsSQL.insert_setting(db, 'do_use_icons', int(cls._do_use_vader_streams_icons))
+                VaderStreamsSQL.insert_setting(db,
+                                               'channel_name_map_md5',
+                                               hashlib.md5(json.dumps(cls._channel_name_map,
+                                                                      sort_keys=True).encode()).hexdigest())
+                VaderStreamsSQL.insert_setting(db, 'last_epg_refresh_date_time_in_utc',
+                                               datetime.strftime(datetime.now(pytz.utc), '%Y-%m-%d %H:%M:%S%z'))
+                db.commit()
+                db.close_connection()
             finally:
-                db.close(do_commit_transaction=do_commit_transaction)
-
                 cls._initialize_refresh_epg_timer()
 
     @classmethod
     def _initialize_refresh_epg_timer(cls):
-        current_date_time_in_local = datetime.now(tzlocal.get_localzone())
+        current_date_time_in_utc = datetime.now(pytz.utc)
 
         do_generate_epg = False
 
-        db = VaderStreamsDB()
+        db = IPTVProxyDatabase()
+        vader_streams_last_epg_refresh_date_time_in_utc_setting_records = VaderStreamsSQL.query_setting(
+            db,
+            'last_epg_refresh_date_time_in_utc')
+        db.close_connection()
 
-        if db.has_keys(['epg']) and db.retrieve(['epg']) and db.has_keys(['last_epg_refresh_date_time_in_local']):
-            last_epg_refresh_date_time_in_local = db.retrieve(['last_epg_refresh_date_time_in_local'])
+        if vader_streams_last_epg_refresh_date_time_in_utc_setting_records:
+            last_epg_refresh_date_time_in_utc = datetime.strptime(
+                vader_streams_last_epg_refresh_date_time_in_utc_setting_records[0]['value'], '%Y-%m-%d %H:%M:%S%z')
 
-            if current_date_time_in_local >= \
-                    (last_epg_refresh_date_time_in_local + timedelta(days=1)).replace(hour=4,
-                                                                                      minute=0,
-                                                                                      second=0,
-                                                                                      microsecond=0):
+            if current_date_time_in_utc >= \
+                    (last_epg_refresh_date_time_in_utc.astimezone(
+                        tzlocal.get_localzone()) + timedelta(days=1)).replace(hour=4,
+                                                                              minute=0,
+                                                                              second=0,
+                                                                              microsecond=0):
                 do_generate_epg = True
             else:
-                refresh_epg_date_time_in_local = (current_date_time_in_local + timedelta(days=1)).replace(hour=4,
-                                                                                                          minute=0,
-                                                                                                          second=0,
-                                                                                                          microsecond=0)
+                refresh_epg_date_time_in_utc = ((current_date_time_in_utc.astimezone(
+                    tzlocal.get_localzone()) + timedelta(days=1)).replace(hour=4,
+                                                                          minute=0,
+                                                                          second=0,
+                                                                          microsecond=0)).astimezone(pytz.utc)
 
-                cls._start_refresh_epg_timer(
-                    (refresh_epg_date_time_in_local - current_date_time_in_local).total_seconds())
+                cls._start_refresh_epg_timer((refresh_epg_date_time_in_utc - current_date_time_in_utc).total_seconds())
         else:
             do_generate_epg = True
-
-        db.close()
 
         if do_generate_epg:
             cls._generate_epg()
@@ -238,20 +255,29 @@ class VaderStreamsEPG(object):
                                                        VADER_STREAMS_CATEGORIES_JSON_FILE_NAME,
                                                        {})
 
+        logger.debug('Processing VaderStreams JSON categories\n'
+                     'File name => {0}'.format(VADER_STREAMS_CATEGORIES_JSON_FILE_NAME))
+
         ijson_parser = ijson.parse(categories_json_stream)
 
         for (prefix, event, value) in ijson_parser:
             if event == 'string':
                 categories_map[int(prefix)] = value
 
+        logger.debug('Processed VaderStreams JSON categories\n'
+                     'File name => {0}'.format(VADER_STREAMS_CATEGORIES_JSON_FILE_NAME))
+
         return categories_map
 
     @classmethod
-    def _parse_channels_json(cls, db, categories_map, source_channel_id_to_channel_number):
+    def _parse_channels_json(cls, categories_map, source_channel_id_to_channel_number):
         for category_id in categories_map:
             channels_json_stream = cls._request_epg_json(VADER_STREAMS_CHANNELS_PATH,
                                                          VADER_STREAMS_CHANNELS_JSON_FILE_NAME,
                                                          dict(category_id=category_id))
+
+            logger.debug('Processing VaderStreams JSON channels\n'
+                         'File name => {0}'.format(VADER_STREAMS_CHANNELS_JSON_FILE_NAME))
 
             channel_category_id = None
             channel_icon_url = None
@@ -259,7 +285,9 @@ class VaderStreamsEPG(object):
             channel_name = ''
             channel_number = None
 
-            programs = PersistentList()
+            programs = []
+
+            db = IPTVProxyDatabase()
 
             ijson_parser = ijson.parse(channels_json_stream)
 
@@ -285,8 +313,7 @@ class VaderStreamsEPG(object):
 
                         cls._apply_optional_settings(channel)
 
-                        db.persist(['epg', channel.number], channel)
-                        db.savepoint(1 + len(programs))
+                        VaderStreamsSQL.insert_channel(db, channel)
 
                         if channel_id in source_channel_id_to_channel_number:
                             source_channel_id_to_channel_number[channel_id].append(channel.number)
@@ -301,36 +328,47 @@ class VaderStreamsEPG(object):
                         channel_name = None
                         channel_number = None
 
-                        programs = PersistentList()
+                        programs = []
                 elif (prefix, event) == ('item.id', 'number'):
                     channel_number = value
                 elif (prefix, event) == ('item.stream_icon', 'string'):
-                    channel_icon_url = html.unescape(value)
+                    channel_icon_url = xml.sax.saxutils.unescape(value)
                 elif (prefix, event) == ('item.channel_id', 'string'):
-                    channel_id = html.unescape(value)
+                    channel_id = xml.sax.saxutils.unescape(value)
                 elif (prefix, event) == ('item.stream_display_name', 'string'):
-                    channel_name = html.unescape(value)
+                    channel_name = xml.sax.saxutils.unescape(value)
 
                 elif (prefix, event) == ('item.category_id', 'number'):
                     channel_category_id = value
 
+            db.commit()
+            db.close_connection()
+
+            logger.debug('Processed VaderStreams JSON channels\n'
+                         'File name => {0}'.format(VADER_STREAMS_CHANNELS_JSON_FILE_NAME))
+
     @classmethod
-    def _parse_epg_json(cls, db, source_channel_id_to_channel_number):
+    def _parse_epg_json(cls, source_channel_id_to_channel_number):
         categories_map = cls._parse_categories_json()
-        cls._parse_channels_json(db, categories_map, source_channel_id_to_channel_number)
-        cls._parse_matchcenter_schedule_json(db)
+        cls._parse_channels_json(categories_map, source_channel_id_to_channel_number)
+        cls._parse_matchcenter_schedule_json()
 
         logger.debug('Processed VaderStreams JSON EPG\n'
-                     'File names     => {0}, {1}, & {2}'.format(VADER_STREAMS_CATEGORIES_JSON_FILE_NAME,
-                                                                VADER_STREAMS_CHANNELS_JSON_FILE_NAME,
-                                                                VADER_STREAMS_MATCHCENTER_SCHEDULE_JSON_FILE_NAME))
+                     'File names => {0}, {1}, & {2}'.format(VADER_STREAMS_CATEGORIES_JSON_FILE_NAME,
+                                                            VADER_STREAMS_CHANNELS_JSON_FILE_NAME,
+                                                            VADER_STREAMS_MATCHCENTER_SCHEDULE_JSON_FILE_NAME))
 
     @classmethod
-    def _parse_epg_xml(cls, db, source_channel_id_to_channel_number):
+    def _parse_epg_xml(cls, source_channel_id_to_channel_number):
         epg_xml_stream = cls._request_epg_xml()
+
+        logger.debug('Processing VaderStreams XML EPG\n'
+                     'File name => {0}'.format(VADER_STREAMS_XML_EPG_FILE_NAME))
 
         with GzipFile(fileobj=epg_xml_stream) as input_file:
             tv_element = None
+
+            db = IPTVProxyDatabase()
 
             for (event, element) in etree.iterparse(input_file,
                                                     events=('start', 'end'),
@@ -345,9 +383,8 @@ class VaderStreamsEPG(object):
 
                         try:
                             channel_numbers = source_channel_id_to_channel_number[channel_id]
-                            for channel_number in channel_numbers:
-                                channel = db.retrieve(['epg', channel_number])
 
+                            for channel_number in channel_numbers:
                                 program = IPTVProxyEPGProgram()
 
                                 program.end_date_time_in_utc = datetime.strptime(element.get('stop'),
@@ -357,14 +394,17 @@ class VaderStreamsEPG(object):
 
                                 for subElement in list(element):
                                     if subElement.tag == 'desc' and subElement.text:
-                                        program.description = html.unescape(subElement.text)
+                                        program.description = xml.sax.saxutils.unescape(subElement.text)
                                     elif subElement.tag == 'sub-title' and subElement.text:
-                                        program.sub_title = html.unescape(subElement.text)
+                                        program.sub_title = xml.sax.saxutils.unescape(subElement.text)
                                     elif subElement.tag == 'title' and subElement.text:
-                                        program.title = html.unescape(subElement.text)
+                                        program.title = xml.sax.saxutils.unescape(subElement.text)
 
-                                channel.add_program(program)
-                                db.savepoint(1)
+                                VaderStreamsSQL.insert_program(db,
+                                                               '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
+                                                                                       '{0} - (VaderStreams)'.format(
+                                                                                           channel_number))),
+                                                               program)
                         except KeyError:
                             pass
                         finally:
@@ -374,11 +414,14 @@ class VaderStreamsEPG(object):
                     if element.tag == 'tv':
                         tv_element = element
 
+            db.commit()
+            db.close_connection()
+
             logger.debug('Processed VaderStreams XML EPG\n'
-                         'File name      => {0}'.format(VADER_STREAMS_XML_EPG_FILE_NAME))
+                         'File name => {0}'.format(VADER_STREAMS_XML_EPG_FILE_NAME))
 
     @classmethod
-    def _parse_matchcenter_schedule_json(cls, db):
+    def _parse_matchcenter_schedule_json(cls):
         current_date_time_in_utc = datetime.now(pytz.utc)
 
         matchcenter_schedule_json_stream = cls._request_epg_json(
@@ -387,8 +430,13 @@ class VaderStreamsEPG(object):
             dict(start=int(current_date_time_in_utc.timestamp()),
                  end=int(current_date_time_in_utc.timestamp()) + 172800))
 
-        channel_ids = []
+        logger.debug('Processing VaderStreams JSON matchcenter schedule\n'
+                     'File name => {0}'.format(VADER_STREAMS_MATCHCENTER_SCHEDULE_JSON_FILE_NAME))
+
+        channel_numbers = []
         program = IPTVProxyEPGProgram()
+
+        db = IPTVProxyDatabase()
 
         ijson_parser = ijson.parse(matchcenter_schedule_json_stream)
 
@@ -396,27 +444,29 @@ class VaderStreamsEPG(object):
             if (prefix, event) == ('item', 'start_map'):
                 program = IPTVProxyEPGProgram()
             elif (prefix, event) == ('item.streams', 'start_array'):
-                channel_ids = []
+                channel_numbers = []
             elif (prefix, event) == ('item.streams.item.id', 'number'):
-                channel_ids.append(value)
+                channel_numbers.append(value)
             elif (prefix, event) == ('item.description', 'string'):
-                program.description = html.unescape(value)
+                program.description = xml.sax.saxutils.unescape(value)
             elif (prefix, event) == ('item.title', 'string'):
-                program.title = html.unescape(value)
+                program.title = xml.sax.saxutils.unescape(value)
             elif (prefix, event) == ('item.startTime', 'string'):
                 program.start_date_time_in_utc = datetime.strptime(value[:-3] + value[-2:], '%Y-%m-%dT%H:%M:%S%z')
             elif (prefix, event) == ('item.endTime', 'string'):
                 program.end_date_time_in_utc = datetime.strptime(value[:-3] + value[-2:], '%Y-%m-%dT%H:%M:%S%z')
             elif (prefix, event) == ('item', 'end_map'):
-                for channel_id in channel_ids:
-                    try:
-                        channel = db.retrieve(['epg', channel_id])
+                for channel_number in channel_numbers:
+                    VaderStreamsSQL.insert_program(db, '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
+                                                                               '{0} - (VaderStreams)'.format(
+                                                                                   channel_number))),
+                                                   program)
 
-                        if 'MatchCenter' in channel.group:
-                            channel.add_program(program)
-                    except KeyError:
-                        pass
-                db.savepoint(1)
+        db.commit()
+        db.close_connection()
+
+        logger.debug('Processed VaderStreams JSON matchcenter schedule\n'
+                     'File name => {0}'.format(VADER_STREAMS_MATCHCENTER_SCHEDULE_JSON_FILE_NAME))
 
     @classmethod
     def _refresh_epg(cls):
@@ -508,27 +558,24 @@ class VaderStreamsEPG(object):
 
     @classmethod
     def get_channel_name(cls, channel_number):
-        channel_number = int(channel_number)
+        db = IPTVProxyDatabase()
+        channel_name_records = VaderStreamsSQL.query_channel_by_channel_number(db, channel_number)
+        db.close_connection()
 
-        db = VaderStreamsDB()
-
-        try:
-            channel_name = db.retrieve(['epg', channel_number]).name
-        except KeyError:
+        if channel_name_records:
+            channel_name = channel_name_records[0]['name']
+        else:
             channel_name = 'Channel {0:02}'.format(channel_number)
-
-        db.close()
 
         return channel_name
 
     @classmethod
     def get_channel_numbers_range(cls):
-        db = VaderStreamsDB()
-        channel_numbers = db.retrieve(['epg']).keys()
-        channel_numbers_range = (channel_numbers[0], channel_numbers[-1])
-        db.close()
+        db = IPTVProxyDatabase()
+        minimum_maximum_channel_number_records = VaderStreamsSQL.query_minimum_maximum_channel_numbers(db)
+        db.close_connection()
 
-        return channel_numbers_range
+        return (minimum_maximum_channel_number_records[0][0], minimum_maximum_channel_number_records[0][1])
 
     @classmethod
     def get_groups(cls):
@@ -539,30 +586,38 @@ class VaderStreamsEPG(object):
     def initialize(cls):
         cls._initialize_refresh_epg_timer()
 
-        db = VaderStreamsDB()
+        db = IPTVProxyDatabase()
+        vader_streams_do_use_icons_setting_records = VaderStreamsSQL.query_setting(db, 'do_use_icons')
+        vader_streams_channel_name_map_md5_setting_records = VaderStreamsSQL.query_setting(db, 'channel_name_map_md5')
+        db.close_connection()
 
-        try:
-            cls._groups = {channel.group for channel in db.retrieve(['epg']).values()}
+        if not vader_streams_do_use_icons_setting_records or not \
+                vader_streams_channel_name_map_md5_setting_records or \
+                hashlib.md5(json.dumps(cls._channel_name_map, sort_keys=True).encode()).hexdigest() != \
+                vader_streams_channel_name_map_md5_setting_records[0]['value'] or \
+                cls._do_use_vader_streams_icons != \
+                bool(int(vader_streams_do_use_icons_setting_records[0]['value'])):
+            cls._cancel_refresh_epg_timer()
+            cls._generate_epg()
 
-            if cls._channel_name_map != db.retrieve(['channel_name_map']) or \
-                    cls._do_use_vader_streams_icons != db.retrieve(['do_use_vader_streams_icons']):
-                cls._cancel_refresh_epg_timer()
-                cls._generate_epg()
+            logger.debug('Resetting EPG')
+        else:
+            db = IPTVProxyDatabase()
+            group_records = VaderStreamsSQL.query_groups(db)
+            db.close_connection()
 
-                logger.debug('Resetting EPG')
-        except KeyError:
-            pass
-
-        db.close()
+            cls._groups = {group_record['group'] for group_record in group_records}
 
     @classmethod
     def is_channel_number_in_epg(cls, channel_number):
-        db = VaderStreamsDB()
-        channel_numbers = db.retrieve(['epg']).keys()
-        is_channel_number_in_epg = int(channel_number) in channel_numbers
-        db.close()
+        db = IPTVProxyDatabase()
+        channel_name_records = VaderStreamsSQL.query_channel_by_channel_number(db, channel_number)
+        db.close_connection()
 
-        return is_channel_number_in_epg
+        if channel_name_records:
+            return True
+        else:
+            return False
 
     @classmethod
     def reset_epg(cls):

@@ -1,7 +1,7 @@
 import base64
 import html
 import json
-import logging.handlers
+import logging
 from datetime import datetime
 from datetime import timedelta
 from threading import RLock
@@ -14,6 +14,7 @@ from .constants import ERROR_HTML_TEMPLATES
 from .constants import INDEX_HTML_TEMPLATES
 from .constants import LOGIN_HTML_TEMPLATES
 from .constants import VERSION
+from .db import IPTVProxyDatabase
 from .enums import IPTVProxyRecordingStatus
 from .recorder import IPTVProxyPVR
 from .utilities import IPTVProxyUtility
@@ -50,7 +51,7 @@ class IPTVProxyHTMLTemplateEngine(object):
                                     authorization_required,
                                     client_ip_address_type,
                                     client_uuid,
-                                    channel,
+                                    channel_record,
                                     channel_index,
                                     channels,
                                     guide_provider):
@@ -59,20 +60,26 @@ class IPTVProxyHTMLTemplateEngine(object):
         else:
             channel_li_border = ''
 
-        channel_li_id_prefix = channel.id
+        channel_li_id_prefix = channel_record['id']
 
-        channel_li_channel_name = html.escape(channel.name)
+        channel_li_channel_name = html.escape(channel_record['name'])
 
-        if channel.icon_data_uri:
-            channel_li_channel_img_src = channel.icon_data_uri
+        if channel_record['icon_data_uri']:
+            channel_li_channel_img_src = channel_record['icon_data_uri']
         else:
-            channel_li_channel_img_src = channel.icon_url.format(
-                's' if is_server_secure else '',
+            channel_li_channel_img_src = channel_record['icon_url'].format(
+                's'
+                if is_server_secure
+                else '',
                 cls._configuration['SERVER_HOSTNAME_{0}'.format(client_ip_address_type.value)],
-                cls._configuration['SERVER_HTTP{0}_PORT'.format('S' if is_server_secure else '')],
-                '?http_token={0}'.format(cls._configuration['SERVER_PASSWORD']) if authorization_required else '')
+                cls._configuration['SERVER_HTTP{0}_PORT'.format('S'
+                                                                if is_server_secure
+                                                                else '')],
+                '?http_token={0}'.format(cls._configuration['SERVER_PASSWORD'])
+                if authorization_required
+                else '')
 
-        channel_li_channel_number = channel.number
+        channel_li_channel_number = channel_record['number']
 
         provider = IPTVProxyConfiguration.get_provider(guide_provider.lower())
 
@@ -81,25 +88,26 @@ class IPTVProxyHTMLTemplateEngine(object):
             channel_sources[provider_supported_protocol] = {}
 
             channel_sources[provider_supported_protocol]['videoSource'] = provider[
-                'api'].generate_playlist_m3u8_track_url(dict(channel_number=channel_li_channel_number,
+                'api'].generate_playlist_m3u8_track_url(dict(channel_number=int(channel_li_channel_number),
                                                              client_uuid=client_uuid,
-                                                             http_token=cls._configuration[
-                                                                 'SERVER_PASSWORD'] if authorization_required else None,
+                                                             http_token=cls._configuration['SERVER_PASSWORD']
+                                                             if authorization_required
+                                                             else None,
                                                              is_server_secure=is_server_secure,
                                                              playlist_protocol=provider_supported_protocol,
                                                              server_hostname=cls._configuration[
                                                                  'SERVER_HOSTNAME_{0}'.format(
                                                                      client_ip_address_type.value)],
                                                              server_port=cls._configuration[
-                                                                 'SERVER_HTTP{0}_PORT'.format(
-                                                                     'S' if is_server_secure else '')]))
+                                                                 'SERVER_HTTP{0}_PORT'.format('S'
+                                                                                              if is_server_secure
+                                                                                              else '')]))
 
         return {
             'channel_li_border': channel_li_border,
             'channel_li_id_prefix': channel_li_id_prefix,
             'channel_li_channel_name': channel_li_channel_name,
             'channel_li_channel_img_src': channel_li_channel_img_src,
-            # 'channel_li_channel_number': channel_li_channel_number,
             'channel_li_channel_number': channel_index + 1,
             'channel_sources_data_json': json.dumps(channel_sources)
         }
@@ -178,7 +186,7 @@ class IPTVProxyHTMLTemplateEngine(object):
                 guide_group_select_options_template = {
                     'guide_group_select_option_selected': 'selected="selected" '
                     if selected_provider == provider and selected_channel_group == group else '',
-                    'guide_group_select_option_provider': provider['api'].__class__.__name__,
+                    'guide_group_select_option_provider': provider['api']().__class__.__name__,
                     'guide_group_select_option_group': group
                 }
 
@@ -214,27 +222,27 @@ class IPTVProxyHTMLTemplateEngine(object):
                 channel_group = guide_group
             else:
                 channel_group = sorted(provider_groups)[0]
-
-            db = provider['db']()
-            channels = {channel_number: channel
-                        for channel_number, channel in db.retrieve(['epg']).items() if channel.group == channel_group}
         else:
             provider = providers[sorted(providers)[0]]
             provider_groups = provider['epg'].get_groups()
 
             channel_group = sorted(provider_groups)[0]
-            db = provider['db']()
-            channels = {channel_number: channel
-                        for channel_number, channel in db.retrieve(['epg']).items() if channel.group == channel_group}
+
+        db = IPTVProxyDatabase()
+        channel_records = provider['sql'].query_channels(db)
+        db.close_connection()
+
+        channels = {channel_record['number']: channel_record
+                    for channel_record in channel_records if channel_group == channel_record['group']}
 
         guide_lis = []
 
-        for (channel_index, channel) in enumerate(channels.values()):
+        for (channel_index, channel_record) in enumerate(channels.values()):
             channel_li_html_template_fields = cls._render_channel_li_template(is_server_secure,
                                                                               authorization_required,
                                                                               client_ip_address_type,
                                                                               client_uuid,
-                                                                              channel,
+                                                                              channel_record,
                                                                               channel_index,
                                                                               channels,
                                                                               guide_provider)
@@ -248,10 +256,18 @@ class IPTVProxyHTMLTemplateEngine(object):
             date_programs_lis = []
             program_li_input_label_span_id_suffix = 0
 
-            for (program_index, program) in enumerate(sorted(channel.programs,
-                                                             key=lambda program_: program_.start_date_time_in_utc)):
-                program_start_date_time_in_utc = program.start_date_time_in_utc
-                program_end_date_time_in_utc = program.end_date_time_in_utc
+            db = IPTVProxyDatabase()
+            program_records = provider['sql'].query_programs_by_channel_id(db, channel_record['id'])
+            db.close_connection()
+
+            for (program_index, program_record) in enumerate(
+                    sorted(program_records,
+                           key=lambda program_record_: datetime.strptime(
+                               program_record_['start_date_time_in_utc'], '%Y-%m-%d %H:%M:%S%z'))):
+                program_start_date_time_in_utc = datetime.strptime(program_record['start_date_time_in_utc'],
+                                                                   '%Y-%m-%d %H:%M:%S%z')
+                program_end_date_time_in_utc = datetime.strptime(program_record['end_date_time_in_utc'],
+                                                                 '%Y-%m-%d %H:%M:%S%z')
 
                 if current_date_time_in_utc >= program_end_date_time_in_utc:
                     continue
@@ -289,15 +305,15 @@ class IPTVProxyHTMLTemplateEngine(object):
 
                 if cutoff_date_time_in_utc > program_start_date_time_in_utc:
                     date_programs_lis.append(INDEX_HTML_TEMPLATES['program_li.html.st'].safe_substitute(
-                        cls._render_program_li_template(channel,
-                                                        program,
+                        cls._render_program_li_template(channel_record,
+                                                        program_record,
                                                         channel_li_html_template_fields[
                                                             'channel_li_id_prefix'],
                                                         program_li_input_label_span_id_suffix,
                                                         date_li_id_suffix,
                                                         guide_provider)))
 
-                if program_index == len(channel.programs) - 1:
+                if program_index == len(program_records) - 1:
                     if day_of_containing_date_li:
                         if date_programs_lis:
                             channel_programs_lis.append(cls._render_date_programs_li_template(
@@ -319,8 +335,6 @@ class IPTVProxyHTMLTemplateEngine(object):
                     channel_li_html_template_fields['channel_li_id_prefix'],
                     channel_programs_lis))
 
-        db.close()
-
         return guide_lis
 
     @classmethod
@@ -338,14 +352,15 @@ class IPTVProxyHTMLTemplateEngine(object):
 
     @classmethod
     def _render_program_li_template(cls,
-                                    channel,
-                                    program,
+                                    channel_record,
+                                    program_record,
                                     program_li_id_prefix,
                                     program_li_input_label_span_id_suffix,
                                     program_li_input_name_suffix,
                                     guide_provider):
-        program_start_date_time_in_utc = program.start_date_time_in_utc
-        program_end_date_time_in_utc = program.end_date_time_in_utc
+        program_start_date_time_in_utc = datetime.strptime(program_record['start_date_time_in_utc'],
+                                                           '%Y-%m-%d %H:%M:%S%z')
+        program_end_date_time_in_utc = datetime.strptime(program_record['end_date_time_in_utc'], '%Y-%m-%d %H:%M:%S%z')
 
         program_start_date_time_in_local = program_start_date_time_in_utc.astimezone(tzlocal.get_localzone())
         program_end_date_time_in_local = program_end_date_time_in_utc.astimezone(tzlocal.get_localzone())
@@ -354,12 +369,11 @@ class IPTVProxyHTMLTemplateEngine(object):
             'data': {
                 'type': 'recordings',
                 'attributes': {
-                    'channel_number': '{0:02}'.format(channel.number),
-                    'end_date_time_in_utc': '{0}'.format(program.end_date_time_in_utc.strftime('%Y-%m-%d %H:%M:%S')),
-                    'program_title': '{0}'.format(html.escape(program.title)),
+                    'channel_number': '{0:02}'.format(int(channel_record['number'])),
+                    'end_date_time_in_utc': '{0}'.format(program_end_date_time_in_utc.strftime('%Y-%m-%d %H:%M:%S')),
+                    'program_title': '{0}'.format(html.escape(program_record['title'])),
                     'provider': '{0}'.format(guide_provider),
-                    'start_date_time_in_utc': '{0}'.format(
-                        program.start_date_time_in_utc.strftime('%Y-%m-%d %H:%M:%S')),
+                    'start_date_time_in_utc': '{0}'.format(program_start_date_time_in_utc.strftime('%Y-%m-%d %H:%M:%S'))
                 }
             }
         }
@@ -371,8 +385,8 @@ class IPTVProxyHTMLTemplateEngine(object):
             'program_li_input_value': json.dumps(program_post_recording_body),
             'program_li_label_start_time': program_start_date_time_in_local.strftime('%H:%M:%S'),
             'program_li_label_end_time': program_end_date_time_in_local.strftime('%H:%M:%S'),
-            'program_li_label_program_title': html.escape(program.title),
-            'program_li_span_description': html.escape(program.description)
+            'program_li_label_program_title': html.escape(program_record['title']),
+            'program_li_span_description': html.escape(program_record['description'])
         }
 
     @classmethod

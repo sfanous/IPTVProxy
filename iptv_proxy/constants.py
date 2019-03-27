@@ -6,7 +6,8 @@ CHANNEL_ICONS_DIRECTORY_PATH = os.path.join(sys.path[0], 'resources', 'icons', '
 DEFAULT_CHANNEL_ICON_FILE_PATH = os.path.join(CHANNEL_ICONS_DIRECTORY_PATH, '0.png')
 DEFAULT_CONFIGURATION_FILE_PATH = os.path.join(sys.path[0], 'iptv_proxy.ini')
 DEFAULT_DB_DIRECTORY_PATH = os.path.join(sys.path[0], 'db')
-DEFAULT_DB_FILE_PATH = os.path.join(DEFAULT_DB_DIRECTORY_PATH, 'iptv_proxy_db.fs')
+DEFAULT_DB_CREATE_SCHEMA_FILE_PATH = os.path.join(DEFAULT_DB_DIRECTORY_PATH, 'iptv_proxy.db.sql')
+DEFAULT_DB_FILE_PATH = os.path.join(DEFAULT_DB_DIRECTORY_PATH, 'iptv_proxy.db')
 DEFAULT_HOSTNAME_LOOPBACK = 'localhost'
 DEFAULT_LOGGING_LEVEL = 'INFO'
 DEFAULT_LOG_DIRECTORY_PATH = os.path.join(sys.path[0], 'logs')
@@ -39,13 +40,12 @@ INDEX_HTML_TEMPLATES = {
 LOGIN_HTML_TEMPLATES = {
     'login.html.st': None
 }
-MAXIMUM_NUMBER_OF_CHANGED_OBJECTS = 1024
 OPTIONAL_SETTINGS_FILE_PATH = os.path.join(sys.path[0], 'iptv_proxy_optional_settings.json')
 RESOURCES_DIRECTORY_PATH = os.path.join(sys.path[0], 'resources')
 TEMPLATES_DIRECTORY_PATH = os.path.join(sys.path[0], 'templates')
 TRACE = 5
 VALID_LOGGING_LEVEL_VALUES = ['ERROR', 'INFO', 'DEBUG', 'TRACE']
-VERSION = '5.9.3'
+VERSION = '6.0.0'
 XML_TV_TEMPLATES = {
     'tv_header.xml.st': None,
     'channel.xml.st': None,

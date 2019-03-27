@@ -3,7 +3,7 @@ import binascii
 import email.utils
 import http.client
 import json
-import logging.handlers
+import logging
 import pprint
 import re
 import ssl
@@ -26,12 +26,12 @@ from threading import Thread
 import pytz
 import requests
 import tzlocal
-from persistent import Persistent
 
 from .cache import IPTVProxyCacheManager
 from .configuration import IPTVProxyConfiguration
 from .constants import DEFAULT_STREAMING_PROTOCOL
-from .db import IPTVProxyDB
+from .db import IPTVProxyDatabase
+from .db import IPTVProxySQL
 from .enums import IPTVProxyCacheResponseType
 from .enums import IPTVProxyIPAddressType
 from .epg import IPTVProxyEPG
@@ -50,81 +50,75 @@ logger = logging.getLogger(__name__)
 
 # noinspection PyAttributeOutsideInit
 class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
-    # _active_sessions = PersistentMapping()
-    # _active_sessions_lock = RLock()
     _allow_insecure_lan_connections = True
     _allow_insecure_wan_connections = False
     _lan_connections_require_credentials = False
     _wan_connections_require_credentials = True
 
     @classmethod
-    def _add_session_to_active_sessions(cls, session):
-        db = IPTVProxyDB()
-        db.persist(['http_server_active_sessions', session.session_id], session)
-        db.close(do_commit_transaction=True)
-
-    @classmethod
     def initialize(cls):
-        deleted_active_sessions_log_message = []
-        loaded_active_sessions_log_message = []
+        deleted_http_sessions_log_message = []
+        loaded_http_sessions_log_message = []
 
         do_commit_transaction = False
 
-        db = IPTVProxyDB()
-        active_sessions = db.retrieve(['http_server_active_sessions'])
+        db = IPTVProxyDatabase()
+        http_session_records = IPTVProxySQL.query_http_sessions(db)
 
-        for active_session_id in list(active_sessions.keys()):
-            active_session = active_sessions[active_session_id]
-
+        for http_session_record in http_session_records:
             current_date_time_in_utc = datetime.now(pytz.utc)
 
-            if current_date_time_in_utc >= active_session.expiry_date_time_in_utc:
+            if current_date_time_in_utc >= datetime.strptime(http_session_record['expiry_date_time_in_utc'],
+                                                             '%Y-%m-%d %H:%M:%S%z'):
+                IPTVProxySQL.delete_http_session_by_id(db, http_session_record['id'])
                 do_commit_transaction = True
 
-                del active_sessions[active_session_id]
-
-                deleted_active_sessions_log_message.append(
+                deleted_http_sessions_log_message.append(
                     'Session ID         => {0}\n'
                     'Client IP address  => {1}\n'
                     'Browser user agent => {2}\n'
-                    'Expired on         => {3}\n'.format(active_session_id,
-                                                         active_session.client_ip_address,
-                                                         active_session.user_agent,
-                                                         active_session.expiry_date_time_in_utc.astimezone(
-                                                             tzlocal.get_localzone()).strftime(
-                                                             '%Y-%m-%d %H:%M:%S')))
+                    'Expired on         => {3}\n'.format(http_session_record['id'],
+                                                         http_session_record['client_ip_address'],
+                                                         http_session_record['user_agent'],
+                                                         datetime.strptime(
+                                                             http_session_record['expiry_date_time_in_utc'],
+                                                             '%Y-%m-%d %H:%M:%S%z').astimezone(
+                                                             tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S%z')))
             else:
-                loaded_active_sessions_log_message.append(
+                loaded_http_sessions_log_message.append(
                     'Session ID         => {0}\n'
                     'Client IP address  => {1}\n'
                     'Browser user agent => {2}\n'
-                    'Expires on         => {3}\n'.format(active_session_id,
-                                                         active_session.client_ip_address,
-                                                         active_session.user_agent,
-                                                         active_session.expiry_date_time_in_utc.astimezone(
-                                                             tzlocal.get_localzone()).strftime(
-                                                             '%Y-%m-%d %H:%M:%S')))
+                    'Expires on         => {3}\n'.format(http_session_record['id'],
+                                                         http_session_record['client_ip_address'],
+                                                         http_session_record['user_agent'],
+                                                         datetime.strptime(
+                                                             http_session_record['expiry_date_time_in_utc'],
+                                                             '%Y-%m-%d %H:%M:%S%z').astimezone(
+                                                             tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S%z')))
 
-        db.close(do_commit_transaction=do_commit_transaction)
+        if do_commit_transaction:
+            db.commit()
+        db.close_connection()
 
-        if deleted_active_sessions_log_message:
-            deleted_active_sessions_log_message.insert(0, 'Deleted HTTP server session{0}\n'.format(
-                's' if len(deleted_active_sessions_log_message) > 1 else ''))
+        if deleted_http_sessions_log_message:
+            deleted_http_sessions_log_message.insert(0, 'Deleted HTTP server session{0}\n'.format(
+                's' if len(deleted_http_sessions_log_message) > 1 else ''))
 
-            logger.debug('\n'.join(deleted_active_sessions_log_message).strip())
+            logger.debug('\n'.join(deleted_http_sessions_log_message).strip())
 
-        if loaded_active_sessions_log_message:
-            loaded_active_sessions_log_message.insert(0, 'Loaded HTTP server session{0}\n'.format(
-                's' if len(loaded_active_sessions_log_message) > 1 else ''))
+        if loaded_http_sessions_log_message:
+            loaded_http_sessions_log_message.insert(0, 'Loaded HTTP server session{0}\n'.format(
+                's' if len(loaded_http_sessions_log_message) > 1 else ''))
 
-            logger.debug('\n'.join(loaded_active_sessions_log_message).strip())
+            logger.debug('\n'.join(loaded_http_sessions_log_message).strip())
 
     @classmethod
-    def reset_active_sessions(cls):
-        db = IPTVProxyDB()
-        active_sessions = db.retrieve(['http_server_active_sessions'])
-        active_sessions.clear()
-        db.close(do_commit_transaction=True)
+    def purge_http_sessions(cls):
+        db = IPTVProxyDatabase()
+        IPTVProxySQL.delete_http_sessions(db)
+        db.commit()
+        db.close_connection()
 
     @classmethod
     def set_allow_insecure_lan_connections(cls, allow_insecure_lan_connections):
@@ -143,28 +137,24 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
         cls._wan_connections_require_credentials = wan_connections_require_credentials
 
     def _authenticate(self, password_to_authenticate):
-        authenticated = True
-
         server_password = IPTVProxyConfiguration.get_configuration_parameter('SERVER_PASSWORD')
 
         if server_password != password_to_authenticate:
-            authenticated = False
-
             self._send_http_error(requests.codes.UNAUTHORIZED, 'Invalid password provided.')
 
-        return authenticated
+            return False
+
+        return True
 
     def _authorization_required(self):
-        authorization_required = True
-
         if self._client_ip_address_type == IPTVProxyIPAddressType.PUBLIC and not \
                 IPTVProxyHTTPRequestHandler._wan_connections_require_credentials:
-            authorization_required = False
+            return False
         elif self._client_ip_address_type != IPTVProxyIPAddressType.PUBLIC and not \
                 IPTVProxyHTTPRequestHandler._lan_connections_require_credentials:
-            authorization_required = False
+            return False
 
-        return authorization_required
+        return True
 
     def _create_response_headers(self):
         if self.command == 'OPTIONS':
@@ -195,13 +185,13 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
                 if self._cookies[cookie]['expires']:
                     self._response_headers['Set-Cookie'].append(self._cookies[cookie].output(header='').strip())
 
-    def _create_session_cookie(self, iptv_proxy_http_session):
-        session_id_cookie_expires = email.utils.format_datetime(iptv_proxy_http_session.expiry_date_time_in_utc)
+    def _create_http_session_cookie(self, iptv_proxy_http_session):
+        http_session_id_cookie_expires = email.utils.format_datetime(iptv_proxy_http_session.expiry_date_time_in_utc)
 
-        self._cookies['session_id'] = iptv_proxy_http_session.session_id
-        self._cookies['session_id']['expires'] = session_id_cookie_expires
-        self._cookies['session_id']['httponly'] = True
-        self._cookies['session_id']['path'] = '/index.html'
+        self._cookies['http_session_id'] = iptv_proxy_http_session.id
+        self._cookies['http_session_id']['expires'] = http_session_id_cookie_expires
+        self._cookies['http_session_id']['httponly'] = True
+        self._cookies['http_session_id']['path'] = '/index.html'
 
     def _create_settings_cookies(self):
         settings_cookie_expires = self._cookies.get('settings_cookie_expires')
@@ -226,7 +216,8 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
 
         if self._cookies.get('guide_provider') is None:
             if self._providers:
-                self._cookies['guide_provider'] = self._providers[sorted(self._providers)[0]]['api'].__class__.__name__
+                self._cookies['guide_provider'] = self._providers[sorted(
+                    self._providers)[0]]['api']().__class__.__name__
 
         if self._cookies.get('guide_provider') is not None:
             self._cookies['guide_provider']['expires'] = settings_cookie_expires
@@ -234,13 +225,10 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
 
             if self._cookies.get('guide_group') is None:
                 provider = self._providers[self._cookies.get('guide_provider').value.lower()]
-                db = provider['db']()
-                groups = {channel.group for channel in db.retrieve(['epg']).values()}
+                groups = provider['epg'].get_groups()
 
                 if groups:
                     self._cookies['guide_group'] = sorted(groups)[0]
-
-                db.close()
 
         if self._cookies.get('guide_group') is not None:
             self._cookies['guide_group']['expires'] = settings_cookie_expires
@@ -252,8 +240,6 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
         self._cookies['streaming_protocol']['path'] = '/index.html'
 
     def _get_json_request_password(self):
-        password_to_authenticate = None
-
         authorization = self.headers.get('Authorization')
 
         if authorization:
@@ -264,11 +250,11 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
 
             if match:
                 try:
-                    password_to_authenticate = base64.b64decode(match.group(1)).decode()[1:]
+                    return base64.b64decode(match.group(1)).decode()[1:]
                 except binascii.Error:
                     pass
 
-        return password_to_authenticate
+        return None
 
     def _handle_internal_server_error(self):
         (status, value_, traceback_) = sys.exc_info()
@@ -362,40 +348,39 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
                                                       self.command))
 
     def _is_logged_in(self):
-        authorization_required = self._authorization_required()
+        if self._authorization_required():
+            http_session_id_cookie = self._cookies.get('http_session_id')
 
-        if authorization_required:
-            session_id_cookie = self._cookies.get('session_id')
-
-            if session_id_cookie is None:
+            if http_session_id_cookie is None:
                 logged_in = False
             else:
-                session_id = session_id_cookie.value
+                http_session_id = http_session_id_cookie.value
 
-                db = IPTVProxyDB()
-                active_session = db.retrieve(['http_server_active_sessions'])
+                do_commit_transaction = False
 
-                # with IPTVProxyHTTPRequestHandler._active_sessions_lock:
-                if session_id not in active_session:
-                    do_commit_transaction = False
+                db = IPTVProxyDatabase()
+                http_session_records = IPTVProxySQL.query_http_session_by_id(db, http_session_id)
+
+                if not http_session_records:
                     logged_in = False
                 else:
-                    do_commit_transaction = True
-
-                    iptv_proxy_http_session = active_session[session_id]
+                    iptv_proxy_http_session = IPTVProxyHTTPSession.createFromHTTPSessionRecord(http_session_records[0])
 
                     if datetime.now(pytz.utc) > iptv_proxy_http_session.expiry_date_time_in_utc or \
                             self._client_ip_address != iptv_proxy_http_session.client_ip_address or \
                             self._user_agent != iptv_proxy_http_session.user_agent:
                         logged_in = False
 
-                        del active_session[session_id]
+                        IPTVProxySQL.delete_http_session_by_id(db, iptv_proxy_http_session.id)
+                        do_commit_transaction = True
                     else:
                         logged_in = True
 
                         iptv_proxy_http_session.last_access_date_time_in_utc = datetime.now(pytz.utc)
 
-                db.close(do_commit_transaction=do_commit_transaction)
+                if do_commit_transaction:
+                    db.commit()
+                db.close_connection()
         else:
             logged_in = True
 
@@ -449,15 +434,13 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
                                content_to_log))
 
     def _screen_request(self, password_to_authenticate):
-        cleared_screening = True
-
         if self._secure_transport_satisfied():
             if self._authorization_required():
-                cleared_screening = self._authenticate(password_to_authenticate)
+                return self._authenticate(password_to_authenticate)
+            else:
+                return True
         else:
-            cleared_screening = False
-
-        return cleared_screening
+            return False
 
     def _secure_transport_satisfied(self):
         secure_transport_satisfied = True
@@ -638,17 +621,6 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
                             guide_provider_cookie_value = urllib.parse.unquote(
                                 self._cookies.get('guide_provider').value)
                             guide_group_cookie_value = urllib.parse.unquote(self._cookies.get('guide_group').value)
-
-                            # if guide_provider_cookie_value.lower() not in self._providers:
-                            #     guide_provider_cookie_value = self._providers[sorted(self._providers)[0]][
-                            #         'api'].__class__.__name__
-                            #
-                            # db = self._providers[guide_provider_cookie_value.lower()]['db']()
-                            # groups = {channel.group for channel in db.retrieve(['epg']).values()}
-                            # db.close()
-                            #
-                            # if guide_group_cookie_value not in groups:
-                            #     guide_group_cookie_value = sorted(groups)[0]
 
                             if refresh_epg_parameter_value:
                                 self._response_content = IPTVProxyHTMLTemplateEngine.render_guide_div_template(
@@ -1068,9 +1040,14 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
                         password = urllib.parse.unquote(match.group(1))
 
                         if self._authenticate(password):
-                            iptv_proxy_http_session = IPTVProxyHTTPSession(self._client_ip_address, self._user_agent)
-                            self._create_session_cookie(iptv_proxy_http_session)
-                            IPTVProxyHTTPRequestHandler._add_session_to_active_sessions(iptv_proxy_http_session)
+                            iptv_proxy_http_session = IPTVProxyHTTPSession.create(self._client_ip_address,
+                                                                                  self._user_agent)
+                            self._create_http_session_cookie(iptv_proxy_http_session)
+
+                            db = IPTVProxyDatabase()
+                            IPTVProxySQL.insert_http_session(db, iptv_proxy_http_session)
+                            db.commit()
+                            db.close_connection()
 
                             self._response_status_code = requests.codes.FOUND
                             self._send_http_response()
@@ -1123,18 +1100,34 @@ class IPTVProxyHTTPRequestHandler(BaseHTTPRequestHandler):
         return self._requested_url_components
 
 
-class IPTVProxyHTTPSession(Persistent):
-    __slots__ = ['_client_ip_address', '_expiry_date_time_in_utc', '_last_access_date_time_in_utc', '_session_id',
+class IPTVProxyHTTPSession(object):
+    __slots__ = ['_client_ip_address', '_expiry_date_time_in_utc', '_id', '_last_access_date_time_in_utc',
                  '_user_agent']
 
-    def __init__(self, client_ip_address, user_agent):
+    @classmethod
+    def create(cls, client_ip_address, user_agent):
         current_date_time_in_utc = datetime.now(pytz.utc)
 
+        return cls('{0}'.format(uuid.uuid4()),
+                   client_ip_address,
+                   user_agent,
+                   current_date_time_in_utc,
+                   current_date_time_in_utc + timedelta(days=7))
+
+    @classmethod
+    def createFromHTTPSessionRecord(cls, http_session_record):
+        return cls(http_session_record['id'],
+                   http_session_record['client_ip_address'],
+                   http_session_record['user_agent'],
+                   datetime.strptime(http_session_record['last_access_date_time_in_utc'], '%Y-%m-%d %H:%M:%S%z'),
+                   datetime.strptime(http_session_record['expiry_date_time_in_utc'], '%Y-%m-%d %H:%M:%S%z'))
+
+    def __init__(self, id_, client_ip_address, user_agent, last_access_date_time_in_utc, expiry_date_time_in_utc):
+        self._id = id_
         self._client_ip_address = client_ip_address
-        self._expiry_date_time_in_utc = current_date_time_in_utc + timedelta(days=7)
-        self._last_access_date_time_in_utc = current_date_time_in_utc
-        self._session_id = '{0}'.format(uuid.uuid4())
         self._user_agent = user_agent
+        self._last_access_date_time_in_utc = last_access_date_time_in_utc
+        self._expiry_date_time_in_utc = expiry_date_time_in_utc
 
     @property
     def client_ip_address(self):
@@ -1145,16 +1138,16 @@ class IPTVProxyHTTPSession(Persistent):
         return self._expiry_date_time_in_utc
 
     @property
+    def id(self):
+        return self._id
+
+    @property
     def last_access_date_time_in_utc(self):
         return self._last_access_date_time_in_utc
 
     @last_access_date_time_in_utc.setter
     def last_access_date_time_in_utc(self, last_access_date_time_in_utc):
         self._last_access_date_time_in_utc = last_access_date_time_in_utc
-
-    @property
-    def session_id(self):
-        return self._session_id
 
     @property
     def user_agent(self):

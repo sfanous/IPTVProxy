@@ -1,11 +1,12 @@
 import base64
 import copy
 import json
-import logging.handlers
+import logging
 import math
 import os
 import re
 import shutil
+import sqlite3
 import sys
 import time
 import traceback
@@ -21,11 +22,11 @@ import m3u8
 import pytz
 import requests
 import tzlocal
-from persistent import Persistent
 
 from .cache import IPTVProxyCacheManager
 from .configuration import IPTVProxyConfiguration
-from .db import IPTVProxyDB
+from .db import IPTVProxyDatabase
+from .db import IPTVProxySQL
 from .enums import IPTVProxyCacheResponseType
 from .enums import IPTVProxyRecordingStatus
 from .exceptions import IPTVProxyDuplicateRecordingError
@@ -85,38 +86,34 @@ class IPTVProxyPVR(object):
         return persistent_recordings
 
     @classmethod
-    def _get_scheduled_recordings(cls):
-        scheduled_recordings = []
+    def _restart_live_recordings(cls):
+        live_recordings_to_recording_thread = {}
 
-        db = IPTVProxyDB()
+        db = IPTVProxyDatabase()
+        live_recording_records = IPTVProxySQL.query_live_recordings(db)
+        db.close_connection()
 
-        for recording in db.retrieve(['recordings']):
-            if recording.status == IPTVProxyRecordingStatus.SCHEDULED.value:
-                scheduled_recordings.append(recording)
+        for live_recording_record in live_recording_records:
+            live_recording = IPTVProxyRecording(live_recording_record['channel_name'],
+                                                live_recording_record['channel_number'],
+                                                datetime.strptime(live_recording_record['end_date_time_in_utc'],
+                                                                  '%Y-%m-%d %H:%M:%S%z'),
+                                                live_recording_record['id'],
+                                                live_recording_record['program_title'],
+                                                live_recording_record['provider'],
+                                                datetime.strptime(live_recording_record['start_date_time_in_utc'],
+                                                                  '%Y-%m-%d %H:%M:%S%z'),
+                                                live_recording_record['status'])
+            live_recordings_to_recording_thread[live_recording.id] = IPTVProxyRecordingThread(
+                live_recording)
+            live_recordings_to_recording_thread[live_recording.id].start()
 
-        db.close()
-
-        return scheduled_recordings
+        cls._set_live_recordings_to_recording_thread(live_recordings_to_recording_thread)
 
     @classmethod
     def _set_live_recordings_to_recording_thread(cls, live_recordings_to_recording_thread):
         with cls._live_recordings_to_recording_thread_lock:
             cls._live_recordings_to_recording_thread = live_recordings_to_recording_thread
-
-    @classmethod
-    def _restart_live_recordings(cls):
-        live_recordings_to_recording_thread = {}
-
-        db = IPTVProxyDB()
-
-        for recording in db.retrieve(['recordings']):
-            if recording.status == IPTVProxyRecordingStatus.LIVE.value:
-                live_recordings_to_recording_thread[recording.id] = IPTVProxyRecordingThread(recording)
-                live_recordings_to_recording_thread[recording.id].start()
-
-        db.close()
-
-        cls._set_live_recordings_to_recording_thread(live_recordings_to_recording_thread)
 
     @classmethod
     def _set_start_recording_timer(cls):
@@ -127,21 +124,45 @@ class IPTVProxyPVR(object):
             soonest_scheduled_recording_start_date_time_in_utc = None
             current_date_time_in_utc = datetime.now(pytz.utc)
 
-            for scheduled_recording in cls._get_scheduled_recordings():
+            db = IPTVProxyDatabase()
+            scheduled_recording_records = IPTVProxySQL.query_scheduled_recordings(db)
+            db.close_connection()
+
+            for scheduled_recording_record in scheduled_recording_records:
+                scheduled_recording = IPTVProxyRecording(scheduled_recording_record['channel_name'],
+                                                         scheduled_recording_record['channel_number'],
+                                                         datetime.strptime(
+                                                             scheduled_recording_record['end_date_time_in_utc'],
+                                                             '%Y-%m-%d %H:%M:%S%z'),
+                                                         scheduled_recording_record['id'],
+                                                         scheduled_recording_record['program_title'],
+                                                         scheduled_recording_record['provider'],
+                                                         datetime.strptime(
+                                                             scheduled_recording_record['start_date_time_in_utc'],
+                                                             '%Y-%m-%d %H:%M:%S%z'),
+                                                         scheduled_recording_record['status'])
+
                 scheduled_recording_start_date_time_in_utc = scheduled_recording.start_date_time_in_utc
 
                 if current_date_time_in_utc > scheduled_recording_start_date_time_in_utc:
-                    db = IPTVProxyDB()
+                    live_recording = IPTVProxyRecording(scheduled_recording.channel_name,
+                                                        scheduled_recording.channel_number,
+                                                        scheduled_recording.end_date_time_in_utc,
+                                                        '{0}'.format(uuid.uuid4()),
+                                                        scheduled_recording.program_title,
+                                                        scheduled_recording.provider,
+                                                        scheduled_recording.start_date_time_in_utc,
+                                                        IPTVProxyRecordingStatus.LIVE.value)
 
-                    # Generate a new id for the recording when we change it's status
-                    scheduled_recording.id = '{0}'.format(uuid.uuid4())
-                    scheduled_recording.status = IPTVProxyRecordingStatus.LIVE.value
-
-                    db.close(do_commit_transaction=True)
+                    db = IPTVProxyDatabase()
+                    IPTVProxySQL.delete_recording_by_id(db, scheduled_recording.id)
+                    IPTVProxySQL.insert_recording(db, live_recording)
+                    db.commit()
+                    db.close_connection()
 
                     with cls._live_recordings_to_recording_thread_lock:
-                        cls._live_recordings_to_recording_thread[
-                            scheduled_recording.id] = IPTVProxyRecordingThread(scheduled_recording)
+                        cls._live_recordings_to_recording_thread[scheduled_recording.id] = IPTVProxyRecordingThread(
+                            live_recording)
                         cls._live_recordings_to_recording_thread[scheduled_recording.id].start()
                 elif not soonest_scheduled_recording_start_date_time_in_utc:
                     soonest_scheduled_recording_start_date_time_in_utc = scheduled_recording_start_date_time_in_utc
@@ -161,40 +182,60 @@ class IPTVProxyPVR(object):
     def _start_recording(cls):
         current_date_time_in_utc = datetime.now(pytz.utc)
 
-        for scheduled_recording in cls._get_scheduled_recordings():
+        db = IPTVProxyDatabase()
+        scheduled_recording_records = IPTVProxySQL.query_scheduled_recordings(db)
+        db.close_connection()
+
+        for scheduled_recording_record in scheduled_recording_records:
+            scheduled_recording = IPTVProxyRecording(scheduled_recording_record['channel_name'],
+                                                     scheduled_recording_record['channel_number'],
+                                                     datetime.strptime(
+                                                         scheduled_recording_record['end_date_time_in_utc'],
+                                                         '%Y-%m-%d %H:%M:%S%z'),
+                                                     scheduled_recording_record['id'],
+                                                     scheduled_recording_record['program_title'],
+                                                     scheduled_recording_record['provider'],
+                                                     datetime.strptime(
+                                                         scheduled_recording_record['start_date_time_in_utc'],
+                                                         '%Y-%m-%d %H:%M:%S%z'),
+                                                     scheduled_recording_record['status'])
+
             scheduled_recording_start_date_time_in_utc = scheduled_recording.start_date_time_in_utc
 
             if current_date_time_in_utc > scheduled_recording_start_date_time_in_utc:
-                db = IPTVProxyDB()
+                live_recording = IPTVProxyRecording(scheduled_recording.channel_name,
+                                                    scheduled_recording.channel_number,
+                                                    scheduled_recording.end_date_time_in_utc,
+                                                    '{0}'.format(uuid.uuid4()),
+                                                    scheduled_recording.program_title,
+                                                    scheduled_recording.provider,
+                                                    scheduled_recording.start_date_time_in_utc,
+                                                    IPTVProxyRecordingStatus.LIVE.value)
 
-                # Generate a new id for the recording when we change it's status
-                scheduled_recording.id = '{0}'.format(uuid.uuid4())
-                scheduled_recording.status = IPTVProxyRecordingStatus.LIVE.value
-
-                db.close(do_commit_transaction=True)
+                db = IPTVProxyDatabase()
+                IPTVProxySQL.delete_recording_by_id(db, scheduled_recording.id)
+                IPTVProxySQL.insert_recording(db, live_recording)
+                db.commit()
+                db.close_connection()
 
                 with cls._live_recordings_to_recording_thread_lock:
-                    cls._live_recordings_to_recording_thread[
-                        scheduled_recording.id] = IPTVProxyRecordingThread(scheduled_recording)
+                    cls._live_recordings_to_recording_thread[scheduled_recording.id] = IPTVProxyRecordingThread(
+                        live_recording)
                     cls._live_recordings_to_recording_thread[scheduled_recording.id].start()
 
         cls._set_start_recording_timer()
 
     @classmethod
     def add_scheduled_recording(cls, scheduled_recording):
-        db = IPTVProxyDB()
-        recordings = db.retrieve(['recordings'])
+        db = IPTVProxyDatabase()
 
-        if scheduled_recording not in recordings:
-            recordings.append(scheduled_recording)
-
-            db.close(do_commit_transaction=True)
-
-            cls._set_start_recording_timer()
-        else:
-            db.close()
-
+        try:
+            IPTVProxySQL.insert_recording(db, scheduled_recording)
+            db.commit()
+        except sqlite3.IntegrityError:
             raise IPTVProxyDuplicateRecordingError
+        finally:
+            db.close_connection()
 
     @classmethod
     def cancel_start_recording_timer(cls):
@@ -203,10 +244,10 @@ class IPTVProxyPVR(object):
 
     @classmethod
     def delete_live_recording(cls, live_recording):
-        db = IPTVProxyDB()
-        recordings = db.retrieve(['recordings'])
-        recordings.remove(live_recording)
-        db.close(do_commit_transaction=True)
+        db = IPTVProxyDatabase()
+        IPTVProxySQL.delete_recording_by_id(db, live_recording.id)
+        db.commit()
+        db.close_connection()
 
     @classmethod
     def delete_persisted_recording(cls, persisted_recording):
@@ -214,10 +255,10 @@ class IPTVProxyPVR(object):
 
     @classmethod
     def delete_scheduled_recording(cls, scheduled_recording):
-        db = IPTVProxyDB()
-        recordings = db.retrieve(['recordings'])
-        recordings.remove(scheduled_recording)
-        db.close(do_commit_transaction=True)
+        db = IPTVProxyDatabase()
+        IPTVProxySQL.delete_recording_by_id(db, scheduled_recording.id)
+        db.commit()
+        db.close_connection()
 
         cls._set_start_recording_timer()
 
@@ -274,24 +315,53 @@ class IPTVProxyPVR(object):
 
     @classmethod
     def get_recording(cls, recording_id):
-        db = IPTVProxyDB()
+        db = IPTVProxyDatabase()
+        recording_records = IPTVProxySQL.query_recording_by_id(db, recording_id)
+        db.close_connection()
 
-        for recording in db.retrieve(['recordings']) + cls._get_persistent_recordings():
-            if recording.id == recording_id:
-                db.close()
+        for recording_record in recording_records + cls._get_persistent_recordings():
+            if recording_id == recording_record['id']:
+                recording = IPTVProxyRecording(recording_record['channel_name'],
+                                               recording_record['channel_number'],
+                                               datetime.strptime(
+                                                   recording_record['end_date_time_in_utc'],
+                                                   '%Y-%m-%d %H:%M:%S%z'),
+                                               recording_record['id'],
+                                               recording_record['program_title'],
+                                               recording_record['provider'],
+                                               datetime.strptime(
+                                                   recording_record['start_date_time_in_utc'],
+                                                   '%Y-%m-%d %H:%M:%S%z'),
+                                               recording_record['status'])
 
                 return recording
-
-        db.close()
 
         raise IPTVProxyRecordingNotFoundError
 
     @classmethod
     def get_recordings(cls):
-        db = IPTVProxyDB()
-        recordings = [copy.deepcopy(recording)
-                      for recording in db.retrieve(['recordings'])] + cls._get_persistent_recordings()
-        db.close()
+        db = IPTVProxyDatabase()
+        recording_records = IPTVProxySQL.query_recordings(db)
+        db.close_connection()
+
+        recordings = []
+
+        for recording_record in recording_records:
+            recordings.append(IPTVProxyRecording(recording_record['channel_name'],
+                                                 recording_record['channel_number'],
+                                                 datetime.strptime(
+                                                     recording_record['end_date_time_in_utc'],
+                                                     '%Y-%m-%d %H:%M:%S%z'),
+                                                 recording_record['id'],
+                                                 recording_record['program_title'],
+                                                 recording_record['provider'],
+                                                 datetime.strptime(
+                                                     recording_record['start_date_time_in_utc'],
+                                                     '%Y-%m-%d %H:%M:%S%z'),
+                                                 recording_record['status']))
+
+        for persistent_recording in cls._get_persistent_recordings():
+            recordings.append(copy.deepcopy(persistent_recording))
 
         return recordings
 
@@ -306,18 +376,36 @@ class IPTVProxyPVR(object):
 
         do_commit_transaction = False
 
-        db = IPTVProxyDB()
-        recordings = db.retrieve(['recordings'])
+        db = IPTVProxyDatabase()
+        recording_records = IPTVProxySQL.query_recordings(db)
 
-        recordings_to_delete = []
-
-        for recording in recordings:
+        for recording_record in recording_records:
             current_date_time_in_utc = datetime.now(pytz.utc)
 
-            if current_date_time_in_utc >= recording.end_date_time_in_utc:
+            if current_date_time_in_utc >= datetime.strptime(recording_record['end_date_time_in_utc'],
+                                                             '%Y-%m-%d %H:%M:%S%z'):
+                IPTVProxySQL.delete_recording_by_id(db, recording_record['id'])
+
                 do_commit_transaction = True
 
-                recordings_to_delete.append(recording)
+                deleted_recordings_log_message.append(
+                    'Provider          => {0}\n'
+                    'Channel name      => {1}\n'
+                    'Channel number    => {2}\n'
+                    'Program title     => {3}\n'
+                    'Start date & time => {4}\n'
+                    'End date & time   => {5}\n'
+                    'Status            => {6}\n'.format(recording_record['provider'],
+                                                        recording_record['channel_name'],
+                                                        recording_record['channel_number'],
+                                                        recording_record['program_title'],
+                                                        datetime.strptime(recording_record['start_date_time_in_utc'],
+                                                                          '%Y-%m-%d %H:%M:%S%z').astimezone(
+                                                            tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S%z'),
+                                                        datetime.strptime(recording_record['end_date_time_in_utc'],
+                                                                          '%Y-%m-%d %H:%M:%S%z').astimezone(
+                                                            tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S%z'),
+                                                        recording_record['status']))
             else:
                 loaded_recordings_log_message.append(
                     'Provider          => {0}\n'
@@ -326,41 +414,20 @@ class IPTVProxyPVR(object):
                     'Program title     => {3}\n'
                     'Start date & time => {4}\n'
                     'End date & time   => {5}\n'
-                    'Status            => {6}\n'.format(recording.provider,
-                                                        recording.channel_name,
-                                                        recording.channel_number,
-                                                        recording.program_title,
-                                                        recording.start_date_time_in_utc.astimezone(
-                                                            tzlocal.get_localzone()).strftime(
-                                                            '%Y-%m-%d %H:%M:%S'),
-                                                        recording.end_date_time_in_utc.astimezone(
-                                                            tzlocal.get_localzone()).strftime(
-                                                            '%Y-%m-%d %H:%M:%S'),
-                                                        recording.status))
-
-        for recording_to_delete in recordings_to_delete:
-            recordings.remove(recording_to_delete)
-
-            deleted_recordings_log_message.append(
-                'Provider          => {0}\n'
-                'Channel name      => {1}\n'
-                'Channel number    => {2}\n'
-                'Program title     => {3}\n'
-                'Start date & time => {4}\n'
-                'End date & time   => {5}\n'
-                'Status            => {6}\n'.format(recording_to_delete.provider,
-                                                    recording_to_delete.channel_name,
-                                                    recording_to_delete.channel_number,
-                                                    recording_to_delete.program_title,
-                                                    recording_to_delete.start_date_time_in_utc.astimezone(
-                                                        tzlocal.get_localzone()).strftime(
-                                                        '%Y-%m-%d %H:%M:%S'),
-                                                    recording_to_delete.end_date_time_in_utc.astimezone(
-                                                        tzlocal.get_localzone()).strftime(
-                                                        '%Y-%m-%d %H:%M:%S'),
-                                                    recording_to_delete.status))
-
-        db.close(do_commit_transaction=do_commit_transaction)
+                    'Status            => {6}\n'.format(recording_record['provider'],
+                                                        recording_record['channel_name'],
+                                                        recording_record['channel_number'],
+                                                        recording_record['program_title'],
+                                                        datetime.strptime(recording_record['start_date_time_in_utc'],
+                                                                          '%Y-%m-%d %H:%M:%S%z').astimezone(
+                                                            tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S%z'),
+                                                        datetime.strptime(recording_record['end_date_time_in_utc'],
+                                                                          '%Y-%m-%d %H:%M:%S%z').astimezone(
+                                                            tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S%z'),
+                                                        recording_record['status']))
+        if do_commit_transaction:
+            db.commit()
+        db.close_connection()
 
         if deleted_recordings_log_message:
             deleted_recordings_log_message.insert(0, 'Deleted expired recording{0}\n'.format(
@@ -411,7 +478,7 @@ class IPTVProxyPVR(object):
             cls._live_recordings_to_recording_thread[live_recording.id].force_stop()
 
 
-class IPTVProxyRecording(Persistent):
+class IPTVProxyRecording(object):
     __slots__ = ['_base_recording_directory', '_channel_name', '_channel_number', '_end_date_time_in_utc', '_id',
                  '_program_title', '_provider', '_start_date_time_in_utc', '_status']
 
@@ -436,8 +503,8 @@ class IPTVProxyRecording(Persistent):
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
-            return (self.channel_number, self._end_date_time_in_utc, self._start_date_time_in_utc) == (
-                other._channel_number, other._end_date_time_in_utc, other._start_date_time_in_utc)
+            return (self._provider, self._channel_number, self._end_date_time_in_utc, self._start_date_time_in_utc) == \
+                   (other._provider, other._channel_number, other._end_date_time_in_utc, other._start_date_time_in_utc)
         return False
 
     def __repr__(self):
@@ -503,8 +570,6 @@ class IPTVProxyRecordingThread(Thread):
     def __init__(self, recording):
         Thread.__init__(self)
 
-        db = IPTVProxyDB()
-
         self._id = uuid.uuid3(uuid.NAMESPACE_OID, 'IPTVProxyRecordingThread')
         self._recording = recording
         self._recording_directory_path = None
@@ -516,11 +581,7 @@ class IPTVProxyRecordingThread(Thread):
         self._stop_recording_timer.daemon = True
         self._stop_recording_timer.start()
 
-        db.close()
-
     def _create_recording_directory_tree(self):
-        db = IPTVProxyDB()
-
         recording_directory_suffix_counter = 0
         recording_directory_suffix = ''
 
@@ -551,8 +612,6 @@ class IPTVProxyRecordingThread(Thread):
 
                     logger.debug('Created recording directory tree for {0}\n'
                                  'Path => {1}'.format(self._recording.program_title, recording_directory_path))
-
-                    db.close(do_commit_transaction=True)
                 except OSError:
                     logger.error('Failed to create recording directory tree for {0}\n'
                                  'Path => {1}'.format(self._recording.program_title, recording_directory_path))
@@ -624,8 +683,6 @@ class IPTVProxyRecordingThread(Thread):
             logger.error('\n'.join(traceback.format_exception(type_, value_, traceback_)))
 
     def _set_stop_recording_event(self):
-        db = IPTVProxyDB()
-
         logger.info('Stopping recording\n'
                     'Provider          => {0}\n'
                     'Channel name      => {1}\n'
@@ -641,16 +698,12 @@ class IPTVProxyRecordingThread(Thread):
                                                       self._recording.end_date_time_in_utc.astimezone(
                                                           tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S')))
 
-        db.close()
-
         self._stop_recording_event.set()
 
     def force_stop(self):
         self._set_stop_recording_event()
 
     def run(self):
-        db = IPTVProxyDB()
-
         logger.info('Starting recording\n'
                     'Provider          => {0}\n'
                     'Channel name      => {1}\n'
@@ -732,8 +785,6 @@ class IPTVProxyRecordingThread(Thread):
                                      persisted_recording_id,
                                      None,
                                      'Canceled')
-
-            db.close()
 
             return
 
@@ -896,5 +947,3 @@ class IPTVProxyRecordingThread(Thread):
                                                           tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S'),
                                                       self._recording.end_date_time_in_utc.astimezone(
                                                           tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S')))
-
-        db.close()

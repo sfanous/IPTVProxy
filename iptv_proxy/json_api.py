@@ -1,6 +1,6 @@
 import html
 import json
-import logging.handlers
+import logging
 import pprint
 import re
 import uuid

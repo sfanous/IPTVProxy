@@ -9,7 +9,7 @@ from threading import Event
 from .cache import IPTVProxyCacheManager
 from .configuration import IPTVProxyConfiguration
 from .constants import OPTIONAL_SETTINGS_FILE_PATH
-from .db import IPTVProxyDB
+from .db import IPTVProxyDatabase
 from .http_server import IPTVProxyHTTPRequestHandler
 from .http_server import IPTVProxyHTTPServerThread
 from .privilege import IPTVProxyPrivilege
@@ -143,7 +143,6 @@ class IPTVProxyController(object):
             cls._https_server_thread.stop()
 
         IPTVProxyConfiguration.stop_configuration_file_watchdog_observer()
-        IPTVProxyDB.terminate()
 
     @classmethod
     def start_http_server(cls):
@@ -205,7 +204,7 @@ class IPTVProxyController(object):
                     certificate_file_path,
                     key_file_path):
         IPTVProxyConfiguration.set_configuration_file_path(configuration_file_path)
-        IPTVProxyDB.set_db_file_path(db_file_path)
+        IPTVProxyDatabase.set_database_file_path(db_file_path)
         IPTVProxyPVR.set_recordings_directory_path(recordings_directory_path)
         IPTVProxySecurityManager.set_certificate_file_path(certificate_file_path)
         IPTVProxySecurityManager.set_key_file_path(key_file_path)
@@ -220,14 +219,13 @@ class IPTVProxyController(object):
 
         cls.read_optional_settings()
 
-        IPTVProxyDB.initialize()
+        IPTVProxyDatabase.initialize()
         IPTVProxyHTTPRequestHandler.initialize()
         IPTVProxyPVR.initialize()
         IPTVProxySecurityManager.initialize()
 
         for provider in IPTVProxyConfiguration.get_providers().values():
             provider['api'].initialize()
-
             provider['epg'].initialize()
 
         IPTVProxyConfiguration.start_configuration_file_watchdog_observer()

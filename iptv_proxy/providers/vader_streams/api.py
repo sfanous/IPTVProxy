@@ -13,10 +13,11 @@ import requests
 
 from .constants import VALID_VADER_STREAMS_PLAYLIST_PROTOCOL_VALUES
 from .constants import VALID_VADER_STREAMS_PLAYLIST_TYPE_VALUES
-from .db import VaderStreamsDB
+from .db import VaderStreamsSQL
 from .epg import VaderStreamsEPG
-from ..iptv_provider import IPTVProxyProvider
+from ..iptv_provider.api import IPTVProxyProvider
 from ...configuration import IPTVProxyConfiguration
+from ...db import IPTVProxyDatabase
 from ...proxy import IPTVProxy
 from ...security import IPTVProxySecurityManager
 from ...utilities import IPTVProxyUtility
@@ -61,22 +62,22 @@ class VaderStreams(IPTVProxyProvider):
                      'Source IP      => {0}\n'
                      'Requested path => {1}\n'
                      '  Parameters\n'
-                     '    channel_name    => {2}\n'
-                     '    channel_number  => {3}\n'
-                     '    client_uuid     => {4}\n'
-                     '    port            => {5}\n'
-                     '    server          => {6}\n'
+                     '    channel_name   => {2}\n'
+                     '    channel_number => {3}\n'
+                     '    client_uuid    => {4}\n'
+                     '    port           => {5}\n'
+                     '    server         => {6}\n'
                      'Target path    => {7}\n'
                      '  Parameters\n'
-                     '    token           => {8}'.format(client_ip_address,
-                                                         requested_path,
-                                                         channel_name,
-                                                         channel_number,
-                                                         client_uuid,
-                                                         port,
-                                                         server,
-                                                         target_url,
-                                                         authorization_token))
+                     '    token          => {8}'.format(client_ip_address,
+                                                        requested_path,
+                                                        channel_name,
+                                                        channel_number,
+                                                        client_uuid,
+                                                        port,
+                                                        server,
+                                                        target_url,
+                                                        authorization_token))
 
         response = IPTVProxyUtility.make_http_request(http_session.get,
                                                       target_url,
@@ -275,22 +276,22 @@ class VaderStreams(IPTVProxyProvider):
                      'Source IP      => {0}\n'
                      'Requested path => {1}\n'
                      '  Parameters\n'
-                     '    channel_name    => {2}\n'
-                     '    channel_number  => {3}\n'
-                     '    client_uuid     => {4}\n'
-                     '    port            => {5}\n'
-                     '    server          => {6}\n'
+                     '    channel_name   => {2}\n'
+                     '    channel_number => {3}\n'
+                     '    client_uuid    => {4}\n'
+                     '    port           => {5}\n'
+                     '    server         => {6}\n'
                      'Target path    => {7}\n'
                      '  Parameters\n'
-                     '    token           => {8}'.format(client_ip_address,
-                                                         requested_path,
-                                                         channel_name,
-                                                         channel_number,
-                                                         client_uuid,
-                                                         port,
-                                                         server,
-                                                         target_url,
-                                                         authorization_token))
+                     '    token          => {8}'.format(client_ip_address,
+                                                        requested_path,
+                                                        channel_name,
+                                                        channel_number,
+                                                        client_uuid,
+                                                        port,
+                                                        server,
+                                                        target_url,
+                                                        authorization_token))
 
         response = IPTVProxyUtility.make_http_request(http_session.get,
                                                       target_url,
@@ -397,22 +398,23 @@ class VaderStreams(IPTVProxyProvider):
 
         tracks = {}
 
-        db = VaderStreamsDB()
-        epg = db.retrieve(['epg'])
+        db = IPTVProxyDatabase()
+        channel_records = VaderStreamsSQL.query_channels(db)
+        db.close_connection()
 
-        for channel in epg.values():
+        for channel_record in channel_records:
             track_information = []
 
-            channel_icon = channel.icon_url.format(
+            channel_group = channel_record['group']
+            channel_icon = channel_record['icon_url'].format(
                 's' if is_server_secure else '',
                 server_hostname,
                 server_port,
-                '?http_token={0}'.format(urllib.parse.quote(http_token)) if http_token else '').replace(
-                ' ', '%20') if channel.icon_url else ''
-            channel_group = channel.group
-            channel_id = channel.id
-            channel_name = channel.name
-            channel_number = channel.number
+                '?http_token={0}'.format(
+                    urllib.parse.quote(http_token)) if http_token else '').replace(' ', '%20')
+            channel_id = channel_record['id']
+            channel_name = channel_record['name']
+            channel_number = channel_record['number']
 
             track_information.append(
                 '#EXTINF:-1 group-title="{0}" '
@@ -444,8 +446,6 @@ class VaderStreams(IPTVProxyProvider):
                         cls._calculate_token()))
 
             tracks['{0} {1} {2}'.format(channel_group, channel_name, channel_number)] = ''.join(track_information)
-
-        db.close()
 
         return [tracks[channel_name] for channel_name in sorted(tracks,
                                                                 key=lambda channel_name_: channel_name_.lower())]

@@ -41,6 +41,7 @@ class IPTVProxyUtility(object):
                                            is_content_text=False,
                                            do_print_content=False):
         response_status_code = response.status_code
+
         if response_status_code == requests.codes.OK:
             response_headers = response.headers
 
@@ -114,9 +115,7 @@ class IPTVProxyUtility(object):
         try:
             socket_object = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             socket_object.connect(("8.8.8.8", 80))
-
             private_ip_address = socket_object.getsockname()[0]
-
             socket_object.close()
         except (IndexError, OSError):
             logger.error('Failed to determine private IP address')

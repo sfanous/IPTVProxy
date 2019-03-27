@@ -19,7 +19,8 @@ from cryptography.x509.oid import NameOID
 from .configuration import IPTVProxyConfiguration
 from .constants import DEFAULT_SSL_CERTIFICATE_FILE_PATH
 from .constants import DEFAULT_SSL_KEY_FILE_PATH
-from .db import IPTVProxyDB
+from .db import IPTVProxyDatabase
+from .db import IPTVProxySQL
 from .enums import IPTVProxyPasswordState
 from .utilities import IPTVProxyUtility
 
@@ -64,12 +65,9 @@ class IPTVProxySecurityManager(object):
 
     @classmethod
     def determine_certificate_validity(cls):
-        server_hostname_loopback = IPTVProxyConfiguration.get_configuration_parameter(
-            'SERVER_HOSTNAME_LOOPBACK')
-        server_hostname_private = IPTVProxyConfiguration.get_configuration_parameter(
-            'SERVER_HOSTNAME_PRIVATE')
-        server_hostname_public = IPTVProxyConfiguration.get_configuration_parameter(
-            'SERVER_HOSTNAME_PUBLIC')
+        server_hostname_loopback = IPTVProxyConfiguration.get_configuration_parameter('SERVER_HOSTNAME_LOOPBACK')
+        server_hostname_private = IPTVProxyConfiguration.get_configuration_parameter('SERVER_HOSTNAME_PRIVATE')
+        server_hostname_public = IPTVProxyConfiguration.get_configuration_parameter('SERVER_HOSTNAME_PUBLIC')
 
         with open(cls._certificate_file_path, 'rb') as input_file:
             certificate = x509.load_pem_x509_certificate(input_file.read(), default_backend())
@@ -96,53 +94,54 @@ class IPTVProxySecurityManager(object):
     def generate_self_signed_certificate(cls):
         ip_address_location = IPTVProxyUtility.determine_ip_address_location()
 
-        if ip_address_location is None:
-            pass
+        if ip_address_location is not None:
+            private_key = rsa.generate_private_key(public_exponent=65537,
+                                                   key_size=2048,
+                                                   backend=default_backend())
 
-        private_key = rsa.generate_private_key(public_exponent=65537,
-                                               key_size=2048,
-                                               backend=default_backend())
+            with open(DEFAULT_SSL_KEY_FILE_PATH, 'wb') as output_file:
+                output_file.write(private_key.private_bytes(encoding=serialization.Encoding.PEM,
+                                                            format=serialization.PrivateFormat.TraditionalOpenSSL,
+                                                            encryption_algorithm=serialization.NoEncryption()))
 
-        with open(DEFAULT_SSL_KEY_FILE_PATH, 'wb') as output_file:
-            output_file.write(private_key.private_bytes(encoding=serialization.Encoding.PEM,
-                                                        format=serialization.PrivateFormat.TraditionalOpenSSL,
-                                                        encryption_algorithm=serialization.NoEncryption()))
+            current_date_time_in_utc = datetime.now(pytz.utc)
 
-        current_date_time_in_utc = datetime.now(pytz.utc)
+            subject = issuer = x509.Name([x509.NameAttribute(NameOID.COUNTRY_NAME, ip_address_location['countryCode']),
+                                          x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME,
+                                                             ip_address_location['region']),
+                                          x509.NameAttribute(NameOID.LOCALITY_NAME, ip_address_location['city']),
+                                          x509.NameAttribute(NameOID.ORGANIZATION_NAME, 'IPTVProxy'),
+                                          x509.NameAttribute(NameOID.COMMON_NAME,
+                                                             IPTVProxyConfiguration.get_configuration_parameter(
+                                                                 'SERVER_HOSTNAME_PUBLIC'))])
 
-        subject = issuer = x509.Name([x509.NameAttribute(NameOID.COUNTRY_NAME, ip_address_location['countryCode']),
-                                      x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, ip_address_location['region']),
-                                      x509.NameAttribute(NameOID.LOCALITY_NAME, ip_address_location['city']),
-                                      x509.NameAttribute(NameOID.ORGANIZATION_NAME, 'IPTVProxy'),
-                                      x509.NameAttribute(NameOID.COMMON_NAME,
-                                                         IPTVProxyConfiguration.get_configuration_parameter(
-                                                             'SERVER_HOSTNAME_PUBLIC'))])
+            certificate = x509.CertificateBuilder().subject_name(
+                subject
+            ).issuer_name(
+                issuer
+            ).public_key(
+                private_key.public_key()
+            ).serial_number(
+                x509.random_serial_number()
+            ).not_valid_before(
+                current_date_time_in_utc
+            ).not_valid_after(
+                current_date_time_in_utc + timedelta(days=10 * 365)
+            ).add_extension(
+                x509.SubjectAlternativeName([
+                    x509.DNSName(IPTVProxyConfiguration.get_configuration_parameter('SERVER_HOSTNAME_LOOPBACK')),
+                    x509.DNSName(IPTVProxyConfiguration.get_configuration_parameter('SERVER_HOSTNAME_PRIVATE')),
+                    x509.DNSName(IPTVProxyConfiguration.get_configuration_parameter('SERVER_HOSTNAME_PUBLIC'))]),
+                critical=False
+            ).sign(
+                private_key,
+                hashes.SHA256(),
+                default_backend())
 
-        certificate = x509.CertificateBuilder().subject_name(
-            subject
-        ).issuer_name(
-            issuer
-        ).public_key(
-            private_key.public_key()
-        ).serial_number(
-            x509.random_serial_number()
-        ).not_valid_before(
-            current_date_time_in_utc
-        ).not_valid_after(
-            current_date_time_in_utc + timedelta(days=10 * 365)
-        ).add_extension(
-            x509.SubjectAlternativeName([
-                x509.DNSName(IPTVProxyConfiguration.get_configuration_parameter('SERVER_HOSTNAME_LOOPBACK')),
-                x509.DNSName(IPTVProxyConfiguration.get_configuration_parameter('SERVER_HOSTNAME_PRIVATE')),
-                x509.DNSName(IPTVProxyConfiguration.get_configuration_parameter('SERVER_HOSTNAME_PUBLIC'))]),
-            critical=False
-        ).sign(
-            private_key,
-            hashes.SHA256(),
-            default_backend())
-
-        with open(DEFAULT_SSL_CERTIFICATE_FILE_PATH, 'wb') as output_file:
-            output_file.write(certificate.public_bytes(serialization.Encoding.PEM))
+            with open(DEFAULT_SSL_CERTIFICATE_FILE_PATH, 'wb') as output_file:
+                output_file.write(certificate.public_bytes(serialization.Encoding.PEM))
+        else:
+            logger.error('Failed to generate self signed certificate')
 
     @classmethod
     def get_auto_generate_self_signed_certificate(cls):
@@ -158,16 +157,15 @@ class IPTVProxySecurityManager(object):
 
     @classmethod
     def initialize(cls):
-        db = IPTVProxyDB()
+        db = IPTVProxyDatabase()
 
         try:
-            fernet_key = db.retrieve(['password_encryption_key'])
-
+            fernet_key = IPTVProxySQL.query_setting(db, 'password_encryption_key')[0]['value'].encode()
             cls._fernet = Fernet(fernet_key)
-        except KeyError:
+        except IndexError:
             pass
 
-        db.close()
+        db.close_connection()
 
     @classmethod
     def scrub_password(cls, provider_name, password):
@@ -176,9 +174,10 @@ class IPTVProxySecurityManager(object):
                 fernet_key = Fernet.generate_key()
                 cls._fernet = Fernet(fernet_key)
 
-                db = IPTVProxyDB()
-                db.persist(['password_encryption_key'], fernet_key)
-                db.close(do_commit_transaction=True)
+                db = IPTVProxyDatabase()
+                IPTVProxySQL.insert_setting(db, 'password_encryption_key', fernet_key.decode())
+                db.commit()
+                db.close_connection()
 
             encrypted_password = cls._encrypt_password(password)
 

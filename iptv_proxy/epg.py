@@ -1,19 +1,18 @@
 import copy
 import functools
-import html
 import logging
+import xml.sax.saxutils
 from datetime import datetime
 from datetime import timedelta
 from threading import RLock
 
 import pytz
 import tzlocal
-from persistent import Persistent
-from persistent.list import PersistentList
 
 from .configuration import IPTVProxyConfiguration
 from .constants import VERSION
 from .constants import XML_TV_TEMPLATES
+from .db import IPTVProxyDatabase
 from .utilities import IPTVProxyUtility
 
 logger = logging.getLogger(__name__)
@@ -60,40 +59,57 @@ class IPTVProxyEPG(object):
         cutoff_date_time_in_utc = cutoff_date_time_in_local.astimezone(pytz.utc)
 
         for provider in providers.values():
-            db = provider['db']()
-            epg = db.retrieve(['epg'])
+            db = IPTVProxyDatabase()
+            channel_records = provider['sql'].query_channels(db)
+            db.close_connection()
 
-            for channel in epg.values():
+            for channel_record in channel_records:
                 xmltv_elements = []
 
                 channel_xml_template_fields = {
-                    'channel_id': channel.id,
-                    'channel_name': html.escape(channel.name),
+                    'channel_id': channel_record['id'],
+                    'channel_name': xml.sax.saxutils.escape(channel_record['name']),
                     'channel_icon': '        <icon src="{0}" />\n'.format(
-                        html.escape(
-                            channel.icon_url.format(
-                                's' if is_server_secure else '',
+                        xml.sax.saxutils.escape(
+                            channel_record['icon_url'].format(
+                                's'
+                                if is_server_secure
+                                else '',
                                 server_hostname,
                                 server_port,
                                 '?http_token={0}'.format(
                                     IPTVProxyConfiguration.get_configuration_parameter('SERVER_PASSWORD'))
-                                if authorization_required else ''))) if channel.icon_url else ''
+                                if authorization_required
+                                else '')))
+                    if channel_record['icon_url']
+                    else ''
                 }
 
                 xmltv_elements.append(
                     '{0}\n'.format(xml_tv_templates['channel.xml.st'].substitute(channel_xml_template_fields)))
 
-                for program in channel.programs:
-                    if cutoff_date_time_in_utc >= program.start_date_time_in_utc:
+                db = IPTVProxyDatabase()
+                program_records = provider['sql'].query_programs_by_channel_id(db, channel_record['id'])
+                db.close_connection()
+
+                for program_record in program_records:
+                    if cutoff_date_time_in_utc >= datetime.strptime(program_record['start_date_time_in_utc'],
+                                                                    '%Y-%m-%d %H:%M:%S%z'):
                         programme_xml_template_fields = {
-                            'programme_channel': channel.id,
-                            'programme_start': program.start_date_time_in_utc.strftime('%Y%m%d%H%M%S %z'),
-                            'programme_stop': program.end_date_time_in_utc.strftime('%Y%m%d%H%M%S %z'),
-                            'programme_title': html.escape(program.title),
+                            'programme_channel': channel_record['id'],
+                            'programme_start': datetime.strptime(program_record['start_date_time_in_utc'],
+                                                                 '%Y-%m-%d %H:%M:%S%z').strftime('%Y%m%d%H%M%S %z'),
+                            'programme_stop': datetime.strptime(program_record['end_date_time_in_utc'],
+                                                                '%Y-%m-%d %H:%M:%S%z').strftime('%Y%m%d%H%M%S %z'),
+                            'programme_title': xml.sax.saxutils.escape(program_record['title']),
                             'programme_sub_title': '        <sub-title>{0}</sub-title>\n'.format(
-                                html.escape(program.sub_title)) if program.sub_title else '',
+                                xml.sax.saxutils.escape(program_record['sub_title']))
+                            if program_record['sub_title']
+                            else '',
                             'programme_description': '        <desc>{0}</desc>\n'.format(
-                                html.escape(program.description)) if program.description else ''
+                                xml.sax.saxutils.escape(program_record['description']))
+                            if program_record['description']
+                            else ''
                         }
 
                         xmltv_elements.append('{0}\n'.format(
@@ -101,15 +117,7 @@ class IPTVProxyEPG(object):
 
                 yield ''.join(xmltv_elements)
 
-            db.close()
-
         yield '{0}\n'.format(xml_tv_templates['tv_footer.xml.st'].substitute())
-
-    @classmethod
-    def generate_epg(cls, providers):
-        with cls._lock:
-            for provider in providers.values():
-                provider['epg']._generate_epg()
 
     @classmethod
     def generate_epg_xml_file(cls,
@@ -118,8 +126,6 @@ class IPTVProxyEPG(object):
                               client_ip_address,
                               providers,
                               number_of_days):
-        # cls.generate_epg(providers)
-
         return functools.partial(cls._convert_epg_to_xml_tv,
                                  is_server_secure,
                                  authorization_required,
@@ -128,7 +134,7 @@ class IPTVProxyEPG(object):
                                  number_of_days)
 
 
-class IPTVProxyEPGChannel(Persistent):
+class IPTVProxyEPGChannel(object):
     __slots__ = ['_group', '_icon_data_uri', '_icon_url', '_id', '_name', '_number', '_programs']
 
     def __init__(self, group, icon_url, id_, name, number):
@@ -138,7 +144,7 @@ class IPTVProxyEPGChannel(Persistent):
         self._id = id_
         self._name = name
         self._number = number
-        self._programs = PersistentList()
+        self._programs = []
 
     def add_program(self, program):
         self._programs.append(program)
@@ -200,7 +206,7 @@ class IPTVProxyEPGChannel(Persistent):
         self._programs = programs
 
 
-class IPTVProxyEPGProgram(Persistent):
+class IPTVProxyEPGProgram(object):
     __slots__ = ['_description', '_end_date_time_in_utc', '_start_date_time_in_utc', '_sub_title', '_title']
 
     def __init__(self, description='', end_date_time_in_utc=None, start_date_time_in_utc=None, sub_title='', title=''):

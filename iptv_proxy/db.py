@@ -1,200 +1,170 @@
 import logging
-import time
+import sqlite3
 from datetime import datetime
-from datetime import timedelta
-from threading import Timer
+from sqlite3 import Row
 
-import ZODB
-import transaction
-import tzlocal
-from ZODB.FileStorage import FileStorage
-from persistent.list import PersistentList
-from persistent.mapping import PersistentMapping
-from transaction.interfaces import TransientError
-
-from .constants import MAXIMUM_NUMBER_OF_CHANGED_OBJECTS
+from .constants import DEFAULT_DB_CREATE_SCHEMA_FILE_PATH
+from .utilities import IPTVProxyUtility
 
 logger = logging.getLogger(__name__)
 
 
-class IPTVProxyDB(object):
-    __slots__ = ['_connection', '_number_of_changed_objects', '_root']
+class IPTVProxyDatabase(object):
+    __slots__ = ['_connection', '_cursor']
 
-    _db = None
-    _db_file_path = None
-    _pack_timer = None
-
-    @classmethod
-    def _initialize_db(cls):
-        do_commit_transaction = False
-
-        cls._db = ZODB.DB(FileStorage(cls._db_file_path))
-        connection = cls._db.open()
-        root = connection.root()
-
-        if 'IPTVProxy' not in root:
-            do_commit_transaction = True
-
-            root['IPTVProxy'] = PersistentMapping()
-        if 'files' not in root['IPTVProxy']:
-            do_commit_transaction = True
-
-            root['IPTVProxy']['files'] = PersistentMapping()
-        if 'http_server_active_sessions' not in root['IPTVProxy']:
-            do_commit_transaction = True
-
-            root['IPTVProxy']['http_server_active_sessions'] = PersistentMapping()
-        if 'recordings' not in root['IPTVProxy']:
-            do_commit_transaction = True
-
-            root['IPTVProxy']['recordings'] = PersistentList()
-
-        if do_commit_transaction:
-            transaction.commit()
-
-        connection.close()
-
-    @classmethod
-    def _initialize_pack_timer(cls):
-        current_date_time_in_local = datetime.now(tzlocal.get_localzone())
-
-        connection = cls._db.open()
-        root = connection.root()
-
-        try:
-            last_db_pack_date_time_in_local = root['IPTVProxy']['last_db_pack_date_time_in_local']
-
-            if current_date_time_in_local >= \
-                    (last_db_pack_date_time_in_local + timedelta(days=1)).replace(hour=4,
-                                                                                  minute=30,
-                                                                                  second=0,
-                                                                                  microsecond=0):
-                pack_date_time_in_local = current_date_time_in_local
-            else:
-                pack_date_time_in_local = (current_date_time_in_local + timedelta(days=1)).replace(hour=4,
-                                                                                                   minute=30,
-                                                                                                   second=0,
-                                                                                                   microsecond=0)
-        except KeyError:
-            pack_date_time_in_local = current_date_time_in_local
-
-        connection.close()
-
-        interval = (pack_date_time_in_local - current_date_time_in_local).total_seconds()
-
-        cls._pack_timer = Timer(interval, cls._pack)
-        cls._pack_timer.daemon = True
-        cls._pack_timer.start()
-
-        logger.debug('Started DB packing timer\n'
-                     'Interval => {0} seconds'.format(interval))
-
-    @classmethod
-    def _pack(cls):
-        cls._db.pack()
-
-        logger.debug('Packed DB')
-
-        connection = cls._db.open()
-        root = connection.root()
-
-        root['IPTVProxy']['last_db_pack_date_time_in_local'] = datetime.now(tzlocal.get_localzone())
-
-        transaction.commit()
-        connection.close()
-
-        cls._initialize_pack_timer()
+    _database_file_path = None
 
     @classmethod
     def initialize(cls):
-        cls._initialize_db()
-        cls._initialize_pack_timer()
+        connection = sqlite3.connect(IPTVProxyDatabase._database_file_path)
+        cursor = connection.cursor()
+        cursor.executescript(IPTVProxyUtility.read_file(DEFAULT_DB_CREATE_SCHEMA_FILE_PATH))
+        cursor.close()
+        connection.close()
 
     @classmethod
-    def set_db_file_path(cls, db_file_path):
-        cls._db_file_path = db_file_path
-
-    @classmethod
-    def terminate(cls):
-        if cls._pack_timer:
-            cls._pack_timer.cancel()
-
-        cls._db.close()
+    def set_database_file_path(cls, database_file_path):
+        cls._database_file_path = database_file_path
 
     def __init__(self):
-        self._connection = IPTVProxyDB._db.open()
-        self._number_of_changed_objects = 0
-        self._root = self._connection.root()
+        self._connection = sqlite3.connect(IPTVProxyDatabase._database_file_path)
+        self._connection.row_factory = Row
+        self._cursor = self._connection.cursor()
 
-    def abort(self):
-        transaction.abort()
-
-        self._number_of_changed_objects = 0
-
-    def commit(self):
-        maximum_number_of_attempts = 5
-        number_of_attempts = 0
-
-        while maximum_number_of_attempts > number_of_attempts:
-            try:
-                transaction.commit()
-
-                break
-            except TransientError:
-                number_of_attempts += 1
-
-                self.abort()
-
-                time.sleep(3)
-
-        self._number_of_changed_objects = 0
-
-    def close(self, do_commit_transaction=False):
-        if do_commit_transaction:
-            self.commit()
-        else:
-            self.abort()
-
+    def close_connection(self):
+        self._cursor.close()
         self._connection.close()
 
-    def delete(self, keys):
-        key_to_delete = self._root['IPTVProxy']
+    def commit(self):
+        self._connection.commit()
 
-        for key in keys[:-1]:
-            key_to_delete = key_to_delete[key]
+    def execute(self, sql_statement, parameters):
+        self._cursor.execute(sql_statement, parameters)
 
-        del key_to_delete[keys[-1]]
+        return self._cursor.fetchall()
 
-    def has_keys(self, keys):
-        key_to_check = self._root['IPTVProxy']
 
-        for key in keys:
-            if key not in key_to_check:
-                return False
-            key_to_check = key_to_check[key]
+class IPTVProxySQL(object):
+    __slots__ = []
 
-        return True
+    @classmethod
+    def delete_http_session_by_id(cls, db, http_session_id):
+        sql_statement = 'DELETE ' \
+                        'FROM http_session ' \
+                        'WHERE id = :id'
+        db.execute(sql_statement, {'id': http_session_id})
 
-    def persist(self, keys, value):
-        key_to_persist = self._root['IPTVProxy']
+    @classmethod
+    def delete_http_sessions(cls, db):
+        sql_statement = 'DELETE ' \
+                        'FROM http_session'
+        db.execute(sql_statement, {})
 
-        for key in keys[:-1]:
-            key_to_persist = key_to_persist[key]
+    @classmethod
+    def delete_recording_by_id(cls, db, recording_id):
+        sql_statement = 'DELETE ' \
+                        'FROM recording ' \
+                        'WHERE id = :id'
+        db.execute(sql_statement, {'id': recording_id})
 
-        key_to_persist[keys[-1]] = value
+    @classmethod
+    def insert_http_session(cls, db, http_session):
+        sql_statement = 'INSERT ' \
+                        'INTO http_session (id, client_ip_address, user_agent, last_access_date_time_in_utc, ' \
+                        'expiry_date_time_in_utc) ' \
+                        'VALUES (:id, :client_ip_address, :user_agent, :last_access_date_time_in_utc, ' \
+                        ':expiry_date_time_in_utc)'
+        db.execute(sql_statement, {'id': http_session.id,
+                                   'client_ip_address': http_session.client_ip_address,
+                                   'user_agent': http_session.user_agent,
+                                   'last_access_date_time_in_utc': datetime.strftime(
+                                       http_session.last_access_date_time_in_utc, '%Y-%m-%d %H:%M:%S%z'),
+                                   'expiry_date_time_in_utc': datetime.strftime(http_session.expiry_date_time_in_utc,
+                                                                                '%Y-%m-%d %H:%M:%S%z')})
 
-    def retrieve(self, keys):
-        key_to_retrieve = self._root['IPTVProxy']
+    @classmethod
+    def insert_recording(cls, db, recording):
+        sql_statement = 'INSERT ' \
+                        'INTO recording (id, provider, channel_number, channel_name, program_title, ' \
+                        'start_date_time_in_utc, end_date_time_in_utc, status) ' \
+                        'VALUES (:id, :provider, :channel_number, :channel_name, :program_title, ' \
+                        ':start_date_time_in_utc, :end_date_time_in_utc, :status)'
+        db.execute(sql_statement, {'id': recording.id,
+                                   'provider': recording.provider,
+                                   'channel_number': recording.channel_number,
+                                   'channel_name': recording.channel_name,
+                                   'program_title': recording.program_title,
+                                   'start_date_time_in_utc': datetime.strftime(recording.start_date_time_in_utc,
+                                                                               '%Y-%m-%d %H:%M:%S%z'),
+                                   'end_date_time_in_utc': datetime.strftime(recording.end_date_time_in_utc,
+                                                                             '%Y-%m-%d %H:%M:%S%z'),
+                                   'status': recording.status})
 
-        for key in keys:
-            key_to_retrieve = key_to_retrieve[key]
+    @classmethod
+    def insert_setting(cls, db, name, value):
+        sql_statement = 'REPLACE ' \
+                        'INTO settings (name, value) ' \
+                        'VALUES (:name, :value)'
+        db.execute(sql_statement, {'name': name,
+                                   'value': value})
 
-        return key_to_retrieve
+    @classmethod
+    def query_http_session_by_id(cls, db, http_session_id):
+        sql_statement = 'SELECT * ' \
+                        'FROM http_session ' \
+                        'WHERE id = :id'
+        http_session_records = db.execute(sql_statement, {'id': http_session_id})
 
-    def savepoint(self, number_of_newly_changed_objects):
-        self._number_of_changed_objects += number_of_newly_changed_objects
+        return http_session_records
 
-        if self._number_of_changed_objects >= MAXIMUM_NUMBER_OF_CHANGED_OBJECTS:
-            transaction.savepoint()
+    @classmethod
+    def query_http_sessions(cls, db):
+        sql_statement = 'SELECT * ' \
+                        'FROM http_session'
+        http_session_records = db.execute(sql_statement, {})
 
-            self._number_of_changed_objects = 0
+        return http_session_records
+
+    @classmethod
+    def query_live_recordings(cls, db):
+        sql_statement = 'SELECT * ' \
+                        'FROM recording ' \
+                        'WHERE status = \'live\''
+        live_recording_records = db.execute(sql_statement, {})
+
+        return live_recording_records
+
+    @classmethod
+    def query_recording_by_id(cls, db, recording_id):
+        sql_statement = 'SELECT * ' \
+                        'FROM recording ' \
+                        'WHERE id = :id'
+        recording_records = db.execute(sql_statement, {'id': recording_id})
+
+        return recording_records
+
+    @classmethod
+    def query_recordings(cls, db):
+        sql_statement = 'SELECT * ' \
+                        'FROM recording'
+        recording_records = db.execute(sql_statement, {})
+
+        return recording_records
+
+    @classmethod
+    def query_scheduled_recordings(cls, db):
+        sql_statement = 'SELECT * ' \
+                        'FROM recording ' \
+                        'WHERE status = \'scheduled\''
+        scheduled_recording_records = db.execute(sql_statement, {})
+
+        return scheduled_recording_records
+
+    @classmethod
+    def query_setting(cls, db, name):
+        sql_statement = 'SELECT value ' \
+                        'FROM settings ' \
+                        'WHERE name = :name'
+        setting_records = db.execute(sql_statement, {'name': name})
+
+        return setting_records
