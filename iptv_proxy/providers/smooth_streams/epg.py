@@ -560,7 +560,7 @@ class SmoothStreamsEPG(object):
         if channel_name_records:
             channel_name = channel_name_records[0]['name']
         else:
-            channel_name = 'Channel {0:02}'.format(channel_number)
+            channel_name = 'Channel {0:02}'.format(int(channel_number))
 
         return channel_name
 
@@ -570,7 +570,7 @@ class SmoothStreamsEPG(object):
         minimum_maximum_channel_number_records = SmoothStreamsSQL.query_minimum_maximum_channel_numbers(db)
         db.close_connection()
 
-        return (minimum_maximum_channel_number_records[0][0], minimum_maximum_channel_number_records[0][1])
+        return (int(minimum_maximum_channel_number_records[0][0]), int(minimum_maximum_channel_number_records[0][1]))
 
     @classmethod
     def get_groups(cls):

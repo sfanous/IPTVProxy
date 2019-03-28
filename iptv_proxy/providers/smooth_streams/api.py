@@ -455,7 +455,7 @@ class SmoothStreams(IPTVProxyProvider):
                'protocol={6}'.format('https' if is_server_secure else 'http',
                                      server_hostname,
                                      server_port,
-                                     channel_number,
+                                     int(channel_number),
                                      client_uuid,
                                      urllib.parse.quote(http_token) if http_token else '',
                                      playlist_protocol)
@@ -532,7 +532,7 @@ class SmoothStreams(IPTVProxyProvider):
                     IPTVProxyConfiguration.get_configuration_parameter('SMOOTH_STREAMS_SERVER'),
                     '443' if playlist_protocol == 'hls' else '3635',
                     IPTVProxyConfiguration.get_configuration_parameter('SMOOTH_STREAMS_SERVICE'),
-                    channel_number,
+                    int(channel_number),
                     authorization_token))
 
         return tracks

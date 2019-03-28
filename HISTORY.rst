@@ -2,6 +2,10 @@
 
 Release History
 ===============
+6.0.1 (28-03-2019)
+------------------
+* Fix bug by casting channel_number to int before applying string format specifier
+
 6.0.0 (27-03-2019)
 ------------------
 * Migrate from ZODB to Sqlite

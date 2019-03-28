@@ -375,7 +375,7 @@ class VaderStreams(IPTVProxyProvider):
                'protocol={6}'.format('https' if is_server_secure else 'http',
                                      server_hostname,
                                      server_port,
-                                     channel_number,
+                                     int(channel_number),
                                      client_uuid,
                                      urllib.parse.quote(http_token) if http_token else '',
                                      playlist_protocol)
@@ -441,7 +441,7 @@ class VaderStreams(IPTVProxyProvider):
             elif playlist_type == 'static':
                 track_information.append(
                     'http://vapi.vaders.tv/play/{0:02}.{1}?token={2}\n'.format(
-                        channel_number,
+                        int(channel_number),
                         'm3u8' if playlist_protocol == 'hls' else 'ts',
                         cls._calculate_token()))
 
