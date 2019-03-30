@@ -7,11 +7,6 @@ class IPTVProxyCacheResponseType(Enum):
     SOFT_HIT = 'Soft Hit'
 
 
-class IPTVProxyEPGSource(Enum):
-    FOG = 'fog'
-    SMOOTH_STREAMS = 'smoothstreams'
-
-
 class IPTVProxyIPAddressType(Enum):
     LOOPBACK = 'LOOPBACK'
     PRIVATE = 'PRIVATE'

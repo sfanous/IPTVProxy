@@ -82,8 +82,8 @@ class VaderStreamsConfiguration(object):
 
                     error_messages.append(
                         'The server option within the [VaderStreams] section must be one of\n'
-                        '{0}\n'.format('\n'.join(['\u2022 {0}'.format(service)
-                                                  for service in VALID_VADER_STREAMS_SERVER_VALUES])))
+                        '{0}\n'.format('\n'.join(['\u2022 {0}'.format(server)
+                                                  for server in VALID_VADER_STREAMS_SERVER_VALUES])))
             except KeyError:
                 is_valid_section = False
 
@@ -117,16 +117,16 @@ class VaderStreamsConfiguration(object):
                         error_messages.append(
                             'The protocol option within the [Playlist] section must be one of\n'
                             '{0}Defaulting to {1}\n'.format(
-                                '\n'.join(['\u2022 {0}'.format(service)
-                                           for service in VALID_VADER_STREAMS_PLAYLIST_PROTOCOL_VALUES]),
+                                '\n'.join(['\u2022 {0}'.format(protocol)
+                                           for protocol in VALID_VADER_STREAMS_PLAYLIST_PROTOCOL_VALUES]),
                                 playlist_protocol))
                 except KeyError:
                     error_messages.append(
                         'Could not find a protocol option within the [Playlist] section\n'
                         'The protocol option within the [Playlist] section must be one of\n{0}\n'
                         'Defaulting to {1}\n'.format(
-                            '\n'.join(['\u2022 {0}'.format(service)
-                                       for service in VALID_VADER_STREAMS_PLAYLIST_PROTOCOL_VALUES]),
+                            '\n'.join(['\u2022 {0}'.format(protocol)
+                                       for protocol in VALID_VADER_STREAMS_PLAYLIST_PROTOCOL_VALUES]),
                             playlist_protocol))
 
                 try:
@@ -137,16 +137,16 @@ class VaderStreamsConfiguration(object):
                         error_messages.append(
                             'The type option within the [Playlist] section must be one of\n'
                             '{0}Defaulting to {1}\n'.format(
-                                '\n'.join(['\u2022 {0}'.format(service)
-                                           for service in VALID_VADER_STREAMS_PLAYLIST_TYPE_VALUES]),
+                                '\n'.join(['\u2022 {0}'.format(type_)
+                                           for type_ in VALID_VADER_STREAMS_PLAYLIST_TYPE_VALUES]),
                                 playlist_type))
                 except KeyError:
                     error_messages.append(
                         'Could not find a type option within the [Playlist] section\n'
                         'The type option within the [Playlist] section must be one of\n{0}\n'
                         'Defaulting to {1}\n'.format(
-                            '\n'.join(['\u2022 {0}'.format(service)
-                                       for service in VALID_VADER_STREAMS_PLAYLIST_TYPE_VALUES]),
+                            '\n'.join(['\u2022 {0}'.format(type_)
+                                       for type_ in VALID_VADER_STREAMS_PLAYLIST_TYPE_VALUES]),
                             playlist_type))
             except KeyError:
                 error_messages.append('Could not find a [Playlist] section\n'

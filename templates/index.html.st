@@ -652,7 +652,7 @@ ${scheduled_recordings_table_rows}
                             <select class="w3-border w3-select"
                                     id="smoothStreamsEpgSourceSelect"
                                     name="smoothStreamsEpgSourceSelect"
-                                    oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                    oninput="ConfigurationModule.determineEpgUrlLabelInputVisibility();ConfigurationModule.determineResetAndUpdateButtonsState();"
                                     style="padding: 8px;">
                                 <option disabled="disabled"
                                         selected="selected"
@@ -660,9 +660,23 @@ ${scheduled_recordings_table_rows}
                                 </option>
                                 <option ${configuration_smooth_streams_epg_source_smoothstreams_selected}value="smoothstreams">SmoothStreams (Main)</option>
                                 <option ${configuration_smooth_streams_epg_source_fog_selected}value="fog">Fog (Alternative)</option>
+                                <option ${configuration_smooth_streams_epg_source_other_selected}value="other">Other (External)</option>
                             </select>
                             <span class="w3-font-red w3-tiny"
                                   id="smoothStreamsEpgSourceSelectErrorSpan"
+                                  style="color: red;"></span>
+                        </p>
+                        <p>
+                            <label for="smoothStreamsEpgUrlInput"
+                                   id="smoothStreamsEpgUrlLabel">EPG Url</label>
+                            <input class="w3-border w3-input"
+                                   id="smoothStreamsEpgUrlInput"
+                                   name="smoothStreamsEpgUrlInput"
+                                   oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                   type="text"
+                                   value="${configuration_smooth_streams_epg_url}" />
+                            <span class="w3-font-red w3-tiny"
+                                  id="smoothStreamsEpgUrlInputErrorSpan"
                                   style="color: red;"></span>
                         </p>
                     </div>

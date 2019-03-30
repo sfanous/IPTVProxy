@@ -356,8 +356,9 @@ class IPTVProxyConfiguration(object):
              smooth_streams_password,
              smooth_streams_playlist_protocol,
              smooth_streams_playlist_type,
-             smooth_streams_epg_source) = SmoothStreamsConfiguration.read_configuration_file(configuration_object,
-                                                                                             error_messages)
+             smooth_streams_epg_source,
+             smooth_streams_epg_url) = SmoothStreamsConfiguration.read_configuration_file(configuration_object,
+                                                                                          error_messages)
 
             if is_valid_smooth_streams_section:
                 from .providers.smooth_streams.api import SmoothStreams
@@ -467,6 +468,7 @@ class IPTVProxyConfiguration(object):
                     'SMOOTH_STREAMS_PLAYLIST_PROTOCOL': smooth_streams_playlist_protocol,
                     'SMOOTH_STREAMS_PLAYLIST_TYPE': smooth_streams_playlist_type,
                     'SMOOTH_STREAMS_EPG_SOURCE': smooth_streams_epg_source,
+                    'SMOOTH_STREAMS_EPG_URL': smooth_streams_epg_url,
                     'VADER_STREAMS_SERVER': vader_streams_server,
                     'VADER_STREAMS_USERNAME': vader_streams_username,
                     'VADER_STREAMS_PASSWORD': vader_streams_password,
@@ -476,47 +478,52 @@ class IPTVProxyConfiguration(object):
                 }
                 cls._set_configuration(configuration)
 
-                logger.info('{0}ead configuration file\n'
-                            'Configuration file path          => {1}\n\n'
-                            'SERVER_PASSWORD                  => {2}\n'
-                            'SERVER_HOSTNAME_LOOPBACK         => {3}\n'
-                            'SERVER_HOSTNAME_PRIVATE          => {4}\n'
-                            'SERVER_HOSTNAME_PUBLIC           => {5}\n'
-                            'SERVER_HTTP_PORT                 => {6}\n'
-                            'SERVER_HTTPS_PORT                => {7}\n\n'
-                            'SMOOTH_STREAMS_SERVICE           => {8}\n'
-                            'SMOOTH_STREAMS_SERVER            => {9}\n'
-                            'SMOOTH_STREAMS_USERNAME          => {10}\n'
-                            'SMOOTH_STREAMS_PASSWORD          => {11}\n'
-                            'SMOOTH_STREAMS_PLAYLIST_PROTOCOL => {12}\n'
-                            'SMOOTH_STREAMS_PLAYLIST_TYPE     => {13}\n'
-                            'SMOOTH_STREAMS_EPG_SOURCE        => {14}\n\n'
-                            'VADER_STREAMS_SERVER             => {15}\n'
-                            'VADER_STREAMS_USERNAME           => {16}\n'
-                            'VADER_STREAMS_PASSWORD           => {17}\n'
-                            'VADER_STREAMS_PLAYLIST_PROTOCOL  => {18}\n'
-                            'VADER_STREAMS_PLAYLIST_TYPE      => {19}\n\n'
-                            'LOGGING_LEVEL                    => {20}'.format('R' if initial_read else 'Rer',
-                                                                              cls._configuration_file_path,
-                                                                              password,
-                                                                              hostname_loopback,
-                                                                              hostname_private,
-                                                                              hostname_public,
-                                                                              http_port,
-                                                                              https_port,
-                                                                              smooth_streams_service,
-                                                                              smooth_streams_server,
-                                                                              smooth_streams_username,
-                                                                              smooth_streams_password,
-                                                                              smooth_streams_playlist_protocol,
-                                                                              smooth_streams_playlist_type,
-                                                                              smooth_streams_epg_source,
-                                                                              vader_streams_server,
-                                                                              vader_streams_username,
-                                                                              vader_streams_password,
-                                                                              vader_streams_playlist_protocol,
-                                                                              vader_streams_playlist_type,
-                                                                              logging_level))
+                logger.info(
+                    '{0}ead configuration file\n'
+                    'Configuration file path          => {1}\n\n'
+                    'SERVER_PASSWORD                  => {2}\n'
+                    'SERVER_HOSTNAME_LOOPBACK         => {3}\n'
+                    'SERVER_HOSTNAME_PRIVATE          => {4}\n'
+                    'SERVER_HOSTNAME_PUBLIC           => {5}\n'
+                    'SERVER_HTTP_PORT                 => {6}\n'
+                    'SERVER_HTTPS_PORT                => {7}\n\n'
+                    'SMOOTH_STREAMS_SERVICE           => {8}\n'
+                    'SMOOTH_STREAMS_SERVER            => {9}\n'
+                    'SMOOTH_STREAMS_USERNAME          => {10}\n'
+                    'SMOOTH_STREAMS_PASSWORD          => {11}\n'
+                    'SMOOTH_STREAMS_PLAYLIST_PROTOCOL => {12}\n'
+                    'SMOOTH_STREAMS_PLAYLIST_TYPE     => {13}\n'
+                    'SMOOTH_STREAMS_EPG_SOURCE        => {14}\n'
+                    '{15}'
+                    'VADER_STREAMS_SERVER             => {16}\n'
+                    'VADER_STREAMS_USERNAME           => {17}\n'
+                    'VADER_STREAMS_PASSWORD           => {18}\n'
+                    'VADER_STREAMS_PLAYLIST_PROTOCOL  => {19}\n'
+                    'VADER_STREAMS_PLAYLIST_TYPE      => {20}\n\n'
+                    'LOGGING_LEVEL                    => {21}'.format(
+                        'R' if initial_read else 'Rer',
+                        cls._configuration_file_path,
+                        password,
+                        hostname_loopback,
+                        hostname_private,
+                        hostname_public,
+                        http_port,
+                        https_port,
+                        smooth_streams_service,
+                        smooth_streams_server,
+                        smooth_streams_username,
+                        smooth_streams_password,
+                        smooth_streams_playlist_protocol,
+                        smooth_streams_playlist_type,
+                        smooth_streams_epg_source,
+                        'SMOOTH_STREAMS_EPG_URL           => {0}\n\n'.format(smooth_streams_epg_url)
+                        if smooth_streams_epg_url else '\n',
+                        vader_streams_server,
+                        vader_streams_username,
+                        vader_streams_password,
+                        vader_streams_playlist_protocol,
+                        vader_streams_playlist_type,
+                        logging_level))
         except OSError:
             logger.error('Could not open the specified configuration file for reading\n'
                          'Configuration file path => {0}'

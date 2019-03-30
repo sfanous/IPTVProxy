@@ -628,6 +628,8 @@ class IPTVProxyHTMLTemplateEngine(object):
                 'configuration_smooth_streams_playlist_type_static_selected': '',
                 'configuration_smooth_streams_epg_source_smoothstreams_selected': '',
                 'configuration_smooth_streams_epg_source_fog_selected': '',
+                'configuration_smooth_streams_epg_source_other_selected': '',
+                'configuration_smooth_streams_epg_url': '',
                 'configuration_vader_streams_username': '',
                 'configuration_vader_streams_password': '',
                 'configuration_vader_streams_playlist_protocol_hls_selected': '',
@@ -661,6 +663,12 @@ class IPTVProxyHTMLTemplateEngine(object):
             if 'SMOOTH_STREAMS_EPG_SOURCE' in cls._configuration:
                 index_html_template_fields['configuration_smooth_streams_epg_source_{0}_selected'.format(
                     cls._configuration['SMOOTH_STREAMS_EPG_SOURCE'].lower())] = 'selected="selected" '
+            if 'SMOOTH_STREAMS_EPG_URL' in cls._configuration:
+                if cls._configuration['SMOOTH_STREAMS_EPG_URL'] is None:
+                    index_html_template_fields['configuration_smooth_streams_epg_url'] = ''
+                else:
+                    index_html_template_fields['configuration_smooth_streams_epg_url'] = cls._configuration[
+                        'SMOOTH_STREAMS_EPG_URL']
 
             if 'VADER_STREAMS_SERVER' in cls._configuration:
                 index_html_template_fields['configuration_{0}_selected'.format(

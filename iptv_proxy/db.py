@@ -43,6 +43,9 @@ class IPTVProxyDatabase(object):
 
         return self._cursor.fetchall()
 
+    def rollback(self):
+        self._connection.rollback()
+
 
 class IPTVProxySQL(object):
     __slots__ = []
@@ -66,6 +69,13 @@ class IPTVProxySQL(object):
                         'FROM recording ' \
                         'WHERE id = :id'
         db.execute(sql_statement, {'id': recording_id})
+
+    @classmethod
+    def delete_setting(cls, db, name):
+        sql_statement = 'DELETE ' \
+                        'FROM settings ' \
+                        'WHERE name = :name'
+        db.execute(sql_statement, {'name': name})
 
     @classmethod
     def insert_http_session(cls, db, http_session):

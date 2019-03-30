@@ -114,6 +114,8 @@ Playlist Type
     * Recommended value: "Dynamic"
 EPG Source
     * The source from which to retrieve the EPG
+EPG URL
+    * The URL to a XMLTV file to be used if EPG Source is set to "other"
 
 #############
 VaderStreams

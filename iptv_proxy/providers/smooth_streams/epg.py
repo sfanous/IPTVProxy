@@ -24,13 +24,13 @@ from .constants import SMOOTH_STREAMS_FOG_CHANNELS_JSON_FILE_NAME
 from .constants import SMOOTH_STREAMS_FOG_EPG_BASE_URL
 from .constants import SMOOTH_STREAMS_FOG_EPG_XML_FILE_NAME
 from .db import SmoothStreamsSQL
+from .enums import SmoothStreamsEPGSource
 from ...configuration import IPTVProxyConfiguration
 from ...constants import CHANNEL_ICONS_DIRECTORY_PATH
 from ...constants import DEFAULT_CHANNEL_ICON_FILE_PATH
 from ...constants import VERSION
 from ...constants import XML_TV_TEMPLATES
 from ...db import IPTVProxyDatabase
-from ...enums import IPTVProxyEPGSource
 from ...epg import IPTVProxyEPGChannel
 from ...epg import IPTVProxyEPGProgram
 from ...utilities import IPTVProxyUtility
@@ -81,7 +81,7 @@ class SmoothStreamsEPG(object):
     def _convert_epg_to_xml_tv(cls, is_server_secure, authorization_required, client_ip_address, number_of_days):
         current_date_time_in_utc = datetime.now(pytz.utc)
 
-        if cls._source == IPTVProxyEPGSource.FOG.value:
+        if cls._source == SmoothStreamsEPGSource.FOG.value:
             tv_source_data_url = '{0}{1}'.format(SMOOTH_STREAMS_FOG_EPG_BASE_URL, SMOOTH_STREAMS_FOG_EPG_XML_FILE_NAME)
         else:
             tv_source_data_url = '{0}{1}'.format(SMOOTH_STREAMS_EPG_BASE_URL, SMOOTH_STREAMS_EPG_FILE_NAME)
@@ -175,24 +175,32 @@ class SmoothStreamsEPG(object):
     @classmethod
     def _generate_epg(cls):
         with cls._lock:
-            try:
-                db = IPTVProxyDatabase()
-                SmoothStreamsSQL.delete_programs_temp(db)
-                SmoothStreamsSQL.delete_channels_temp(db)
-                db.commit()
-                db.close_connection()
+            db = IPTVProxyDatabase()
+            SmoothStreamsSQL.delete_programs_temp(db)
+            SmoothStreamsSQL.delete_channels_temp(db)
+            db.commit()
+            db.close_connection()
 
+            was_exception_raised = False
+
+            # noinspection PyBroadException
+            try:
                 if IPTVProxyConfiguration.get_configuration_parameter('SMOOTH_STREAMS_EPG_SOURCE') == \
-                        IPTVProxyEPGSource.FOG.value:
+                        SmoothStreamsEPGSource.FOG.value:
                     cls._parse_fog_channels_json()
                     cls._parse_fog_epg_xml()
 
-                    cls._source = IPTVProxyEPGSource.FOG.value
+                    cls._source = SmoothStreamsEPGSource.FOG.value
                 elif IPTVProxyConfiguration.get_configuration_parameter('SMOOTH_STREAMS_EPG_SOURCE') == \
-                        IPTVProxyEPGSource.SMOOTH_STREAMS.value:
+                        SmoothStreamsEPGSource.OTHER.value:
+                    cls._parse_other_epg_xml()
+
+                    cls._source = SmoothStreamsEPGSource.OTHER.value
+                elif IPTVProxyConfiguration.get_configuration_parameter('SMOOTH_STREAMS_EPG_SOURCE') == \
+                        SmoothStreamsEPGSource.SMOOTH_STREAMS.value:
                     cls._parse_smooth_streams_epg_json()
 
-                    cls._source = IPTVProxyEPGSource.SMOOTH_STREAMS.value
+                    cls._source = SmoothStreamsEPGSource.SMOOTH_STREAMS.value
 
                 db = IPTVProxyDatabase()
                 SmoothStreamsSQL.delete_programs(db)
@@ -213,47 +221,68 @@ class SmoothStreamsEPG(object):
                                                 'last_epg_refresh_date_time_in_utc',
                                                 datetime.strftime(datetime.now(pytz.utc), '%Y-%m-%d %H:%M:%S%z'))
                 SmoothStreamsSQL.insert_setting(db, 'epg_source', cls._source)
+                if cls._source == SmoothStreamsEPGSource.OTHER.value:
+                    SmoothStreamsSQL.insert_setting(db, 'epg_url', IPTVProxyConfiguration.get_configuration_parameter(
+                        'SMOOTH_STREAMS_EPG_URL'))
+                else:
+                    SmoothStreamsSQL.delete_setting(db, 'epg_url')
                 db.commit()
                 db.close_connection()
+            except Exception:
+                db = IPTVProxyDatabase()
+                SmoothStreamsSQL.delete_programs_temp(db)
+                SmoothStreamsSQL.delete_channels_temp(db)
+                db.commit()
+                db.close_connection()
+
+                was_exception_raised = True
             finally:
-                cls._initialize_refresh_epg_timer()
+                cls._initialize_refresh_epg_timer(do_set_timer_for_retry=was_exception_raised)
 
     @classmethod
-    def _initialize_refresh_epg_timer(cls):
+    def _initialize_refresh_epg_timer(cls, do_set_timer_for_retry=False):
         current_date_time_in_utc = datetime.now(pytz.utc)
 
-        do_generate_epg = False
+        if do_set_timer_for_retry:
+            refresh_epg_date_time_in_utc = (current_date_time_in_utc.astimezone(
+                tzlocal.get_localzone()).replace(minute=0,
+                                                 second=0,
+                                                 microsecond=0) + timedelta(hours=1)).astimezone(pytz.utc)
 
-        db = IPTVProxyDatabase()
-        smooth_streams_last_epg_refresh_date_time_in_utc_setting_records = SmoothStreamsSQL.query_setting(
-            db,
-            'last_epg_refresh_date_time_in_utc')
-        db.close_connection()
-
-        if smooth_streams_last_epg_refresh_date_time_in_utc_setting_records:
-            last_epg_refresh_date_time_in_utc = datetime.strptime(
-                smooth_streams_last_epg_refresh_date_time_in_utc_setting_records[0]['value'], '%Y-%m-%d %H:%M:%S%z')
-
-            if current_date_time_in_utc >= \
-                    (last_epg_refresh_date_time_in_utc.astimezone(
-                        tzlocal.get_localzone()) + timedelta(days=1)).replace(hour=4,
-                                                                              minute=0,
-                                                                              second=0,
-                                                                              microsecond=0):
-                do_generate_epg = True
-            else:
-                refresh_epg_date_time_in_utc = ((current_date_time_in_utc.astimezone(
-                    tzlocal.get_localzone()) + timedelta(days=1)).replace(hour=4,
-                                                                          minute=0,
-                                                                          second=0,
-                                                                          microsecond=0)).astimezone(pytz.utc)
-
-                cls._start_refresh_epg_timer((refresh_epg_date_time_in_utc - current_date_time_in_utc).total_seconds())
+            cls._start_refresh_epg_timer((refresh_epg_date_time_in_utc - current_date_time_in_utc).total_seconds())
         else:
-            do_generate_epg = True
+            do_generate_epg = False
 
-        if do_generate_epg:
-            cls._generate_epg()
+            db = IPTVProxyDatabase()
+            smooth_streams_last_epg_refresh_date_time_in_utc_setting_records = SmoothStreamsSQL.query_setting(
+                db,
+                'last_epg_refresh_date_time_in_utc')
+            db.close_connection()
+
+            if smooth_streams_last_epg_refresh_date_time_in_utc_setting_records:
+                last_epg_refresh_date_time_in_utc = datetime.strptime(
+                    smooth_streams_last_epg_refresh_date_time_in_utc_setting_records[0]['value'], '%Y-%m-%d %H:%M:%S%z')
+
+                if current_date_time_in_utc >= last_epg_refresh_date_time_in_utc.astimezone(
+                        tzlocal.get_localzone()).replace(hour=4,
+                                                         minute=0,
+                                                         second=0,
+                                                         microsecond=0) + timedelta(days=1):
+                    do_generate_epg = True
+                else:
+                    refresh_epg_date_time_in_utc = (current_date_time_in_utc.astimezone(
+                        tzlocal.get_localzone()).replace(hour=4,
+                                                         minute=0,
+                                                         second=0,
+                                                         microsecond=0) + timedelta(days=1)).astimezone(pytz.utc)
+
+                    cls._start_refresh_epg_timer(
+                        (refresh_epg_date_time_in_utc - current_date_time_in_utc).total_seconds())
+            else:
+                do_generate_epg = True
+
+            if do_generate_epg:
+                cls._generate_epg()
 
     @classmethod
     def _parse_fog_channels_json(cls):
@@ -269,37 +298,48 @@ class SmoothStreamsEPG(object):
 
         db = IPTVProxyDatabase()
 
-        ijson_parser = ijson.parse(epg_json_stream)
+        # noinspection PyBroadException
+        try:
+            ijson_parser = ijson.parse(epg_json_stream)
 
-        for (prefix, event, value) in ijson_parser:
-            if prefix.isdigit() and (event, value) == ('start_map', None):
-                key = prefix
-                channel_icon_url = None
-                channel_name = ''
-                channel_number = None
-            elif (prefix, event) == ('{0}.channum'.format(key), 'string'):
-                channel_number = int(value)
-            elif (prefix, event) == ('{0}.channame'.format(key), 'string'):
-                channel_name = xml.sax.saxutils.unescape(value).strip()
-            elif (prefix, event) == ('{0}.icon'.format(key), 'string'):
-                channel_icon_url = value
-            elif (prefix, event) == (key, 'end_map'):
-                channel = IPTVProxyEPGChannel('SmoothStreams',
-                                              channel_icon_url,
-                                              '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
-                                                                      '{0} - (SmoothStreams)'.format(channel_number))),
-                                              channel_name,
-                                              channel_number)
+            for (prefix, event, value) in ijson_parser:
+                if prefix.isdigit() and (event, value) == ('start_map', None):
+                    key = prefix
+                    channel_icon_url = None
+                    channel_name = ''
+                    channel_number = None
+                elif (prefix, event) == ('{0}.channum'.format(key), 'string'):
+                    channel_number = int(value)
+                elif (prefix, event) == ('{0}.channame'.format(key), 'string'):
+                    channel_name = xml.sax.saxutils.unescape(value).strip()
+                elif (prefix, event) == ('{0}.icon'.format(key), 'string'):
+                    channel_icon_url = value
+                elif (prefix, event) == (key, 'end_map'):
+                    channel = IPTVProxyEPGChannel('SmoothStreams',
+                                                  channel_icon_url,
+                                                  '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
+                                                                          '{0} - (SmoothStreams)'.format(
+                                                                              channel_number))),
+                                                  channel_name,
+                                                  channel_number)
 
-                cls._apply_optional_settings(channel)
+                    cls._apply_optional_settings(channel)
 
-                SmoothStreamsSQL.insert_channel(db, channel)
+                    SmoothStreamsSQL.insert_channel(db, channel)
 
-        db.commit()
-        db.close_connection()
+            db.commit()
 
-        logger.debug('Processed Fog JSON channels\n'
-                     'File name => {0}'.format(SMOOTH_STREAMS_FOG_CHANNELS_JSON_FILE_NAME))
+            logger.debug('Processed Fog JSON channels\n'
+                         'File name => {0}'.format(SMOOTH_STREAMS_FOG_CHANNELS_JSON_FILE_NAME))
+        except Exception:
+            db.rollback()
+
+            logger.debug('Failed to process Fog JSON channels\n'
+                         'File name => {0}'.format(SMOOTH_STREAMS_FOG_CHANNELS_JSON_FILE_NAME))
+
+            raise
+        finally:
+            db.close_connection()
 
     @classmethod
     def _parse_fog_epg_xml(cls):
@@ -314,59 +354,156 @@ class SmoothStreamsEPG(object):
 
         db = IPTVProxyDatabase()
 
-        for event, element in etree.iterparse(epg_xml_stream,
-                                              events=('start', 'end'),
-                                              tag=('channel', 'programme', 'tv')):
-            if event == 'end':
-                if element.tag == 'channel':
-                    channel_id = element.get('id')
+        # noinspection PyBroadException
+        try:
+            for event, element in etree.iterparse(epg_xml_stream,
+                                                  events=('start', 'end'),
+                                                  tag=('channel', 'programme', 'tv')):
+                if event == 'end':
+                    if element.tag == 'channel':
+                        channel_id = element.get('id')
 
-                    for subElement in list(element):
-                        if subElement.tag == 'icon':
-                            channel_number = int(re.search(r'.*/([0-9]+)\.png', subElement.get('src')).group(1))
+                        for subElement in list(element):
+                            if subElement.tag == 'icon':
+                                channel_number = int(re.search(r'.*/([0-9]+)\.png', subElement.get('src')).group(1))
 
-                            source_channel_id_to_channel_number[channel_id] = channel_number
+                                source_channel_id_to_channel_number[channel_id] = channel_number
 
-                    element.clear()
-                    tv_element.clear()
-                elif element.tag == 'programme':
-                    channel_id = element.get('channel')
-                    channel_number = source_channel_id_to_channel_number[channel_id]
+                        element.clear()
+                        tv_element.clear()
+                    elif element.tag == 'programme':
+                        channel_id = element.get('channel')
 
-                    program = IPTVProxyEPGProgram()
+                        program = IPTVProxyEPGProgram()
 
-                    program.end_date_time_in_utc = datetime.strptime(element.get('stop'), '%Y%m%d%H%M%S %z')
-                    program.start_date_time_in_utc = datetime.strptime(element.get('start'), '%Y%m%d%H%M%S %z')
+                        program.end_date_time_in_utc = datetime.strptime(element.get('stop'), '%Y%m%d%H%M%S %z')
+                        program.start_date_time_in_utc = datetime.strptime(element.get('start'), '%Y%m%d%H%M%S %z')
 
-                    for subElement in list(element):
-                        if subElement.tag == 'desc' and subElement.text:
-                            program.description = xml.sax.saxutils.unescape(subElement.text)
-                        if subElement.tag == 'sub-title' and subElement.text:
-                            program.sub_title = xml.sax.saxutils.unescape(subElement.text)
-                        elif subElement.tag == 'title' and subElement.text:
-                            program.title = xml.sax.saxutils.unescape(subElement.text)
+                        for subElement in list(element):
+                            if subElement.tag == 'desc' and subElement.text:
+                                program.description = xml.sax.saxutils.unescape(subElement.text)
+                            if subElement.tag == 'sub-title' and subElement.text:
+                                program.sub_title = xml.sax.saxutils.unescape(subElement.text)
+                            elif subElement.tag == 'title' and subElement.text:
+                                program.title = xml.sax.saxutils.unescape(subElement.text)
 
-                    SmoothStreamsSQL.insert_program(db,
-                                                    '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
-                                                                            '{0} - (SmoothStreams)'.format(
-                                                                                channel_number))),
-                                                    program)
+                        SmoothStreamsSQL.insert_program(db,
+                                                        '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
+                                                                                '{0} - (SmoothStreams)'.format(
+                                                                                    source_channel_id_to_channel_number[
+                                                                                        channel_id]))),
+                                                        program)
 
-                    element.clear()
-                    tv_element.clear()
-            elif event == 'start':
-                if element.tag == 'tv':
-                    tv_element = element
+                        element.clear()
+                        tv_element.clear()
+                elif event == 'start':
+                    if element.tag == 'tv':
+                        tv_element = element
 
-                    tv_date = datetime.strptime(element.get('date'), '%Y%m%d%H%M%S %z').replace(tzinfo=pytz.utc)
+                        tv_date = datetime.strptime(element.get('date'), '%Y%m%d%H%M%S %z').replace(tzinfo=pytz.utc)
 
-        db.commit()
-        db.close_connection()
+            db.commit()
 
-        logger.debug('Processed Fog XML EPG\n'
-                     'File name    => {0}\n'
-                     'Generated on => {1}'.format(SMOOTH_STREAMS_FOG_EPG_XML_FILE_NAME,
-                                                  tv_date))
+            logger.debug('Processed Fog XML EPG\n'
+                         'File name    => {0}\n'
+                         'Generated on => {1}'.format(SMOOTH_STREAMS_FOG_EPG_XML_FILE_NAME,
+                                                      tv_date))
+        except Exception:
+            db.rollback()
+
+            logger.debug('Failed to process Fog XML EPG\n'
+                         'File name    => {0}'.format(SMOOTH_STREAMS_FOG_EPG_XML_FILE_NAME))
+
+            raise
+        finally:
+            db.close_connection()
+
+    @classmethod
+    def _parse_other_epg_xml(cls):
+        epg_xml_stream = cls._request_other_epg_xml()
+
+        logger.debug('Processing external XML EPG')
+
+        source_channel_id_to_channel_number = {}
+        tv_element = None
+        channel_number = 0
+
+        db = IPTVProxyDatabase()
+
+        # noinspection PyBroadException
+        try:
+            for event, element in etree.iterparse(epg_xml_stream,
+                                                  events=('start', 'end'),
+                                                  tag=('channel', 'programme', 'tv')):
+                if event == 'end':
+                    if element.tag == 'channel':
+                        channel_icon_url = None
+                        channel_id = element.get('id')
+                        channel_name = ''
+                        channel_number += 1
+
+                        source_channel_id_to_channel_number[channel_id] = channel_number
+
+                        for sub_element in list(element):
+                            if sub_element.tag == 'display-name':
+                                channel_name = sub_element.text
+                            elif sub_element.tag == 'icon':
+                                channel_icon_url = sub_element.get('src')
+
+                        channel = IPTVProxyEPGChannel('SmoothStreams',
+                                                      channel_icon_url,
+                                                      '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
+                                                                              '{0} - (SmoothStreams)'.format(
+                                                                                  channel_number))),
+                                                      channel_name,
+                                                      channel_number)
+
+                        cls._apply_optional_settings(channel)
+
+                        SmoothStreamsSQL.insert_channel(db, channel)
+
+                        element.clear()
+                        tv_element.clear()
+                    elif element.tag == 'programme':
+                        channel_id = element.get('channel')
+
+                        program = IPTVProxyEPGProgram()
+
+                        program.end_date_time_in_utc = datetime.strptime(element.get('stop'), '%Y%m%d%H%M%S %z')
+                        program.start_date_time_in_utc = datetime.strptime(element.get('start'), '%Y%m%d%H%M%S %z')
+
+                        for subElement in list(element):
+                            if subElement.tag == 'desc' and subElement.text:
+                                program.description = xml.sax.saxutils.unescape(subElement.text)
+                            if subElement.tag == 'sub-title' and subElement.text:
+                                program.sub_title = xml.sax.saxutils.unescape(subElement.text)
+                            elif subElement.tag == 'title' and subElement.text:
+                                program.title = xml.sax.saxutils.unescape(subElement.text)
+
+                        SmoothStreamsSQL.insert_program(db,
+                                                        '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
+                                                                                '{0} - (SmoothStreams)'.format(
+                                                                                    source_channel_id_to_channel_number[
+                                                                                        channel_id]))),
+                                                        program)
+
+                        element.clear()
+                        tv_element.clear()
+                elif event == 'start':
+                    if element.tag == 'tv':
+                        tv_element = element
+
+            db.commit()
+
+            logger.debug('Processed external XML EPG')
+        except Exception:
+            db.rollback()
+
+            logger.debug('Failed to process external XML EPG')
+
+            raise
+        finally:
+            db.close_connection()
 
     @classmethod
     def _parse_smooth_streams_epg_json(cls):
@@ -393,73 +530,83 @@ class SmoothStreamsEPG(object):
 
         db = IPTVProxyDatabase()
 
-        ijson_parser = ijson.parse(epg_json_stream)
+        # noinspection PyBroadException
+        try:
+            ijson_parser = ijson.parse(epg_json_stream)
 
-        for (prefix, event, value) in ijson_parser:
-            if (prefix, event) == ('generated_on', 'string'):
-                generated_on = datetime.fromtimestamp(int(value), pytz.utc)
-            elif (prefix, event) == ('data', 'map_key'):
-                data_id = value
-            elif (prefix, event) == ('data.{0}.events'.format(data_id), 'map_key'):
-                events_id = value
-            elif (prefix, event) == ('data.{0}.events.{1}'.format(data_id, events_id), 'end_map'):
-                program_end_date_time_in_utc = program_start_date_time_in_utc + timedelta(minutes=program_runtime)
+            for (prefix, event, value) in ijson_parser:
+                if (prefix, event) == ('generated_on', 'string'):
+                    generated_on = datetime.fromtimestamp(int(value), pytz.utc)
+                elif (prefix, event) == ('data', 'map_key'):
+                    data_id = value
+                elif (prefix, event) == ('data.{0}.events'.format(data_id), 'map_key'):
+                    events_id = value
+                elif (prefix, event) == ('data.{0}.events.{1}'.format(data_id, events_id), 'end_map'):
+                    program_end_date_time_in_utc = program_start_date_time_in_utc + timedelta(minutes=program_runtime)
 
-                programs.append(IPTVProxyEPGProgram(program_description,
-                                                    program_end_date_time_in_utc,
-                                                    program_start_date_time_in_utc,
-                                                    '',
-                                                    program_title))
-                program_description = ''
-                program_runtime = None
-                program_title = ''
-                program_start_date_time_in_utc = None
-            elif (prefix, event) == ('data.{0}.events.{1}.description'.format(data_id, events_id), 'string'):
-                program_description = xml.sax.saxutils.unescape(value)
-            elif (prefix, event) == ('data.{0}.events.{1}.name'.format(data_id, events_id), 'string'):
-                program_title = xml.sax.saxutils.unescape(value)
-            elif (prefix, event) == ('data.{0}.events.{1}.runtime'.format(data_id, events_id), 'number'):
-                program_runtime = value
-            elif (prefix, event) == ('data.{0}.events.{1}.runtime'.format(data_id, events_id), 'string'):
-                program_runtime = int(value)
-            elif (prefix, event) == ('data.{0}.events.{1}.time'.format(data_id, events_id), 'string'):
-                program_start_date_time_in_utc = datetime.fromtimestamp(int(value), pytz.utc)
-            elif (prefix, event) == ('data.{0}.img'.format(data_id), 'string'):
-                channel_icon_url = value
-            elif (prefix, event) == ('data.{0}'.format(data_id), 'end_map'):
-                channel_id = '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
-                                                     '{0} - (SmoothStreams)'.format(channel_number)))
+                    programs.append(IPTVProxyEPGProgram(program_description,
+                                                        program_end_date_time_in_utc,
+                                                        program_start_date_time_in_utc,
+                                                        '',
+                                                        program_title))
+                    program_description = ''
+                    program_runtime = None
+                    program_title = ''
+                    program_start_date_time_in_utc = None
+                elif (prefix, event) == ('data.{0}.events.{1}.description'.format(data_id, events_id), 'string'):
+                    program_description = xml.sax.saxutils.unescape(value)
+                elif (prefix, event) == ('data.{0}.events.{1}.name'.format(data_id, events_id), 'string'):
+                    program_title = xml.sax.saxutils.unescape(value)
+                elif (prefix, event) == ('data.{0}.events.{1}.runtime'.format(data_id, events_id), 'number'):
+                    program_runtime = value
+                elif (prefix, event) == ('data.{0}.events.{1}.runtime'.format(data_id, events_id), 'string'):
+                    program_runtime = int(value)
+                elif (prefix, event) == ('data.{0}.events.{1}.time'.format(data_id, events_id), 'string'):
+                    program_start_date_time_in_utc = datetime.fromtimestamp(int(value), pytz.utc)
+                elif (prefix, event) == ('data.{0}.img'.format(data_id), 'string'):
+                    channel_icon_url = value
+                elif (prefix, event) == ('data.{0}'.format(data_id), 'end_map'):
+                    channel_id = '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
+                                                         '{0} - (SmoothStreams)'.format(channel_number)))
 
-                channel = IPTVProxyEPGChannel('SmoothStreams',
-                                              channel_icon_url,
-                                              channel_id,
-                                              channel_name,
-                                              channel_number)
-                channel.programs = programs
+                    channel = IPTVProxyEPGChannel('SmoothStreams',
+                                                  channel_icon_url,
+                                                  channel_id,
+                                                  channel_name,
+                                                  channel_number)
+                    channel.programs = programs
 
-                cls._apply_optional_settings(channel)
+                    cls._apply_optional_settings(channel)
 
-                SmoothStreamsSQL.insert_channel(db, channel)
-                for program in programs:
-                    SmoothStreamsSQL.insert_program(db, channel_id, program)
+                    SmoothStreamsSQL.insert_channel(db, channel)
+                    for program in programs:
+                        SmoothStreamsSQL.insert_program(db, channel_id, program)
 
-                channel_icon_url = None
-                channel_name = None
-                channel_number = None
+                    channel_icon_url = None
+                    channel_name = None
+                    channel_number = None
 
-                programs = []
-            elif (prefix, event) == ('data.{0}.name'.format(data_id), 'string'):
-                channel_name = xml.sax.saxutils.unescape(value).strip()
-            elif (prefix, event) == ('data.{0}.number'.format(data_id), 'string'):
-                channel_number = int(value)
+                    programs = []
+                elif (prefix, event) == ('data.{0}.name'.format(data_id), 'string'):
+                    channel_name = xml.sax.saxutils.unescape(value).strip()
+                elif (prefix, event) == ('data.{0}.number'.format(data_id), 'string'):
+                    channel_number = int(value)
 
-        db.commit()
-        db.close_connection()
+            db.commit()
 
-        logger.debug('Processed SmoothStreams JSON EPG\n'
-                     'File name    => {0}\n'
-                     'Generated on => {1}'.format(SMOOTH_STREAMS_EPG_FILE_NAME,
-                                                  generated_on))
+            logger.debug('Processed SmoothStreams JSON EPG\n'
+                         'File name    => {0}\n'
+                         'Generated on => {1}'.format(SMOOTH_STREAMS_EPG_FILE_NAME,
+                                                      generated_on))
+        except Exception:
+            db.rollback()
+
+            logger.debug('Failed to process SmoothStreams JSON EPG\n'
+                         'File name    => {0}'.format(SMOOTH_STREAMS_EPG_FILE_NAME))
+
+            raise
+        finally:
+            db.close_connection()
 
     @classmethod
     def _refresh_epg(cls):
@@ -494,6 +641,28 @@ class SmoothStreamsEPG(object):
         url = '{0}{1}'.format(SMOOTH_STREAMS_FOG_EPG_BASE_URL, SMOOTH_STREAMS_FOG_EPG_XML_FILE_NAME)
 
         logger.debug('Downloading {0}\n'
+                     'URL => {1}'.format(SMOOTH_STREAMS_FOG_EPG_XML_FILE_NAME, url))
+
+        session = requests.Session()
+        response = IPTVProxyUtility.make_http_request(session.get, url, headers=session.headers, stream=True)
+
+        if response.status_code == requests.codes.OK:
+            response.raw.decode_content = True
+
+            # noinspection PyUnresolvedReferences
+            logger.trace(IPTVProxyUtility.assemble_response_from_log_message(response))
+
+            return response.raw
+        else:
+            logger.error(IPTVProxyUtility.assemble_response_from_log_message(response))
+
+            response.raise_for_status()
+
+    @classmethod
+    def _request_other_epg_xml(cls):
+        url = '{0}'.format(IPTVProxyConfiguration.get_configuration_parameter('SMOOTH_STREAMS_EPG_URL'))
+
+        logger.debug('Downloading external XML EPG\n'
                      'URL => {1}'.format(SMOOTH_STREAMS_FOG_EPG_XML_FILE_NAME, url))
 
         session = requests.Session()
@@ -585,6 +754,7 @@ class SmoothStreamsEPG(object):
         smooth_streams_do_use_icons_setting_records = SmoothStreamsSQL.query_setting(db, 'do_use_icons')
         smooth_streams_channel_name_map_md5_setting_records = SmoothStreamsSQL.query_setting(db, 'channel_name_map_md5')
         smooth_streams_epg_source_setting_records = SmoothStreamsSQL.query_setting(db, 'epg_source')
+        smooth_streams_epg_url_setting_records = SmoothStreamsSQL.query_setting(db, 'epg_url')
         db.close_connection()
 
         if not smooth_streams_do_use_icons_setting_records or not \
@@ -595,7 +765,10 @@ class SmoothStreamsEPG(object):
                 cls._do_use_smooth_streams_icons != \
                 bool(int(smooth_streams_do_use_icons_setting_records[0]['value'])) or \
                 IPTVProxyConfiguration.get_configuration_parameter('SMOOTH_STREAMS_EPG_SOURCE') != \
-                smooth_streams_epg_source_setting_records[0]['value']:
+                smooth_streams_epg_source_setting_records[0]['value'] or \
+                (IPTVProxyConfiguration.get_configuration_parameter('SMOOTH_STREAMS_EPG_SOURCE') == 'other' and
+                 IPTVProxyConfiguration.get_configuration_parameter('SMOOTH_STREAMS_EPG_URL') !=
+                 smooth_streams_epg_url_setting_records[0]['value']):
             cls._cancel_refresh_epg_timer()
             cls._generate_epg()
 

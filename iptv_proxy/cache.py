@@ -101,6 +101,8 @@ class IPTVProxyCacheManager():
             else:
                 cls._cleanup_cache_timer = None
 
+                logger.debug('Deleted all cache buckets')
+
     @classmethod
     def cancel_cleanup_cache_timer(cls):
         if cls._cleanup_cache_timer:

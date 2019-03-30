@@ -25,6 +25,10 @@ class VaderStreamsSQL(IPTVProxyProviderSQL):
         IPTVProxyProviderSQL.delete_programs_temp(db, provider)
 
     @classmethod
+    def delete_setting(cls, db, name):
+        IPTVProxySQL.delete_setting(db, 'vader_streams_{0}'.format(name))
+
+    @classmethod
     def insert_channel(cls, db, channel, provider=PROVIDER_NAME):
         IPTVProxyProviderSQL.insert_channel(db, channel, provider)
 

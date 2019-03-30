@@ -4,7 +4,7 @@ import traceback
 
 from .constants import VERSION
 from .controller import IPTVProxyController
-from.privilege import IPTVProxyPrivilege
+from .privilege import IPTVProxyPrivilege
 from .utilities import IPTVProxyUtility
 
 logger = logging.getLogger(__name__)

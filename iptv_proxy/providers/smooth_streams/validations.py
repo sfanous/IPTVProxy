@@ -1,5 +1,7 @@
 import logging
 
+import requests
+
 from .constants import VALID_SMOOTH_STREAMS_EPG_SOURCE_VALUES
 from .constants import VALID_SMOOTH_STREAMS_PLAYLIST_PROTOCOL_VALUES
 from .constants import VALID_SMOOTH_STREAMS_PLAYLIST_TYPE_VALUES
@@ -14,12 +16,23 @@ class SmoothStreamsValidations(object):
 
     @classmethod
     def is_valid_epg_source(cls, epg_source):
-        is_valid_smooth_streams_epg = True
+        is_valid_smooth_streams_epg_source = True
 
         if epg_source not in VALID_SMOOTH_STREAMS_EPG_SOURCE_VALUES:
-            is_valid_smooth_streams_epg = False
+            is_valid_smooth_streams_epg_source = False
 
-        return is_valid_smooth_streams_epg
+        return is_valid_smooth_streams_epg_source
+
+    @classmethod
+    def is_valid_epg_url(cls, epg_url):
+        is_valid_smooth_streams_epg_url = True
+
+        try:
+            requests.head(epg_url)
+        except requests.RequestException:
+            is_valid_smooth_streams_epg_url = False
+
+        return is_valid_smooth_streams_epg_url
 
     @classmethod
     def is_valid_password(cls, password):

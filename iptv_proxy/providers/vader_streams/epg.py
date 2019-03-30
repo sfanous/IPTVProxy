@@ -182,6 +182,9 @@ class VaderStreamsEPG(object):
             db.commit()
             db.close_connection()
 
+            was_exception_raised = False
+
+            # noinspection PyBroadException
             try:
                 source_channel_id_to_channel_number = {}
 
@@ -207,45 +210,61 @@ class VaderStreamsEPG(object):
                                                datetime.strftime(datetime.now(pytz.utc), '%Y-%m-%d %H:%M:%S%z'))
                 db.commit()
                 db.close_connection()
+            except Exception:
+                db = IPTVProxyDatabase()
+                VaderStreamsSQL.delete_programs_temp(db)
+                VaderStreamsSQL.delete_channels_temp(db)
+                db.commit()
+                db.close_connection()
+
+                was_exception_raised = True
             finally:
-                cls._initialize_refresh_epg_timer()
+                cls._initialize_refresh_epg_timer(do_set_timer_for_retry=was_exception_raised)
 
     @classmethod
-    def _initialize_refresh_epg_timer(cls):
+    def _initialize_refresh_epg_timer(cls, do_set_timer_for_retry=False):
         current_date_time_in_utc = datetime.now(pytz.utc)
 
-        do_generate_epg = False
+        if do_set_timer_for_retry:
+            refresh_epg_date_time_in_utc = (current_date_time_in_utc.astimezone(
+                tzlocal.get_localzone()).replace(minute=0,
+                                                 second=0,
+                                                 microsecond=0) + timedelta(hours=1)).astimezone(pytz.utc)
 
-        db = IPTVProxyDatabase()
-        vader_streams_last_epg_refresh_date_time_in_utc_setting_records = VaderStreamsSQL.query_setting(
-            db,
-            'last_epg_refresh_date_time_in_utc')
-        db.close_connection()
-
-        if vader_streams_last_epg_refresh_date_time_in_utc_setting_records:
-            last_epg_refresh_date_time_in_utc = datetime.strptime(
-                vader_streams_last_epg_refresh_date_time_in_utc_setting_records[0]['value'], '%Y-%m-%d %H:%M:%S%z')
-
-            if current_date_time_in_utc >= \
-                    (last_epg_refresh_date_time_in_utc.astimezone(
-                        tzlocal.get_localzone()) + timedelta(days=1)).replace(hour=4,
-                                                                              minute=0,
-                                                                              second=0,
-                                                                              microsecond=0):
-                do_generate_epg = True
-            else:
-                refresh_epg_date_time_in_utc = ((current_date_time_in_utc.astimezone(
-                    tzlocal.get_localzone()) + timedelta(days=1)).replace(hour=4,
-                                                                          minute=0,
-                                                                          second=0,
-                                                                          microsecond=0)).astimezone(pytz.utc)
-
-                cls._start_refresh_epg_timer((refresh_epg_date_time_in_utc - current_date_time_in_utc).total_seconds())
+            cls._start_refresh_epg_timer((refresh_epg_date_time_in_utc - current_date_time_in_utc).total_seconds())
         else:
-            do_generate_epg = True
+            do_generate_epg = False
 
-        if do_generate_epg:
-            cls._generate_epg()
+            db = IPTVProxyDatabase()
+            vader_streams_last_epg_refresh_date_time_in_utc_setting_records = VaderStreamsSQL.query_setting(
+                db,
+                'last_epg_refresh_date_time_in_utc')
+            db.close_connection()
+
+            if vader_streams_last_epg_refresh_date_time_in_utc_setting_records:
+                last_epg_refresh_date_time_in_utc = datetime.strptime(
+                    vader_streams_last_epg_refresh_date_time_in_utc_setting_records[0]['value'], '%Y-%m-%d %H:%M:%S%z')
+
+                if current_date_time_in_utc >= last_epg_refresh_date_time_in_utc.astimezone(
+                        tzlocal.get_localzone()).replace(hour=4,
+                                                         minute=0,
+                                                         second=0,
+                                                         microsecond=0) + timedelta(days=1):
+                    do_generate_epg = True
+                else:
+                    refresh_epg_date_time_in_utc = (current_date_time_in_utc.astimezone(
+                        tzlocal.get_localzone()).replace(hour=4,
+                                                         minute=0,
+                                                         second=0,
+                                                         microsecond=0) + timedelta(days=1)).astimezone(pytz.utc)
+
+                    cls._start_refresh_epg_timer(
+                        (refresh_epg_date_time_in_utc - current_date_time_in_utc).total_seconds())
+            else:
+                do_generate_epg = True
+
+            if do_generate_epg:
+                cls._generate_epg()
 
     @classmethod
     def _parse_categories_json(cls):
@@ -289,63 +308,73 @@ class VaderStreamsEPG(object):
 
             db = IPTVProxyDatabase()
 
-            ijson_parser = ijson.parse(channels_json_stream)
+            # noinspection PyBroadException
+            try:
+                ijson_parser = ijson.parse(channels_json_stream)
 
-            for (prefix, event, value) in ijson_parser:
-                if (prefix, event) == ('item', 'end_map'):
-                    try:
-                        if 'sport' in channel_name.lower():
-                            channel_group = 'VaderStreams - Sports'
-                        elif 'movie' in channel_name.lower():
-                            channel_group = 'VaderStreams - Premium Movies'
-                        else:
-                            channel_group = 'VaderStreams - {0}'.format(categories_map[channel_category_id])
-                        cls._groups.add(channel_group)
+                for (prefix, event, value) in ijson_parser:
+                    if (prefix, event) == ('item', 'end_map'):
+                        try:
+                            if 'sport' in channel_name.lower():
+                                channel_group = 'VaderStreams - Sports'
+                            elif 'movie' in channel_name.lower():
+                                channel_group = 'VaderStreams - Premium Movies'
+                            else:
+                                channel_group = 'VaderStreams - {0}'.format(categories_map[channel_category_id])
+                            cls._groups.add(channel_group)
 
-                        channel = IPTVProxyEPGChannel(channel_group,
-                                                      channel_icon_url,
-                                                      '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
-                                                                              '{0} - (VaderStreams)'.format(
-                                                                                  channel_number))),
-                                                      channel_name,
-                                                      channel_number)
-                        channel.programs = programs
+                            channel = IPTVProxyEPGChannel(channel_group,
+                                                          channel_icon_url,
+                                                          '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
+                                                                                  '{0} - (VaderStreams)'.format(
+                                                                                      channel_number))),
+                                                          channel_name,
+                                                          channel_number)
+                            channel.programs = programs
 
-                        cls._apply_optional_settings(channel)
+                            cls._apply_optional_settings(channel)
 
-                        VaderStreamsSQL.insert_channel(db, channel)
+                            VaderStreamsSQL.insert_channel(db, channel)
 
-                        if channel_id in source_channel_id_to_channel_number:
-                            source_channel_id_to_channel_number[channel_id].append(channel.number)
-                        else:
-                            source_channel_id_to_channel_number[channel_id] = [channel.number]
-                    except KeyError:
-                        pass
-                    finally:
-                        channel_category_id = None
-                        channel_icon_url = None
-                        channel_id = None
-                        channel_name = None
-                        channel_number = None
+                            if channel_id in source_channel_id_to_channel_number:
+                                source_channel_id_to_channel_number[channel_id].append(channel.number)
+                            else:
+                                source_channel_id_to_channel_number[channel_id] = [channel.number]
+                        except KeyError:
+                            pass
+                        finally:
+                            channel_category_id = None
+                            channel_icon_url = None
+                            channel_id = None
+                            channel_name = None
+                            channel_number = None
 
-                        programs = []
-                elif (prefix, event) == ('item.id', 'number'):
-                    channel_number = value
-                elif (prefix, event) == ('item.stream_icon', 'string'):
-                    channel_icon_url = xml.sax.saxutils.unescape(value)
-                elif (prefix, event) == ('item.channel_id', 'string'):
-                    channel_id = xml.sax.saxutils.unescape(value)
-                elif (prefix, event) == ('item.stream_display_name', 'string'):
-                    channel_name = xml.sax.saxutils.unescape(value)
+                            programs = []
+                    elif (prefix, event) == ('item.id', 'number'):
+                        channel_number = value
+                    elif (prefix, event) == ('item.stream_icon', 'string'):
+                        channel_icon_url = xml.sax.saxutils.unescape(value)
+                    elif (prefix, event) == ('item.channel_id', 'string'):
+                        channel_id = xml.sax.saxutils.unescape(value)
+                    elif (prefix, event) == ('item.stream_display_name', 'string'):
+                        channel_name = xml.sax.saxutils.unescape(value)
 
-                elif (prefix, event) == ('item.category_id', 'number'):
-                    channel_category_id = value
+                    elif (prefix, event) == ('item.category_id', 'number'):
+                        channel_category_id = value
 
-            db.commit()
-            db.close_connection()
+                db.commit()
 
-            logger.debug('Processed VaderStreams JSON channels\n'
-                         'File name => {0}'.format(VADER_STREAMS_CHANNELS_JSON_FILE_NAME))
+                logger.debug('Processed VaderStreams JSON channels\n'
+                             'File name => {0}'.format(VADER_STREAMS_CHANNELS_JSON_FILE_NAME))
+            except Exception:
+                db.rollback()
+
+                logger.debug('Failed to process VaderStreams JSON channels\n'
+                             'File name => {0}'.format(VADER_STREAMS_CHANNELS_JSON_FILE_NAME))
+
+                raise
+            finally:
+                db.close_connection()
 
     @classmethod
     def _parse_epg_json(cls, source_channel_id_to_channel_number):
@@ -370,55 +399,65 @@ class VaderStreamsEPG(object):
 
             db = IPTVProxyDatabase()
 
-            for (event, element) in etree.iterparse(input_file,
-                                                    events=('start', 'end'),
-                                                    recover=True,
-                                                    tag=('channel', 'programme', 'tv')):
-                if event == 'end':
-                    if element.tag == 'channel':
-                        element.clear()
-                        tv_element.clear()
-                    elif element.tag == 'programme':
-                        channel_id = element.get('channel')
-
-                        try:
-                            channel_numbers = source_channel_id_to_channel_number[channel_id]
-
-                            for channel_number in channel_numbers:
-                                program = IPTVProxyEPGProgram()
-
-                                program.end_date_time_in_utc = datetime.strptime(element.get('stop'),
-                                                                                 '%Y%m%d%H%M%S %z')
-                                program.start_date_time_in_utc = datetime.strptime(element.get('start'),
-                                                                                   '%Y%m%d%H%M%S %z')
-
-                                for subElement in list(element):
-                                    if subElement.tag == 'desc' and subElement.text:
-                                        program.description = xml.sax.saxutils.unescape(subElement.text)
-                                    elif subElement.tag == 'sub-title' and subElement.text:
-                                        program.sub_title = xml.sax.saxutils.unescape(subElement.text)
-                                    elif subElement.tag == 'title' and subElement.text:
-                                        program.title = xml.sax.saxutils.unescape(subElement.text)
-
-                                VaderStreamsSQL.insert_program(db,
-                                                               '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
-                                                                                       '{0} - (VaderStreams)'.format(
-                                                                                           channel_number))),
-                                                               program)
-                        except KeyError:
-                            pass
-                        finally:
+            # noinspection PyBroadException
+            try:
+                for (event, element) in etree.iterparse(input_file,
+                                                        events=('start', 'end'),
+                                                        recover=True,
+                                                        tag=('channel', 'programme', 'tv')):
+                    if event == 'end':
+                        if element.tag == 'channel':
                             element.clear()
                             tv_element.clear()
-                elif event == 'start':
-                    if element.tag == 'tv':
-                        tv_element = element
+                        elif element.tag == 'programme':
+                            channel_id = element.get('channel')
 
-            db.commit()
-            db.close_connection()
+                            try:
+                                channel_numbers = source_channel_id_to_channel_number[channel_id]
 
-            logger.debug('Processed VaderStreams XML EPG\n'
-                         'File name => {0}'.format(VADER_STREAMS_XML_EPG_FILE_NAME))
+                                for channel_number in channel_numbers:
+                                    program = IPTVProxyEPGProgram()
+
+                                    program.end_date_time_in_utc = datetime.strptime(element.get('stop'),
+                                                                                     '%Y%m%d%H%M%S %z')
+                                    program.start_date_time_in_utc = datetime.strptime(element.get('start'),
+                                                                                       '%Y%m%d%H%M%S %z')
+
+                                    for subElement in list(element):
+                                        if subElement.tag == 'desc' and subElement.text:
+                                            program.description = xml.sax.saxutils.unescape(subElement.text)
+                                        elif subElement.tag == 'sub-title' and subElement.text:
+                                            program.sub_title = xml.sax.saxutils.unescape(subElement.text)
+                                        elif subElement.tag == 'title' and subElement.text:
+                                            program.title = xml.sax.saxutils.unescape(subElement.text)
+
+                                    VaderStreamsSQL.insert_program(
+                                        db,
+                                        '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
+                                                                '{0} - (VaderStreams)'.format(channel_number))),
+                                        program)
+                            except KeyError:
+                                pass
+                            finally:
+                                element.clear()
+                                tv_element.clear()
+                    elif event == 'start':
+                        if element.tag == 'tv':
+                            tv_element = element
+
+                db.commit()
+
+                logger.debug('Processed VaderStreams XML EPG\n'
+                             'File name => {0}'.format(VADER_STREAMS_XML_EPG_FILE_NAME))
+            except Exception:
+                db.rollback()
+
+                logger.debug('Failed to process VaderStreams XML EPG\n'
+                             'File name => {0}'.format(VADER_STREAMS_XML_EPG_FILE_NAME))
+
+                raise
+            finally:
+                db.close_connection()
 
     @classmethod
     def _parse_matchcenter_schedule_json(cls):
@@ -438,35 +477,45 @@ class VaderStreamsEPG(object):
 
         db = IPTVProxyDatabase()
 
-        ijson_parser = ijson.parse(matchcenter_schedule_json_stream)
+        # noinspection PyBroadException
+        try:
+            ijson_parser = ijson.parse(matchcenter_schedule_json_stream)
 
-        for (prefix, event, value) in ijson_parser:
-            if (prefix, event) == ('item', 'start_map'):
-                program = IPTVProxyEPGProgram()
-            elif (prefix, event) == ('item.streams', 'start_array'):
-                channel_numbers = []
-            elif (prefix, event) == ('item.streams.item.id', 'number'):
-                channel_numbers.append(value)
-            elif (prefix, event) == ('item.description', 'string'):
-                program.description = xml.sax.saxutils.unescape(value)
-            elif (prefix, event) == ('item.title', 'string'):
-                program.title = xml.sax.saxutils.unescape(value)
-            elif (prefix, event) == ('item.startTime', 'string'):
-                program.start_date_time_in_utc = datetime.strptime(value[:-3] + value[-2:], '%Y-%m-%dT%H:%M:%S%z')
-            elif (prefix, event) == ('item.endTime', 'string'):
-                program.end_date_time_in_utc = datetime.strptime(value[:-3] + value[-2:], '%Y-%m-%dT%H:%M:%S%z')
-            elif (prefix, event) == ('item', 'end_map'):
-                for channel_number in channel_numbers:
-                    VaderStreamsSQL.insert_program(db, '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
-                                                                               '{0} - (VaderStreams)'.format(
-                                                                                   channel_number))),
-                                                   program)
+            for (prefix, event, value) in ijson_parser:
+                if (prefix, event) == ('item', 'start_map'):
+                    program = IPTVProxyEPGProgram()
+                elif (prefix, event) == ('item.streams', 'start_array'):
+                    channel_numbers = []
+                elif (prefix, event) == ('item.streams.item.id', 'number'):
+                    channel_numbers.append(value)
+                elif (prefix, event) == ('item.description', 'string'):
+                    program.description = xml.sax.saxutils.unescape(value)
+                elif (prefix, event) == ('item.title', 'string'):
+                    program.title = xml.sax.saxutils.unescape(value)
+                elif (prefix, event) == ('item.startTime', 'string'):
+                    program.start_date_time_in_utc = datetime.strptime(value[:-3] + value[-2:], '%Y-%m-%dT%H:%M:%S%z')
+                elif (prefix, event) == ('item.endTime', 'string'):
+                    program.end_date_time_in_utc = datetime.strptime(value[:-3] + value[-2:], '%Y-%m-%dT%H:%M:%S%z')
+                elif (prefix, event) == ('item', 'end_map'):
+                    for channel_number in channel_numbers:
+                        VaderStreamsSQL.insert_program(db, '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
+                                                                                   '{0} - (VaderStreams)'.format(
+                                                                                       channel_number))),
+                                                       program)
 
-        db.commit()
-        db.close_connection()
+            db.commit()
 
-        logger.debug('Processed VaderStreams JSON matchcenter schedule\n'
-                     'File name => {0}'.format(VADER_STREAMS_MATCHCENTER_SCHEDULE_JSON_FILE_NAME))
+            logger.debug('Processed VaderStreams JSON matchcenter schedule\n'
+                         'File name => {0}'.format(VADER_STREAMS_MATCHCENTER_SCHEDULE_JSON_FILE_NAME))
+        except Exception:
+            db.rollback()
+
+            logger.debug('Failed to process VaderStreams JSON matchcenter schedule\n'
+                         'File name => {0}'.format(VADER_STREAMS_MATCHCENTER_SCHEDULE_JSON_FILE_NAME))
+
+            raise
+        finally:
+            db.close_connection()
 
     @classmethod
     def _refresh_epg(cls):

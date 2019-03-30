@@ -176,6 +176,9 @@ class IPTVProxyConfigurationJSONAPI(IPTVProxyJSONAPI):
                                 'smooth_streams_epg_source': {
                                     'required': True
                                 },
+                                'smooth_streams_epg_url': {
+                                    'required': True
+                                },
                                 'smooth_streams_password': {
                                     'required': True
                                 },
@@ -371,6 +374,8 @@ class IPTVProxyConfigurationJSONAPI(IPTVProxyJSONAPI):
                         'server_https_port': configuration['SERVER_HTTPS_PORT'],
                         'server_password': configuration['SERVER_PASSWORD'],
                         'smooth_streams_epg_source': configuration['SMOOTH_STREAMS_EPG_SOURCE'],
+                        'smooth_streams_epg_url': configuration['SMOOTH_STREAMS_EPG_URL']
+                        if configuration['SMOOTH_STREAMS_EPG_URL'] else '',
                         'smooth_streams_password': configuration['SMOOTH_STREAMS_PASSWORD'],
                         'smooth_streams_playlist_protocol': configuration['SMOOTH_STREAMS_PLAYLIST_PROTOCOL'],
                         'smooth_streams_playlist_type': configuration['SMOOTH_STREAMS_PLAYLIST_TYPE'],
@@ -402,6 +407,7 @@ class IPTVProxyConfigurationJSONAPI(IPTVProxyJSONAPI):
                 'SERVER_HTTP_PORT': request_body['data']['attributes']['server_http_port'],
                 'SERVER_PASSWORD': request_body['data']['attributes']['server_password'],
                 'SMOOTH_STREAMS_EPG_SOURCE': request_body['data']['attributes']['smooth_streams_epg_source'].lower(),
+                'SMOOTH_STREAMS_EPG_URL': request_body['data']['attributes']['smooth_streams_epg_url'].lower(),
                 'SMOOTH_STREAMS_PASSWORD': request_body['data']['attributes']['smooth_streams_password'],
                 'SMOOTH_STREAMS_PLAYLIST_PROTOCOL': request_body['data']['attributes'][
                     'smooth_streams_playlist_protocol'].lower(),

@@ -25,7 +25,8 @@ class SmoothStreamsConfiguration(object):
         if configuration['SMOOTH_STREAMS_SERVICE'] and configuration['SMOOTH_STREAMS_SERVER'] and \
                 configuration['SMOOTH_STREAMS_USERNAME'] and configuration['SMOOTH_STREAMS_PASSWORD'] and \
                 configuration['SMOOTH_STREAMS_PLAYLIST_PROTOCOL'] and \
-                configuration['SMOOTH_STREAMS_PLAYLIST_TYPE'] and configuration['SMOOTH_STREAMS_EPG_SOURCE']:
+                configuration['SMOOTH_STREAMS_PLAYLIST_TYPE'] and configuration['SMOOTH_STREAMS_EPG_SOURCE'] and \
+                (configuration['SMOOTH_STREAMS_EPG_SOURCE'] != 'other' or configuration['SMOOTH_STREAMS_EPG_URL']):
             configuration_section = {
                 'service': configuration['SMOOTH_STREAMS_SERVICE'],
                 'server': configuration['SMOOTH_STREAMS_SERVER'],
@@ -36,7 +37,8 @@ class SmoothStreamsConfiguration(object):
                     'type': configuration['SMOOTH_STREAMS_PLAYLIST_TYPE']
                 },
                 'EPG': {
-                    'source': configuration['SMOOTH_STREAMS_EPG_SOURCE']
+                    'source': configuration['SMOOTH_STREAMS_EPG_SOURCE'],
+                    'url': configuration['SMOOTH_STREAMS_EPG_URL']
                 }
             }
 
@@ -45,6 +47,7 @@ class SmoothStreamsConfiguration(object):
     @classmethod
     def process_configuration_file_updates(cls, configuration, previous_configuration):
         refresh_session = False
+        reset_epg = False
 
         # <editor-fold desc="Detect and handle updates to the SMOOTH_STREAMS_SERVICE option">
         if configuration['SMOOTH_STREAMS_SERVICE'] != previous_configuration['SMOOTH_STREAMS_SERVICE']:
@@ -107,9 +110,7 @@ class SmoothStreamsConfiguration(object):
 
         # <editor-fold desc="Detect and handle updates to the SMOOTH_STREAMS_EPG_SOURCE option">
         if configuration['SMOOTH_STREAMS_EPG_SOURCE'] != previous_configuration['SMOOTH_STREAMS_EPG_SOURCE']:
-            from .epg import SmoothStreamsEPG
-
-            SmoothStreamsEPG.reset_epg()
+            reset_epg = True
 
             logger.debug('Detected a change in the source option within the [EPG] section\n'
                          'Old value => {0}\n'
@@ -117,6 +118,22 @@ class SmoothStreamsConfiguration(object):
                          'Resetting the EPG'.format(previous_configuration['SMOOTH_STREAMS_EPG_SOURCE'],
                                                     configuration['SMOOTH_STREAMS_EPG_SOURCE']))
         # </editor-fold>
+
+        # <editor-fold desc="Detect and handle updates to the SMOOTH_STREAMS_EPG_URL option">
+        if configuration['SMOOTH_STREAMS_EPG_URL'] != previous_configuration['SMOOTH_STREAMS_EPG_URL']:
+            reset_epg = True
+
+            logger.debug('Detected a change in the url option within the [EPG] section\n'
+                         'Old value => {0}\n'
+                         'New value => {1}\n\n'
+                         'Resetting the EPG'.format(previous_configuration['SMOOTH_STREAMS_EPG_URL'],
+                                                    configuration['SMOOTH_STREAMS_EPG_URL']))
+        # </editor-fold>
+
+        if reset_epg:
+            from .epg import SmoothStreamsEPG
+
+            SmoothStreamsEPG.reset_epg()
 
     @classmethod
     def read_configuration_file(cls, configuration_object, error_messages):
@@ -132,6 +149,7 @@ class SmoothStreamsConfiguration(object):
         playlist_protocol = DEFAULT_SMOOTH_STREAMS_PLAYLIST_PROTOCOL
         playlist_type = DEFAULT_SMOOTH_STREAMS_PLAYLIST_TYPE
         epg_source = DEFAULT_SMOOTH_STREAMS_EPG_SOURCE
+        epg_url = ''
 
         try:
             smooth_streams_section = configuration_object['SmoothStreams']
@@ -161,8 +179,8 @@ class SmoothStreamsConfiguration(object):
 
                     error_messages.append(
                         'The server option within the [SmoothStreams] section must be one of\n'
-                        '{0}\n'.format('\n'.join(['\u2022 {0}'.format(service)
-                                                  for service in VALID_SMOOTH_STREAMS_SERVER_VALUES])))
+                        '{0}\n'.format('\n'.join(['\u2022 {0}'.format(server)
+                                                  for server in VALID_SMOOTH_STREAMS_SERVER_VALUES])))
             except KeyError:
                 is_valid_section = False
 
@@ -196,16 +214,16 @@ class SmoothStreamsConfiguration(object):
                         error_messages.append(
                             'The protocol option within the [Playlist] section must be one of\n'
                             '{0}Defaulting to {1}\n'.format(
-                                '\n'.join(['\u2022 {0}'.format(service)
-                                           for service in VALID_SMOOTH_STREAMS_PLAYLIST_PROTOCOL_VALUES]),
+                                '\n'.join(['\u2022 {0}'.format(protocol)
+                                           for protocol in VALID_SMOOTH_STREAMS_PLAYLIST_PROTOCOL_VALUES]),
                                 playlist_protocol))
                 except KeyError:
                     error_messages.append(
                         'Could not find a protocol option within the [Playlist] section\n'
                         'The protocol option within the [Playlist] section must be one of\n{0}\n'
                         'Defaulting to {1}\n'.format(
-                            '\n'.join(['\u2022 {0}'.format(service)
-                                       for service in VALID_SMOOTH_STREAMS_PLAYLIST_PROTOCOL_VALUES]),
+                            '\n'.join(['\u2022 {0}'.format(protocol)
+                                       for protocol in VALID_SMOOTH_STREAMS_PLAYLIST_PROTOCOL_VALUES]),
                             playlist_protocol))
 
                 try:
@@ -216,16 +234,16 @@ class SmoothStreamsConfiguration(object):
                         error_messages.append(
                             'The type option within the [Playlist] section must be one of\n'
                             '{0}Defaulting to {1}\n'.format(
-                                '\n'.join(['\u2022 {0}'.format(service)
-                                           for service in VALID_SMOOTH_STREAMS_PLAYLIST_TYPE_VALUES]),
+                                '\n'.join(['\u2022 {0}'.format(type_)
+                                           for type_ in VALID_SMOOTH_STREAMS_PLAYLIST_TYPE_VALUES]),
                                 playlist_type))
                 except KeyError:
                     error_messages.append(
                         'Could not find a type option within the [Playlist] section\n'
                         'The type option within the [Playlist] section must be one of\n{0}\n'
                         'Defaulting to {1}\n'.format(
-                            '\n'.join(['\u2022 {0}'.format(service)
-                                       for service in VALID_SMOOTH_STREAMS_PLAYLIST_TYPE_VALUES]),
+                            '\n'.join(['\u2022 {0}'.format(type_)
+                                       for type_ in VALID_SMOOTH_STREAMS_PLAYLIST_TYPE_VALUES]),
                             playlist_type))
             except KeyError:
                 error_messages.append('Could not find a [Playlist] section\n'
@@ -245,17 +263,29 @@ class SmoothStreamsConfiguration(object):
                             'The source option within the [EPG] section must be one of\n'
                             '{0}\n'
                             'Defaulting to {1}\n'.format(
-                                '\n'.join(['\u2022 {0}'.format(service)
-                                           for service in VALID_SMOOTH_STREAMS_EPG_SOURCE_VALUES]),
+                                '\n'.join(['\u2022 {0}'.format(source)
+                                           for source in VALID_SMOOTH_STREAMS_EPG_SOURCE_VALUES]),
                                 epg_source))
                 except KeyError:
                     error_messages.append(
                         'Could not find a source option within the [EPG] section\n'
                         'The source option within the [EPG] section must be one of\n'
                         '{0}\n'
-                        'Defaulting to {1}\n'.format('\n'.join(['\u2022 {0}'.format(service)
-                                                                for service in VALID_SMOOTH_STREAMS_EPG_SOURCE_VALUES]),
+                        'Defaulting to {1}\n'.format('\n'.join(['\u2022 {0}'.format(source)
+                                                                for source in VALID_SMOOTH_STREAMS_EPG_SOURCE_VALUES]),
                                                      epg_source))
+
+                if epg_source == 'other':
+                    try:
+                        epg_url = epg_section['url'].lower()
+                        if not SmoothStreamsValidations.is_valid_epg_url(epg_url):
+                            error_messages.append(
+                                'Could not find a url option within the [EPG] section\n'
+                                'The url option within the [EPG] section must be a valid url to a XMLTV file')
+                    except KeyError:
+                        error_messages.append(
+                            'Could not find a url option within the [EPG] section\n'
+                            'The url option within the [EPG] section must be a valid url to a XMLTV file')
             except KeyError:
                 error_messages.append('Could not find an [EPG] section\n'
                                       'Defaulting the source option to {0}\n'.format(epg_source))
@@ -276,14 +306,15 @@ class SmoothStreamsConfiguration(object):
                 password,
                 playlist_protocol,
                 playlist_type,
-                epg_source)
+                epg_source,
+                epg_url)
 
     @classmethod
     def validate_update_configuration_request(cls, configuration, errors):
         if configuration['SMOOTH_STREAMS_SERVICE'] or configuration['SMOOTH_STREAMS_SERVER'] or \
                 configuration['SMOOTH_STREAMS_USERNAME'] or configuration['SMOOTH_STREAMS_PASSWORD'] or \
                 configuration['SMOOTH_STREAMS_PLAYLIST_PROTOCOL'] or configuration['SMOOTH_STREAMS_PLAYLIST_TYPE'] or \
-                configuration['SMOOTH_STREAMS_EPG_SOURCE']:
+                configuration['SMOOTH_STREAMS_EPG_SOURCE'] or configuration['SMOOTH_STREAMS_EPG_URL']:
             if configuration['SMOOTH_STREAMS_SERVICE'] and not \
                     SmoothStreamsValidations.is_valid_service(configuration['SMOOTH_STREAMS_SERVICE']):
                 errors['smoothStreamsService'] = 'Must be one of [{0}]'.format(
@@ -317,3 +348,8 @@ class SmoothStreamsConfiguration(object):
                     SmoothStreamsValidations.is_valid_epg_source(configuration['SMOOTH_STREAMS_EPG_SOURCE']):
                 errors['smoothStreamsEpgSource'] = 'Must be one of [{0}]'.format(
                     ', '.join(['\'{0}\''.format(service) for service in VALID_SMOOTH_STREAMS_EPG_SOURCE_VALUES]))
+
+            if configuration['SMOOTH_STREAMS_EPG_SOURCE'] and \
+                    configuration['SMOOTH_STREAMS_EPG_SOURCE'] == 'other' and not \
+                    SmoothStreamsValidations.is_valid_epg_url(configuration['SMOOTH_STREAMS_EPG_URL']):
+                errors['smoothStreamsEpgUrl'] = 'Must be a valid url to a XMLTV file'

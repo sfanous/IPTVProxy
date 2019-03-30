@@ -512,7 +512,7 @@ const GuideModule = (function () {
                 if (jqXHR.status === 0) {
                     // Set the text of the programReasonParagraph
                     $('#' + idPrefix + '_programReasonParagraph_' + idSuffix)
-                        .text('Check if IPTV Proxy is up and running');
+                        .text('Check if IPTVProxy is up and running');
                 } else {
                     // Set the text of the programReasonParagraph
                     $('#' + idPrefix + '_programReasonParagraph_' + idSuffix)
@@ -1469,7 +1469,7 @@ const RecordingsModule = (function () {
 
             if (jqXHR.status === 0) {
                 // Set the text of the recordingsReasonParagraph
-                _recordingsReasonParagraph.text('Check if IPTV Proxy is up and running');
+                _recordingsReasonParagraph.text('Check if IPTVProxy is up and running');
             }
 
             // Scroll to the bottom of the page
@@ -1516,6 +1516,8 @@ const ConfigurationModule = (function () {
     let _serverHttpsPortInput = null;
     let _serverPasswordInput = null;
     let _smoothStreamsEpgSourceSelect = null;
+    let _smoothStreamsEpgUrlLabel = null;
+    let _smoothStreamsEpgUrlInput = null;
     let _smoothStreamsPasswordInput = null;
     let _smoothStreamsPlaylistProtocolSelect = null;
     let _smoothStreamsPlaylistTypeSelect = null;
@@ -1545,6 +1547,7 @@ const ConfigurationModule = (function () {
         _smoothStreamsPlaylistProtocolSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _smoothStreamsPlaylistTypeSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _smoothStreamsEpgSourceSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _smoothStreamsEpgUrlInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _vaderStreamsServerSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _vaderStreamsUsernameInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _vaderStreamsPasswordInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
@@ -1575,13 +1578,33 @@ const ConfigurationModule = (function () {
         _lastAppliedConfigurationSerialization = _configurationForm.serialize();
     };
 
+    const determineEpgUrlLabelInputVisibility = function () {
+        if (_smoothStreamsEpgSourceSelect.val() === 'other') {
+            _smoothStreamsEpgUrlLabel.show();
+            _smoothStreamsEpgUrlInput.show();
+        } else {
+            _smoothStreamsEpgUrlLabel.hide();
+            _smoothStreamsEpgUrlInput.hide();
+        }
+    };
+    
     const determineResetAndUpdateButtonsState = function () {
         const currentConfigurationSerialization = _configurationForm.serialize();
-        const emptyInputs = $(
-            'form#configurationForm input[type=number], form#configurationForm input[type=password], form#configurationForm input[type=text]')
-            .filter(function () {
-                return !($.trim($(this).val()));
-            });
+        let emptyInputs = null;
+
+        if (_smoothStreamsEpgSourceSelect.val() === 'other') {
+            emptyInputs = $(
+                'form#configurationForm input[type=number], form#configurationForm input[type=password], form#configurationForm input[type=text]')
+                .filter(function () {
+                    return !($.trim($(this).val()));
+                });
+        } else {
+            emptyInputs = $(
+                'form#configurationForm input[type=number], form#configurationForm input[type=password], form#configurationForm input[type=text]').not(_smoothStreamsEpgUrlInput)
+                .filter(function () {
+                    return !($.trim($(this).val()));
+                });
+        }
 
         if ((currentConfigurationSerialization !== _lastAppliedConfigurationSerialization) &&
             (!emptyInputs.length)) {
@@ -1608,6 +1631,8 @@ const ConfigurationModule = (function () {
         _serverHttpsPortInput = $('#serverHttpsPortInput');
         _serverPasswordInput = $('#serverPasswordInput');
         _smoothStreamsEpgSourceSelect = $('#smoothStreamsEpgSourceSelect');
+        _smoothStreamsEpgUrlLabel = $('#smoothStreamsEpgUrlLabel');
+        _smoothStreamsEpgUrlInput = $('#smoothStreamsEpgUrlInput');
         _smoothStreamsPasswordInput = $('#smoothStreamsPasswordInput');
         _smoothStreamsPlaylistProtocolSelect = $('#smoothStreamsPlaylistProtocolSelect');
         _smoothStreamsPlaylistTypeSelect = $('#smoothStreamsPlaylistTypeSelect');
@@ -1624,6 +1649,7 @@ const ConfigurationModule = (function () {
         _vaderStreamsUsernameInput = $('#vaderStreamsUsernameInput');
 
         _serializeConfigurationForm();
+        determineEpgUrlLabelInputVisibility();
     };
 
     const resetConfiguration = function () {
@@ -1661,6 +1687,7 @@ const ConfigurationModule = (function () {
             _smoothStreamsPlaylistTypeSelect
                 .val(data['data']['attributes']['smooth_streams_playlist_type'].toLowerCase());
             _smoothStreamsEpgSourceSelect.val(data['data']['attributes']['smooth_streams_epg_source'].toLowerCase());
+            _smoothStreamsEpgUrlInput.val(data['data']['attributes']['smooth_streams_epg_url']);
             _vaderStreamsServerSelect
                 .val(data['data']['attributes']['vader_streams_server'].toLowerCase());
             _vaderStreamsUsernameInput.val(data['data']['attributes']['vader_streams_username']);
@@ -1691,7 +1718,7 @@ const ConfigurationModule = (function () {
 
             if (jqXHR.status === 0) {
                 // Set the text of the configurationReasonParagraph
-                _configurationReasonParagraph.text('Check if IPTV Proxy is up and running');
+                _configurationReasonParagraph.text('Check if IPTVProxy is up and running');
             }
 
             // Scroll to the bottom of the page
@@ -1742,6 +1769,7 @@ const ConfigurationModule = (function () {
         const smoothStreamsPlaylistProtocolSelectValue = _smoothStreamsPlaylistProtocolSelect.val();
         const smoothStreamsPlaylistTypeSelectValue = _smoothStreamsPlaylistTypeSelect.val();
         const smoothStreamsEpgSourceSelectValue = _smoothStreamsEpgSourceSelect.val();
+        const smoothStreamsEpgUrlInputValue = _smoothStreamsEpgUrlInput.val();
         const vaderStreamsServerSelectValue = _vaderStreamsServerSelect.val();
         const vaderStreamsUsernameInputValue = _vaderStreamsUsernameInput.val();
         const vaderStreamsPasswordInputValue = _vaderStreamsPasswordInput.val();
@@ -1792,6 +1820,9 @@ const ConfigurationModule = (function () {
                                        '",\n' +
                                        '      "smooth_streams_epg_source": "' +
                                        smoothStreamsEpgSourceSelectValue +
+                                       '",\n' +
+                                       '      "smooth_streams_epg_url": "' +
+                                       smoothStreamsEpgUrlInputValue +
                                        '",\n' +
                                        '      "vader_streams_server": "' +
                                        vaderStreamsServerSelectValue +
@@ -1869,7 +1900,7 @@ const ConfigurationModule = (function () {
 
             if (jqXHR.status === 0) {
                 // Set the text of the configurationReasonParagraph
-                _configurationReasonParagraph.text('Check if IPTV Proxy is up and running');
+                _configurationReasonParagraph.text('Check if IPTVProxy is up and running');
             } else if (jqXHR.status === HttpCodes.BAD_REQUEST) {
                 // Set the text of the configurationReasonParagraph
                 _configurationReasonParagraph.text('Encountered unexpected error');
@@ -1897,6 +1928,7 @@ const ConfigurationModule = (function () {
 
     return {
         determineResetAndUpdateButtonsState: determineResetAndUpdateButtonsState,
+        determineEpgUrlLabelInputVisibility: determineEpgUrlLabelInputVisibility,
         init: init,
         resetConfiguration: resetConfiguration,
         togglePasswordVisibility: togglePasswordVisibility,

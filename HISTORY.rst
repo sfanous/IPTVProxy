@@ -2,6 +2,11 @@
 
 Release History
 ===============
+6.1.0 (28-03-2019)
+------------------
+* Add external SmoothStreams EPG feature
+* Fix bug where EPG timer was not getting set if an Exception was raised when attempting to generate the EPG
+
 6.0.1 (28-03-2019)
 ------------------
 * Fix bug by casting channel_number to int before applying string format specifier
