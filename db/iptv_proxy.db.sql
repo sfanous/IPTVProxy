@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS "program_temp" (
 	"title"	TEXT NOT NULL,
 	"sub_title"	TEXT NOT NULL,
 	"description"	TEXT NOT NULL,
+	"category"	TEXT NOT NULL,
 	FOREIGN KEY("channel_id") REFERENCES "channel_temp"("id") ON DELETE CASCADE ON UPDATE CASCADE,
 	PRIMARY KEY("channel_id","provider","start_date_time_in_utc","end_date_time_in_utc")
 );
@@ -23,6 +24,7 @@ CREATE TABLE IF NOT EXISTS "program" (
 	"title"	TEXT NOT NULL,
 	"sub_title"	TEXT NOT NULL,
 	"description"	TEXT NOT NULL,
+	"category"	TEXT NOT NULL,
 	FOREIGN KEY("channel_id") REFERENCES "channel"("id") ON DELETE CASCADE ON UPDATE CASCADE,
 	PRIMARY KEY("channel_id","provider","start_date_time_in_utc","end_date_time_in_utc")
 );

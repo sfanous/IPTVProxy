@@ -1,6 +1,7 @@
 import copy
 import functools
 import hashlib
+import html
 import json
 import logging
 import os
@@ -162,6 +163,10 @@ class SmoothStreamsEPG(object):
                         'programme_description': '        <desc>{0}</desc>\n'.format(
                             xml.sax.saxutils.escape(program_record['description']))
                         if program_record['description']
+                        else '',
+                        'programme_category': '        <category>{0}</category>\n'.format(
+                            xml.sax.saxutils.escape(program_record['category']))
+                        if program_record['category']
                         else ''
                     }
 
@@ -311,7 +316,7 @@ class SmoothStreamsEPG(object):
                 elif (prefix, event) == ('{0}.channum'.format(key), 'string'):
                     channel_number = int(value)
                 elif (prefix, event) == ('{0}.channame'.format(key), 'string'):
-                    channel_name = xml.sax.saxutils.unescape(value).strip()
+                    channel_name = html.unescape(value).strip()
                 elif (prefix, event) == ('{0}.icon'.format(key), 'string'):
                     channel_icon_url = value
                 elif (prefix, event) == (key, 'end_map'):
@@ -363,9 +368,9 @@ class SmoothStreamsEPG(object):
                     if element.tag == 'channel':
                         channel_id = element.get('id')
 
-                        for subElement in list(element):
-                            if subElement.tag == 'icon':
-                                channel_number = int(re.search(r'.*/([0-9]+)\.png', subElement.get('src')).group(1))
+                        for sub_element in list(element):
+                            if sub_element.tag == 'icon':
+                                channel_number = int(re.search(r'.*/([0-9]+)\.png', sub_element.get('src')).group(1))
 
                                 source_channel_id_to_channel_number[channel_id] = channel_number
 
@@ -379,13 +384,15 @@ class SmoothStreamsEPG(object):
                         program.end_date_time_in_utc = datetime.strptime(element.get('stop'), '%Y%m%d%H%M%S %z')
                         program.start_date_time_in_utc = datetime.strptime(element.get('start'), '%Y%m%d%H%M%S %z')
 
-                        for subElement in list(element):
-                            if subElement.tag == 'desc' and subElement.text:
-                                program.description = xml.sax.saxutils.unescape(subElement.text)
-                            if subElement.tag == 'sub-title' and subElement.text:
-                                program.sub_title = xml.sax.saxutils.unescape(subElement.text)
-                            elif subElement.tag == 'title' and subElement.text:
-                                program.title = xml.sax.saxutils.unescape(subElement.text)
+                        for sub_element in list(element):
+                            if sub_element.tag == 'category' and sub_element.text and not program.category:
+                                program.category = sub_element.text
+                            elif sub_element.tag == 'desc' and sub_element.text:
+                                program.description = sub_element.text
+                            if sub_element.tag == 'sub-title' and sub_element.text:
+                                program.sub_title = sub_element.text
+                            elif sub_element.tag == 'title' and sub_element.text:
+                                program.title = sub_element.text
 
                         SmoothStreamsSQL.insert_program(db,
                                                         '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
@@ -472,13 +479,15 @@ class SmoothStreamsEPG(object):
                         program.end_date_time_in_utc = datetime.strptime(element.get('stop'), '%Y%m%d%H%M%S %z')
                         program.start_date_time_in_utc = datetime.strptime(element.get('start'), '%Y%m%d%H%M%S %z')
 
-                        for subElement in list(element):
-                            if subElement.tag == 'desc' and subElement.text:
-                                program.description = xml.sax.saxutils.unescape(subElement.text)
-                            if subElement.tag == 'sub-title' and subElement.text:
-                                program.sub_title = xml.sax.saxutils.unescape(subElement.text)
-                            elif subElement.tag == 'title' and subElement.text:
-                                program.title = xml.sax.saxutils.unescape(subElement.text)
+                        for sub_element in list(element):
+                            if sub_element.tag == 'category' and sub_element.text and not program.category:
+                                program.category = sub_element.text
+                            elif sub_element.tag == 'desc' and sub_element.text:
+                                program.description = sub_element.text
+                            if sub_element.tag == 'sub-title' and sub_element.text:
+                                program.sub_title = sub_element.text
+                            elif sub_element.tag == 'title' and sub_element.text:
+                                program.title = sub_element.text
 
                         SmoothStreamsSQL.insert_program(db,
                                                         '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
@@ -544,7 +553,8 @@ class SmoothStreamsEPG(object):
                 elif (prefix, event) == ('data.{0}.events.{1}'.format(data_id, events_id), 'end_map'):
                     program_end_date_time_in_utc = program_start_date_time_in_utc + timedelta(minutes=program_runtime)
 
-                    programs.append(IPTVProxyEPGProgram(program_description,
+                    programs.append(IPTVProxyEPGProgram('',
+                                                        program_description,
                                                         program_end_date_time_in_utc,
                                                         program_start_date_time_in_utc,
                                                         '',
@@ -554,9 +564,9 @@ class SmoothStreamsEPG(object):
                     program_title = ''
                     program_start_date_time_in_utc = None
                 elif (prefix, event) == ('data.{0}.events.{1}.description'.format(data_id, events_id), 'string'):
-                    program_description = xml.sax.saxutils.unescape(value)
+                    program_description = html.unescape(value)
                 elif (prefix, event) == ('data.{0}.events.{1}.name'.format(data_id, events_id), 'string'):
-                    program_title = xml.sax.saxutils.unescape(value)
+                    program_title = html.unescape(value)
                 elif (prefix, event) == ('data.{0}.events.{1}.runtime'.format(data_id, events_id), 'number'):
                     program_runtime = value
                 elif (prefix, event) == ('data.{0}.events.{1}.runtime'.format(data_id, events_id), 'string'):
@@ -588,7 +598,7 @@ class SmoothStreamsEPG(object):
 
                     programs = []
                 elif (prefix, event) == ('data.{0}.name'.format(data_id), 'string'):
-                    channel_name = xml.sax.saxutils.unescape(value).strip()
+                    channel_name = html.unescape(value).strip()
                 elif (prefix, event) == ('data.{0}.number'.format(data_id), 'string'):
                     channel_number = int(value)
 
@@ -769,10 +779,10 @@ class SmoothStreamsEPG(object):
                 (IPTVProxyConfiguration.get_configuration_parameter('SMOOTH_STREAMS_EPG_SOURCE') == 'other' and
                  IPTVProxyConfiguration.get_configuration_parameter('SMOOTH_STREAMS_EPG_URL') !=
                  smooth_streams_epg_url_setting_records[0]['value']):
+            logger.debug('Resetting EPG')
+
             cls._cancel_refresh_epg_timer()
             cls._generate_epg()
-
-            logger.debug('Resetting EPG')
         else:
             cls._source = smooth_streams_epg_source_setting_records[0]['value']
 

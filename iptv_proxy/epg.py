@@ -109,6 +109,10 @@ class IPTVProxyEPG(object):
                             'programme_description': '        <desc>{0}</desc>\n'.format(
                                 xml.sax.saxutils.escape(program_record['description']))
                             if program_record['description']
+                            else '',
+                            'programme_category': '        <category>{0}</category>\n'.format(
+                                xml.sax.saxutils.escape(program_record['category']))
+                            if program_record['category']
                             else ''
                         }
 
@@ -207,14 +211,30 @@ class IPTVProxyEPGChannel(object):
 
 
 class IPTVProxyEPGProgram(object):
-    __slots__ = ['_description', '_end_date_time_in_utc', '_start_date_time_in_utc', '_sub_title', '_title']
+    __slots__ = ['_category', '_description', '_end_date_time_in_utc', '_start_date_time_in_utc', '_sub_title',
+                 '_title']
 
-    def __init__(self, description='', end_date_time_in_utc=None, start_date_time_in_utc=None, sub_title='', title=''):
+    def __init__(self,
+                 category='',
+                 description='',
+                 end_date_time_in_utc=None,
+                 start_date_time_in_utc=None,
+                 sub_title='',
+                 title=''):
+        self._category = category
         self._description = description
         self._end_date_time_in_utc = end_date_time_in_utc
         self._start_date_time_in_utc = start_date_time_in_utc
         self._sub_title = sub_title
         self._title = title
+
+    @property
+    def category(self):
+        return self._category
+
+    @category.setter
+    def category(self, category):
+        self._category = category
 
     @property
     def description(self):

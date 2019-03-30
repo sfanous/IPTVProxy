@@ -55,9 +55,9 @@ class IPTVProxyProviderSQL():
         try:
             sql_statement = 'INSERT ' \
                             'INTO program_temp (channel_id, provider, start_date_time_in_utc, ' \
-                            'end_date_time_in_utc, title, sub_title, description) ' \
+                            'end_date_time_in_utc, title, sub_title, description, category) ' \
                             'VALUES (:channel_id, :provider, :start_date_time_in_utc, :end_date_time_in_utc, :title, ' \
-                            ':sub_title, :description)'
+                            ':sub_title, :description, :category)'
             db.execute(sql_statement, {'channel_id': channel_id,
                                        'provider': provider,
                                        'start_date_time_in_utc': datetime.strftime(program.start_date_time_in_utc,
@@ -66,7 +66,8 @@ class IPTVProxyProviderSQL():
                                                                                  '%Y-%m-%d %H:%M:%S%z'),
                                        'title': program.title,
                                        'sub_title': program.sub_title,
-                                       'description': program.description})
+                                       'description': program.description,
+                                       'category': program.category})
         except sqlite3.IntegrityError:
             pass
 

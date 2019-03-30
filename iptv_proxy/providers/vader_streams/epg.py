@@ -1,6 +1,7 @@
 import copy
 import functools
 import hashlib
+import html
 import json
 import logging
 import os
@@ -161,6 +162,10 @@ class VaderStreamsEPG(object):
                         'programme_description': '        <desc>{0}</desc>\n'.format(
                             xml.sax.saxutils.escape(program_record['description']))
                         if program_record['description']
+                        else '',
+                        'programme_category': '        <category>{0}</category>\n'.format(
+                            xml.sax.saxutils.escape(program_record['category']))
+                        if program_record['category']
                         else ''
                     }
 
@@ -296,7 +301,8 @@ class VaderStreamsEPG(object):
                                                          dict(category_id=category_id))
 
             logger.debug('Processing VaderStreams JSON channels\n'
-                         'File name => {0}'.format(VADER_STREAMS_CHANNELS_JSON_FILE_NAME))
+                         'File name => {0}\n'
+                         'Category  => {1}'.format(VADER_STREAMS_CHANNELS_JSON_FILE_NAME, categories_map[category_id]))
 
             channel_category_id = None
             channel_icon_url = None
@@ -353,11 +359,11 @@ class VaderStreamsEPG(object):
                     elif (prefix, event) == ('item.id', 'number'):
                         channel_number = value
                     elif (prefix, event) == ('item.stream_icon', 'string'):
-                        channel_icon_url = xml.sax.saxutils.unescape(value)
+                        channel_icon_url = html.unescape(value)
                     elif (prefix, event) == ('item.channel_id', 'string'):
-                        channel_id = xml.sax.saxutils.unescape(value)
+                        channel_id = html.unescape(value)
                     elif (prefix, event) == ('item.stream_display_name', 'string'):
-                        channel_name = xml.sax.saxutils.unescape(value)
+                        channel_name = html.unescape(value)
 
                     elif (prefix, event) == ('item.category_id', 'number'):
                         channel_category_id = value
@@ -365,12 +371,16 @@ class VaderStreamsEPG(object):
                 db.commit()
 
                 logger.debug('Processed VaderStreams JSON channels\n'
-                             'File name => {0}'.format(VADER_STREAMS_CHANNELS_JSON_FILE_NAME))
+                             'File name => {0}\n'
+                             'Category  => {1}'.format(VADER_STREAMS_CHANNELS_JSON_FILE_NAME,
+                                                       categories_map[category_id]))
             except Exception:
                 db.rollback()
 
                 logger.debug('Failed to process VaderStreams JSON channels\n'
-                             'File name => {0}'.format(VADER_STREAMS_CHANNELS_JSON_FILE_NAME))
+                             'File name => {0}\n'
+                             'Category  => {1}'.format(VADER_STREAMS_CHANNELS_JSON_FILE_NAME,
+                                                       categories_map[category_id]))
 
                 raise
             finally:
@@ -423,13 +433,15 @@ class VaderStreamsEPG(object):
                                     program.start_date_time_in_utc = datetime.strptime(element.get('start'),
                                                                                        '%Y%m%d%H%M%S %z')
 
-                                    for subElement in list(element):
-                                        if subElement.tag == 'desc' and subElement.text:
-                                            program.description = xml.sax.saxutils.unescape(subElement.text)
-                                        elif subElement.tag == 'sub-title' and subElement.text:
-                                            program.sub_title = xml.sax.saxutils.unescape(subElement.text)
-                                        elif subElement.tag == 'title' and subElement.text:
-                                            program.title = xml.sax.saxutils.unescape(subElement.text)
+                                    for sub_element in list(element):
+                                        if sub_element.tag == 'category' and not program.category:
+                                            program.category = sub_element.text
+                                        elif sub_element.tag == 'desc' and sub_element.text:
+                                            program.description = sub_element.text
+                                        elif sub_element.tag == 'sub-title' and sub_element.text:
+                                            program.sub_title = sub_element.text
+                                        elif sub_element.tag == 'title' and sub_element.text:
+                                            program.title = sub_element.text
 
                                     VaderStreamsSQL.insert_program(
                                         db,
@@ -484,18 +496,20 @@ class VaderStreamsEPG(object):
             for (prefix, event, value) in ijson_parser:
                 if (prefix, event) == ('item', 'start_map'):
                     program = IPTVProxyEPGProgram()
+                elif (prefix, event) == ('item.category.name', 'string'):
+                    program.category = html.unescape(value)
+                elif (prefix, event) == ('item.description', 'string'):
+                    program.description = html.unescape(value)
                 elif (prefix, event) == ('item.streams', 'start_array'):
                     channel_numbers = []
                 elif (prefix, event) == ('item.streams.item.id', 'number'):
                     channel_numbers.append(value)
-                elif (prefix, event) == ('item.description', 'string'):
-                    program.description = xml.sax.saxutils.unescape(value)
-                elif (prefix, event) == ('item.title', 'string'):
-                    program.title = xml.sax.saxutils.unescape(value)
                 elif (prefix, event) == ('item.startTime', 'string'):
                     program.start_date_time_in_utc = datetime.strptime(value[:-3] + value[-2:], '%Y-%m-%dT%H:%M:%S%z')
                 elif (prefix, event) == ('item.endTime', 'string'):
                     program.end_date_time_in_utc = datetime.strptime(value[:-3] + value[-2:], '%Y-%m-%dT%H:%M:%S%z')
+                elif (prefix, event) == ('item.title', 'string'):
+                    program.title = html.unescape(value)
                 elif (prefix, event) == ('item', 'end_map'):
                     for channel_number in channel_numbers:
                         VaderStreamsSQL.insert_program(db, '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID,
@@ -646,10 +660,10 @@ class VaderStreamsEPG(object):
                 vader_streams_channel_name_map_md5_setting_records[0]['value'] or \
                 cls._do_use_vader_streams_icons != \
                 bool(int(vader_streams_do_use_icons_setting_records[0]['value'])):
+            logger.debug('Resetting EPG')
+
             cls._cancel_refresh_epg_timer()
             cls._generate_epg()
-
-            logger.debug('Resetting EPG')
         else:
             db = IPTVProxyDatabase()
             group_records = VaderStreamsSQL.query_groups(db)

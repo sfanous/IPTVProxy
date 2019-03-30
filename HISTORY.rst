@@ -2,7 +2,11 @@
 
 Release History
 ===============
-6.1.0 (28-03-2019)
+6.2.0 (30-03-2019)
+------------------
+* Add category element to generated XMLTV
+
+6.1.0 (30-03-2019)
 ------------------
 * Add external SmoothStreams EPG feature
 * Fix bug where EPG timer was not getting set if an Exception was raised when attempting to generate the EPG
