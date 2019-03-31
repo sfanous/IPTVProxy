@@ -88,7 +88,7 @@ class IPTVProxyCacheManager():
                                                                           cache_entry.creation_date_time_in_utc))
 
                 if not cache_bucket:
-                    del cache_bucket
+                    del cls._cache[channel_number]
 
                     # noinspection PyUnresolvedReferences
                     logger.trace('Deleted expired cache bucket\n'

@@ -2,6 +2,10 @@
 
 Release History
 ===============
+6.2.1 (30-03-2019)
+------------------
+* Fix bug in cache
+
 6.2.0 (30-03-2019)
 ------------------
 * Add category element to generated XMLTV
