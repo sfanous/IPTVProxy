@@ -6,6 +6,8 @@ import json
 import logging
 import os
 import re
+import sys
+import traceback
 import uuid
 import xml.sax.saxutils
 from datetime import datetime
@@ -181,13 +183,13 @@ class VaderStreamsEPG(object):
         with cls._lock:
             cls._groups = set()
 
+            was_exception_raised = False
+
             db = IPTVProxyDatabase()
             VaderStreamsSQL.delete_programs_temp(db)
             VaderStreamsSQL.delete_channels_temp(db)
             db.commit()
             db.close_connection()
-
-            was_exception_raised = False
 
             # noinspection PyBroadException
             try:
@@ -216,13 +218,15 @@ class VaderStreamsEPG(object):
                 db.commit()
                 db.close_connection()
             except Exception:
+                was_exception_raised = True
+
                 db = IPTVProxyDatabase()
                 VaderStreamsSQL.delete_programs_temp(db)
                 VaderStreamsSQL.delete_channels_temp(db)
                 db.commit()
                 db.close_connection()
 
-                was_exception_raised = True
+                raise
             finally:
                 cls._initialize_refresh_epg_timer(do_set_timer_for_retry=was_exception_raised)
 
@@ -535,7 +539,12 @@ class VaderStreamsEPG(object):
     def _refresh_epg(cls):
         logger.debug('VaderStreams EPG refresh timer triggered')
 
-        cls._generate_epg()
+        # noinspection PyBroadException
+        try:
+            cls._generate_epg()
+        except Exception:
+            (type_, value_, traceback_) = sys.exc_info()
+            logger.error('\n'.join(traceback.format_exception(type_, value_, traceback_)))
 
     @classmethod
     def _request_epg_json(cls, epg_json_path, epg_json_file_name, request_parameters):

@@ -2,6 +2,10 @@
 
 Release History
 ===============
+6.2.2 (31-03-2019)
+------------------
+* Improve Exception handling while processing SmoothStreams and VaderStreams EPG
+
 6.2.1 (30-03-2019)
 ------------------
 * Fix bug in cache

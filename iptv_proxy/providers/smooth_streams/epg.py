@@ -6,6 +6,8 @@ import json
 import logging
 import os
 import re
+import sys
+import traceback
 import uuid
 import xml.sax.saxutils
 from datetime import datetime
@@ -180,13 +182,13 @@ class SmoothStreamsEPG(object):
     @classmethod
     def _generate_epg(cls):
         with cls._lock:
+            was_exception_raised = False
+
             db = IPTVProxyDatabase()
             SmoothStreamsSQL.delete_programs_temp(db)
             SmoothStreamsSQL.delete_channels_temp(db)
             db.commit()
             db.close_connection()
-
-            was_exception_raised = False
 
             # noinspection PyBroadException
             try:
@@ -234,13 +236,15 @@ class SmoothStreamsEPG(object):
                 db.commit()
                 db.close_connection()
             except Exception:
+                was_exception_raised = True
+
                 db = IPTVProxyDatabase()
                 SmoothStreamsSQL.delete_programs_temp(db)
                 SmoothStreamsSQL.delete_channels_temp(db)
                 db.commit()
                 db.close_connection()
 
-                was_exception_raised = True
+                raise
             finally:
                 cls._initialize_refresh_epg_timer(do_set_timer_for_retry=was_exception_raised)
 
@@ -622,7 +626,12 @@ class SmoothStreamsEPG(object):
     def _refresh_epg(cls):
         logger.debug('SmoothStreams EPG refresh timer triggered')
 
-        cls._generate_epg()
+        # noinspection PyBroadException
+        try:
+            cls._generate_epg()
+        except Exception:
+            (type_, value_, traceback_) = sys.exc_info()
+            logger.error('\n'.join(traceback.format_exception(type_, value_, traceback_)))
 
     @classmethod
     def _request_fog_channels_json(cls):
