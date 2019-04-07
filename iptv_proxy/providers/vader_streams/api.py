@@ -54,9 +54,10 @@ class VaderStreams(IPTVProxyProvider):
 
         http_session = requests.Session()
 
-        target_url = 'http://{0}.vaders.tv{1}/{2}/tracks-v1a1/mono.m3u8'.format(server,
-                                                                                port if port != ':80' else '',
-                                                                                channel_name)
+        target_url = 'http://{0}{1}/{2}/tracks-v1a1/mono.m3u8'.format(
+            server if re.match(r"\A\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\Z", server) else '{0}.vaders.tv'.format(server),
+            port if port != ':80' else '',
+            channel_name)
 
         logger.debug('Proxying request\n'
                      'Source IP      => {0}\n'
@@ -142,7 +143,10 @@ class VaderStreams(IPTVProxyProvider):
 
             IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
 
-            match = re.search(r'http://(.*)\.vaders\.tv(:[0-9]+)?/(.*)/tracks-v1a1/.*', chunks_m3u8)
+            match = re.search(r'http://(.*)\.vaders\.tv(:\d+)?/(.*)/tracks-v1a1/.*', chunks_m3u8)
+            if match is None:
+                match = re.search(r'http://(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?/(.*)/tracks-v1a1/.*',
+                                  chunks_m3u8)
             if match is not None:
                 server = match.group(1)
                 port = match.group(2) if match.group(2) is not None and len(match.groups()) == 3 else ':80'
@@ -217,9 +221,12 @@ class VaderStreams(IPTVProxyProvider):
                                                                                  is_content_text=True,
                                                                                  do_print_content=True))
 
-                match = re.search(r'http://(.*)\.vaders\.tv(:[0-9]+)?/(.*)/tracks-v1a1/.*', response.text)
+                match = re.search(r'http://(.*)\.vaders\.tv(:\d+)?/(.*)/tracks-v1a1/.*', response.text)
                 if match is None:
-                    match = re.search(r'http://(.*)\.vaders\.tv(:[0-9]+)?/(.*)/index.m3u8.*', response.request.url)
+                    match = re.search(r'http://(.*)\.vaders\.tv(:\d+)?/(.*)/index.m3u8.*', response.request.url)
+                    if match is None:
+                        match = re.search(r'http://(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?/(.*)/index.m3u8.*',
+                                          response.request.url)
 
                 server = match.group(1)
                 port = match.group(2) if match.group(2) is not None and len(match.groups()) == 3 else ':80'
@@ -265,12 +272,14 @@ class VaderStreams(IPTVProxyProvider):
 
         http_session = requests.Session()
 
-        target_url = 'http://{0}.vaders.tv{1}/{2}{3}'.format(server,
-                                                             port if port != ':80' else '',
-                                                             channel_name,
-                                                             re.sub(r'(/.*)?(/.*\.ts)',
-                                                                    r'\2',
-                                                                    requested_path).replace('_', '/'))
+        target_url = 'http://{0}{1}/{2}{3}'.format(server
+                                                   if re.match(r"\A\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\Z", server)
+                                                   else '{0}.vaders.tv'.format(server),
+                                                   port if port != ':80' else '',
+                                                   channel_name,
+                                                   re.sub(r'(/.*)?(/.*\.ts)',
+                                                          r'\2',
+                                                          requested_path).replace('_', '/'))
 
         logger.debug('Proxying request\n'
                      'Source IP      => {0}\n'

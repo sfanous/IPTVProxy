@@ -2,6 +2,10 @@
 
 Release History
 ===============
+6.2.5 (07-04-2019)
+------------------
+* Fix to handle IP address instead of hostname in VaderStreams URLs
+
 6.2.2 (31-03-2019)
 ------------------
 * Improve Exception handling while processing SmoothStreams and VaderStreams EPG

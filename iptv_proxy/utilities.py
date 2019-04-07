@@ -143,8 +143,7 @@ class IPTVProxyUtility(object):
         logging.trace = trace
         logging.Logger.trace = trace
 
-        formatter = IPTVProxyMultiLineFormatter(
-            '%(asctime)s %(name)-40s %(funcName)-40s %(levelname)-8s %(message)s')
+        formatter = IPTVProxyMultiLineFormatter('%(asctime)s %(name)-40s %(funcName)-40s %(levelname)-8s %(message)s')
 
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(formatter)
@@ -222,7 +221,7 @@ class IPTVProxyUtility(object):
                 is_valid_private_hostname = False
         except ValueError:
             # This is a weak attempt to differentiate between a badly input IP address and a hostname.
-            if re.match(r'\A[0-9]+\.[0-9]+.[0-9]+.[0-9]+\Z', hostname_private) or not \
+            if re.match(r'\A\d+\.\d+.\d+.\d+\Z', hostname_private) or not \
                     IPTVProxyUtility.is_valid_hostname(hostname_private):
                 is_valid_private_hostname = False
 
@@ -239,7 +238,7 @@ class IPTVProxyUtility(object):
                 is_valid_public_hostname = False
         except ValueError:
             # This is a weak attempt to differentiate between a badly input IP address and a hostname.
-            if re.match(r'\A[0-9]+\.[0-9]+.[0-9]+.[0-9]+\Z', hostname_public) or not \
+            if re.match(r'\A\d+\.\d+.\d+.\d+\Z', hostname_public) or not \
                     IPTVProxyUtility.is_valid_hostname(hostname_public):
                 is_valid_public_hostname = False
 
