@@ -232,6 +232,8 @@ class IPTVProxyPVR(object):
         try:
             IPTVProxySQL.insert_recording(db, scheduled_recording)
             db.commit()
+
+            cls._set_start_recording_timer()
         except sqlite3.IntegrityError:
             raise IPTVProxyDuplicateRecordingError
         finally:
@@ -319,7 +321,7 @@ class IPTVProxyPVR(object):
         recording_records = IPTVProxySQL.query_recording_by_id(db, recording_id)
         db.close_connection()
 
-        for recording_record in recording_records + cls._get_persistent_recordings():
+        for recording_record in recording_records:
             if recording_id == recording_record['id']:
                 recording = IPTVProxyRecording(recording_record['channel_name'],
                                                recording_record['channel_number'],
@@ -334,6 +336,10 @@ class IPTVProxyPVR(object):
                                                    '%Y-%m-%d %H:%M:%S%z'),
                                                recording_record['status'])
 
+                return recording
+
+        for recording in cls._get_persistent_recordings():
+            if recording_id == recording.id:
                 return recording
 
         raise IPTVProxyRecordingNotFoundError

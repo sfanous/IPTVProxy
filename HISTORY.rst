@@ -2,6 +2,10 @@
 
 Release History
 ===============
+6.2.6 (09-04-2019)
+------------------
+* Fix a couple of bugs in recorder.py
+
 6.2.5 (07-04-2019)
 ------------------
 * Fix to handle IP address instead of hostname in VaderStreams URLs
