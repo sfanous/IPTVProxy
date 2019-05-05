@@ -1,6 +1,18 @@
-class IPTVProxyDuplicateRecordingError(Exception):
+class DuplicateRecordingError(Exception):
     pass
 
 
-class IPTVProxyRecordingNotFoundError(Exception):
+class HLSPlaylistDownloadError(Exception):
+    pass
+
+
+class ProviderNotFoundError(Exception):
+    pass
+
+
+class RecordingNotFoundError(Exception):
+    pass
+
+
+class SegmentNotFoundError(Exception):
     pass

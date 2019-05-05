@@ -1,24 +1,29 @@
 from enum import Enum
 
 
-class IPTVProxyCacheResponseType(Enum):
+class CacheResponseType(Enum):
     HARD_HIT = 'Hard Hit'
     MISS = 'Miss'
     SOFT_HIT = 'Soft Hit'
 
 
-class IPTVProxyIPAddressType(Enum):
+class EPGStyle(Enum):
+    COMPLETE = 'Complete'
+    MINIMAL = 'Minimal'
+
+
+class IPAddressType(Enum):
     LOOPBACK = 'LOOPBACK'
     PRIVATE = 'PRIVATE'
     PUBLIC = 'PUBLIC'
 
 
-class IPTVProxyPasswordState(Enum):
+class PasswordState(Enum):
     DECRYPTED = 0
     ENCRYPTED = 1
 
 
-class IPTVProxyRecordingStatus(Enum):
+class RecordingStatus(Enum):
     LIVE = 'live'
     PERSISTED = 'persisted'
     SCHEDULED = 'scheduled'

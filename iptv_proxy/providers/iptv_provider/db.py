@@ -1,130 +1,107 @@
 import logging
-import sqlite3
-from datetime import datetime
+import shutil
+import sys
+import traceback
+from abc import ABC
+from abc import abstractmethod
+
+from pysqlite3 import dbapi2 as sqlite3
+from sqlalchemy import create_engine
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 
 logger = logging.getLogger(__name__)
+Base = declarative_base()
 
 
-class IPTVProxyProviderSQL():
-    @classmethod
-    def delete_channels(cls, db, provider):
-        sql_statement = 'DELETE ' \
-                        'FROM channel ' \
-                        'WHERE provider = :provider'
-        db.execute(sql_statement, {'provider': provider})
+@event.listens_for(Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, _):
+    cursor = dbapi_connection.cursor()
 
-    @classmethod
-    def delete_channels_temp(cls, db, provider):
-        sql_statement = 'DELETE ' \
-                        'FROM channel_temp ' \
-                        'WHERE provider = :provider'
-        db.execute(sql_statement, {'provider': provider})
+    cursor.execute('PRAGMA cache_size = "-8192"')
+    cursor.execute('PRAGMA foreign_keys = "0"')
+    cursor.execute('PRAGMA journal_mode = "WAL"')
+    cursor.execute('PRAGMA secure_delete = "0"')
+    cursor.execute('PRAGMA synchronous = "0"')
 
-    @classmethod
-    def delete_programs(cls, db, provider):
-        sql_statement = 'DELETE ' \
-                        'FROM program ' \
-                        'WHERE provider = :provider'
-        db.execute(sql_statement, {'provider': provider})
+    cursor.close()
 
-    @classmethod
-    def delete_programs_temp(cls, db, provider):
-        sql_statement = 'DELETE ' \
-                        'FROM program_temp ' \
-                        'WHERE provider = :provider'
-        db.execute(sql_statement, {'provider': provider})
+
+class ProviderDatabase(ABC):
+    __slots__ = []
+
+    _access_lock = None
+    _database_file_path = None
+    _engine = None
+    _session_factory = None
+    _temporary_database_file_path = None
+    _temporary_engine = None
+    _temporary_session_factory = None
+    _write_lock = None
 
     @classmethod
-    def insert_channel(cls, db, channel, provider):
-        try:
-            sql_statement = 'INSERT ' \
-                            'INTO channel_temp (id, provider, number, name, icon_data_uri, icon_url, "group") ' \
-                            'VALUES (:id, :provider, :number, :name, :icon_data_uri, :icon_url, :group)'
-            db.execute(sql_statement, {'id': channel.id,
-                                       'provider': provider,
-                                       'number': channel.number,
-                                       'name': channel.name,
-                                       'icon_data_uri': channel.icon_data_uri,
-                                       'icon_url': channel.icon_url,
-                                       'group': channel.group})
-        except sqlite3.IntegrityError:
-            pass
+    @abstractmethod
+    def _migrate(cls, old_db_session, new_db_session):
+        pass
 
     @classmethod
-    def insert_program(cls, db, channel_id, program, provider):
-        try:
-            sql_statement = 'INSERT ' \
-                            'INTO program_temp (channel_id, provider, start_date_time_in_utc, ' \
-                            'end_date_time_in_utc, title, sub_title, description, category) ' \
-                            'VALUES (:channel_id, :provider, :start_date_time_in_utc, :end_date_time_in_utc, :title, ' \
-                            ':sub_title, :description, :category)'
-            db.execute(sql_statement, {'channel_id': channel_id,
-                                       'provider': provider,
-                                       'start_date_time_in_utc': datetime.strftime(program.start_date_time_in_utc,
-                                                                                   '%Y-%m-%d %H:%M:%S%z'),
-                                       'end_date_time_in_utc': datetime.strftime(program.end_date_time_in_utc,
-                                                                                 '%Y-%m-%d %H:%M:%S%z'),
-                                       'title': program.title,
-                                       'sub_title': program.sub_title,
-                                       'description': program.description,
-                                       'category': program.category})
-        except sqlite3.IntegrityError:
-            pass
+    def create_session(cls):
+        return cls._session_factory()
 
     @classmethod
-    def insert_select_channels(cls, db, provider):
-        sql_statement = 'INSERT ' \
-                        'INTO channel ' \
-                        '  SELECT *' \
-                        '  FROM channel_temp ' \
-                        '  WHERE provider = :provider'
-        db.execute(sql_statement, {'provider': provider})
+    def create_temporary_session(cls):
+        return cls._temporary_session_factory()
 
     @classmethod
-    def insert_select_programs(cls, db, provider):
-        sql_statement = 'INSERT ' \
-                        'INTO program ' \
-                        '  SELECT *' \
-                        '  FROM program_temp ' \
-                        '  WHERE provider = :provider'
-        db.execute(sql_statement, {'provider': provider})
+    def get_access_lock(cls):
+        return cls._access_lock
 
     @classmethod
-    def query_channel_by_channel_number(cls, db, channel_number, provider):
-        sql_statement = 'SELECT * ' \
-                        'FROM channel ' \
-                        'WHERE provider = :provider ' \
-                        '  AND number = :channel_number'
-        channel_records = db.execute(sql_statement, {'provider': provider,
-                                                     'channel_number': channel_number})
-
-        return channel_records
+    def get_write_lock(cls):
+        return cls._write_lock
 
     @classmethod
-    def query_channels(cls, db, provider):
-        sql_statement = 'SELECT * ' \
-                        'FROM channel ' \
-                        'WHERE provider = :provider'
-        channel_records = db.execute(sql_statement, {'provider': provider})
+    def initialize(cls):
+        cls._engine = create_engine('sqlite:///{0}'.format(cls._database_file_path), echo=False, module=sqlite3)
+        cls._session_factory = sessionmaker(cls._engine, autoflush=False, expire_on_commit=False)
 
-        return channel_records
-
-    @classmethod
-    def query_minimum_maximum_channel_numbers(cls, db, provider):
-        sql_statement = 'SELECT MIN(CAST(number as INTEGER)), MAX(CAST(number as INTEGER)) ' \
-                        'FROM channel ' \
-                        'WHERE provider = :provider'
-        minimum_maximum_channel_number_records = db.execute(sql_statement, {'provider': provider})
-
-        return minimum_maximum_channel_number_records
+        cls._access_lock.exclusive_lock = cls._access_lock.writer_lock
+        cls._access_lock.shared_lock = cls._access_lock.reader_lock
 
     @classmethod
-    def query_programs_by_channel_id(cls, db, channel_id, provider):
-        sql_statement = 'SELECT * ' \
-                        'FROM program ' \
-                        'WHERE provider = :provider ' \
-                        '  AND channel_id = :channel_id'
-        program_records = db.execute(sql_statement, {'provider': provider,
-                                                     'channel_id': channel_id})
+    def initialize_temporary(cls):
+        cls._temporary_engine = create_engine('sqlite:///{0}'.format(cls._temporary_database_file_path),
+                                              echo=False,
+                                              module=sqlite3)
+        cls._temporary_session_factory = sessionmaker(cls._temporary_engine, autoflush=False, expire_on_commit=False)
 
-        return program_records
+    @classmethod
+    def migrate(cls):
+        with cls._access_lock.exclusive_lock:
+            old_db_session = cls._session_factory()
+            new_db_session = cls._temporary_session_factory()
+
+            try:
+                cls._migrate(old_db_session, new_db_session)
+
+                new_db_session.commit()
+
+                shutil.move(cls._temporary_database_file_path, cls._database_file_path)
+            except Exception:
+                new_db_session.rollback()
+
+                shutil.rmtree(cls._temporary_database_file_path)
+
+                (type_, value_, traceback_) = sys.exc_info()
+                logger.error('\n'.join(traceback.format_exception(type_, value_, traceback_)))
+
+                raise
+            finally:
+                old_db_session.close()
+                new_db_session.close()
+
+                cls._temporary_database_file_path = None
+                cls._temporary_engine = None
+                cls._temporary_session_factory = None

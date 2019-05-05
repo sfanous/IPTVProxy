@@ -1,7 +1,7 @@
 from logging import Formatter
 
 
-class IPTVProxyMultiLineFormatter(Formatter):
+class MultiLineFormatter(Formatter):
     def format(self, record):
         formatted_string = Formatter.format(self, record)
         (header, footer) = formatted_string.split(record.message)

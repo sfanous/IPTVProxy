@@ -3,8 +3,8 @@ import sys
 import traceback
 from threading import RLock
 
-from .configuration import IPTVProxyConfiguration
-from .utilities import IPTVProxyUtility
+from iptv_proxy.configuration import Configuration
+from iptv_proxy.utilities import Utility
 
 logger = logging.getLogger(__name__)
 
@@ -33,14 +33,16 @@ class IPTVProxy(object):
         playlist_type = requested_query_string_parameters.get('type')
 
         try:
-            client_ip_address_type = IPTVProxyUtility.determine_ip_address_type(client_ip_address)
-            server_hostname = IPTVProxyConfiguration.get_configuration_parameter(
+            client_ip_address_type = Utility.determine_ip_address_type(client_ip_address)
+            server_hostname = Configuration.get_configuration_parameter(
                 'SERVER_HOSTNAME_{0}'.format(client_ip_address_type.value))
-            server_port = IPTVProxyConfiguration.get_configuration_parameter(
-                'SERVER_HTTP{0}_PORT'.format('S' if is_server_secure else ''))
+            server_port = Configuration.get_configuration_parameter(
+                'SERVER_HTTP{0}_PORT'.format('S' if is_server_secure
+                                             else ''))
 
             playlist_m3u8 = ['#EXTM3U x-tvg-url="{0}://{1}:{2}/live/epg.xml"\n'.format(
-                'https' if is_server_secure else 'http',
+                'https' if is_server_secure
+                else 'http',
                 server_hostname,
                 server_port)]
 
@@ -67,7 +69,7 @@ class IPTVProxy(object):
                                                              server_port=server_port)
 
                 playlist_m3u8.append(
-                    ''.join(provider['api'].generate_playlist_m3u8_tracks(generate_playlist_m3u8_tracks_mapping)))
+                    ''.join(provider.api_class().generate_playlist_m3u8_tracks(generate_playlist_m3u8_tracks_mapping)))
 
             logger.debug('Generated live IPTVProxy playlist.m3u8')
 

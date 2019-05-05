@@ -2,6 +2,7 @@ import base64
 import binascii
 import logging
 import sys
+import traceback
 from datetime import datetime
 from datetime import timedelta
 
@@ -16,18 +17,20 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 
-from .configuration import IPTVProxyConfiguration
-from .constants import DEFAULT_SSL_CERTIFICATE_FILE_PATH
-from .constants import DEFAULT_SSL_KEY_FILE_PATH
-from .db import IPTVProxyDatabase
-from .db import IPTVProxySQL
-from .enums import IPTVProxyPasswordState
-from .utilities import IPTVProxyUtility
+from iptv_proxy.configuration import Configuration
+from iptv_proxy.configuration import OptionalSettings
+from iptv_proxy.constants import DEFAULT_SSL_CERTIFICATE_FILE_PATH
+from iptv_proxy.constants import DEFAULT_SSL_KEY_FILE_PATH
+from iptv_proxy.data_access import DatabaseAccess
+from iptv_proxy.data_model import Setting
+from iptv_proxy.db import Database
+from iptv_proxy.enums import PasswordState
+from iptv_proxy.utilities import Utility
 
 logger = logging.getLogger(__name__)
 
 
-class IPTVProxySecurityManager(object):
+class SecurityManager(object):
     __slots__ = []
 
     _auto_generate_self_signed_certificate = True
@@ -37,7 +40,7 @@ class IPTVProxySecurityManager(object):
 
     @classmethod
     def _determine_password_state(cls, password):
-        password_state = IPTVProxyPasswordState.ENCRYPTED
+        password_state = PasswordState.ENCRYPTED
 
         try:
             base64_decoded_encrypted_fernet_token = base64.urlsafe_b64decode(password)
@@ -47,11 +50,11 @@ class IPTVProxySecurityManager(object):
 
                 if length_of_base64_decoded_encrypted_fernet_token < 73 or \
                         (length_of_base64_decoded_encrypted_fernet_token - 57) % 16 != 0:
-                    password_state = IPTVProxyPasswordState.DECRYPTED
+                    password_state = PasswordState.DECRYPTED
             else:
-                password_state = IPTVProxyPasswordState.DECRYPTED
+                password_state = PasswordState.DECRYPTED
         except binascii.Error:
-            password_state = IPTVProxyPasswordState.DECRYPTED
+            password_state = PasswordState.DECRYPTED
 
         return password_state
 
@@ -60,14 +63,35 @@ class IPTVProxySecurityManager(object):
         return cls._fernet.encrypt(decrypted_password.encode()).decode()
 
     @classmethod
+    def _initialize_class_variables(cls):
+        try:
+            cls.set_auto_generate_self_signed_certificate(
+                OptionalSettings.get_optional_settings_parameter('auto_generate_self_signed_certificate'))
+        except KeyError:
+            pass
+
+    @classmethod
+    def _initialize_fernet_key(cls):
+        db_session = Database.create_session()
+
+        try:
+            password_encryption_key_setting = DatabaseAccess.query_setting(db_session, 'password_encryption_key')
+
+            if password_encryption_key_setting is not None:
+                fernet_key = password_encryption_key_setting.value.encode()
+                cls._fernet = Fernet(fernet_key)
+        finally:
+            db_session.close()
+
+    @classmethod
     def decrypt_password(cls, encrypted_password):
         return cls._fernet.decrypt(encrypted_password.encode())
 
     @classmethod
     def determine_certificate_validity(cls):
-        server_hostname_loopback = IPTVProxyConfiguration.get_configuration_parameter('SERVER_HOSTNAME_LOOPBACK')
-        server_hostname_private = IPTVProxyConfiguration.get_configuration_parameter('SERVER_HOSTNAME_PRIVATE')
-        server_hostname_public = IPTVProxyConfiguration.get_configuration_parameter('SERVER_HOSTNAME_PUBLIC')
+        server_hostname_loopback = Configuration.get_configuration_parameter('SERVER_HOSTNAME_LOOPBACK')
+        server_hostname_private = Configuration.get_configuration_parameter('SERVER_HOSTNAME_PRIVATE')
+        server_hostname_public = Configuration.get_configuration_parameter('SERVER_HOSTNAME_PUBLIC')
 
         with open(cls._certificate_file_path, 'rb') as input_file:
             certificate = x509.load_pem_x509_certificate(input_file.read(), default_backend())
@@ -85,14 +109,15 @@ class IPTVProxySecurityManager(object):
                              ', '.join(certificate_subjects),
                              '\n'.join(
                                  ['Certificate is {0}valid for domain => {1}'.format(
-                                     '' if server_hostname in certificate_subjects else 'not ',
+                                     '' if server_hostname in certificate_subjects
+                                     else 'not ',
                                      server_hostname)
                                      for server_hostname in
                                      [server_hostname_loopback, server_hostname_private, server_hostname_public]])))
 
     @classmethod
     def generate_self_signed_certificate(cls):
-        ip_address_location = IPTVProxyUtility.determine_ip_address_location()
+        ip_address_location = Utility.determine_ip_address_location()
 
         if ip_address_location is not None:
             private_key = rsa.generate_private_key(public_exponent=65537,
@@ -112,7 +137,7 @@ class IPTVProxySecurityManager(object):
                                           x509.NameAttribute(NameOID.LOCALITY_NAME, ip_address_location['city']),
                                           x509.NameAttribute(NameOID.ORGANIZATION_NAME, 'IPTVProxy'),
                                           x509.NameAttribute(NameOID.COMMON_NAME,
-                                                             IPTVProxyConfiguration.get_configuration_parameter(
+                                                             Configuration.get_configuration_parameter(
                                                                  'SERVER_HOSTNAME_PUBLIC'))])
 
             certificate = x509.CertificateBuilder().subject_name(
@@ -129,9 +154,9 @@ class IPTVProxySecurityManager(object):
                 current_date_time_in_utc + timedelta(days=10 * 365)
             ).add_extension(
                 x509.SubjectAlternativeName([
-                    x509.DNSName(IPTVProxyConfiguration.get_configuration_parameter('SERVER_HOSTNAME_LOOPBACK')),
-                    x509.DNSName(IPTVProxyConfiguration.get_configuration_parameter('SERVER_HOSTNAME_PRIVATE')),
-                    x509.DNSName(IPTVProxyConfiguration.get_configuration_parameter('SERVER_HOSTNAME_PUBLIC'))]),
+                    x509.DNSName(Configuration.get_configuration_parameter('SERVER_HOSTNAME_LOOPBACK')),
+                    x509.DNSName(Configuration.get_configuration_parameter('SERVER_HOSTNAME_PRIVATE')),
+                    x509.DNSName(Configuration.get_configuration_parameter('SERVER_HOSTNAME_PUBLIC'))]),
                 critical=False
             ).sign(
                 private_key,
@@ -157,32 +182,44 @@ class IPTVProxySecurityManager(object):
 
     @classmethod
     def initialize(cls):
-        db = IPTVProxyDatabase()
+        cls._initialize_class_variables()
 
-        try:
-            fernet_key = IPTVProxySQL.query_setting(db, 'password_encryption_key')[0]['value'].encode()
-            cls._fernet = Fernet(fernet_key)
-        except IndexError:
-            pass
+        cls._initialize_fernet_key()
 
-        db.close_connection()
+    @classmethod
+    def is_password_decrypted(cls, password):
+        is_password_decrypted = False
+
+        if cls._determine_password_state(password) == PasswordState.DECRYPTED:
+            is_password_decrypted = True
+
+        return is_password_decrypted
 
     @classmethod
     def scrub_password(cls, provider_name, password):
-        if cls._determine_password_state(password) == IPTVProxyPasswordState.DECRYPTED:
+        if cls._determine_password_state(password) == PasswordState.DECRYPTED:
             if cls._fernet is None:
                 fernet_key = Fernet.generate_key()
                 cls._fernet = Fernet(fernet_key)
 
-                db = IPTVProxyDatabase()
-                IPTVProxySQL.insert_setting(db, 'password_encryption_key', fernet_key.decode())
-                db.commit()
-                db.close_connection()
+                with Database.get_write_lock():
+                    db_session = Database.create_session()
+
+                    try:
+                        db_session.add(Setting('password_encryption_key', fernet_key.decode()))
+                        db_session.commit()
+                    except Exception:
+                        (type_, value_, traceback_) = sys.exc_info()
+                        logger.error('\n'.join(traceback.format_exception(type_, value_, traceback_)))
+
+                        db_session.rollback()
+                    finally:
+                        db_session.close()
 
             encrypted_password = cls._encrypt_password(password)
 
             logger.debug('Scrubbed {0} password\n'
-                         'Encrypted password => {0}'.format(provider_name,
+                         'Encrypted password => {1}'.format(provider_name,
                                                             encrypted_password))
         else:
             if cls._fernet:
@@ -197,7 +234,7 @@ class IPTVProxySecurityManager(object):
                         'Please re-enter your cleartext password in the configuration file\n'
                         'Configuration file path => {0}\n'
                         'Exiting...'.format(provider_name,
-                                            IPTVProxyConfiguration.get_configuration_file_path))
+                                            Configuration.get_configuration_file_path))
 
                     sys.exit()
             else:
@@ -206,7 +243,7 @@ class IPTVProxySecurityManager(object):
                     'Please re-enter your cleartext password in the configuration file\n'
                     'Configuration file path => {0}\n'
                     'Exiting...'.format(provider_name,
-                                        IPTVProxyConfiguration.get_configuration_file_path))
+                                        Configuration.get_configuration_file_path))
 
                 sys.exit()
 

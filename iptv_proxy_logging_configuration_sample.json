@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "disable_existing_loggers": true,
+  "formatters": {
+    "MultiLine": {
+      "format": "%(asctime)s %(name)-50s %(funcName)-40s %(levelname)-8s %(message)s",
+      "()": "iptv_proxy.formatters.MultiLineFormatter"
+    }
+  },
+  "handlers": {
+    "console": {
+      "level": "DEBUG",
+      "formatter": "MultiLine",
+      "class": "logging.StreamHandler"
+    },
+    "rotating_file": {
+      "level": "DEBUG",
+      "formatter": "MultiLine",
+      "class": "logging.handlers.RotatingFileHandler",
+      "filename": "logs/iptv_proxy.log",
+      "maxBytes": 10485760,
+      "backupCount": 10
+    }
+  },
+  "loggers": {
+    "iptv_proxy": {
+      "handlers": [
+        "console",
+        "rotating_file"
+      ],
+      "level": "DEBUG",
+      "propagate": true
+    }
+  }
+}

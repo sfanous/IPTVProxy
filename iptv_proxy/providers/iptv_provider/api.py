@@ -1,7 +1,8 @@
-from abc import ABC, abstractmethod
+from abc import ABC
+from abc import abstractmethod
 
 
-class IPTVProxyProvider(ABC):
+class Provider(ABC):
     @classmethod
     @abstractmethod
     def download_chunks_m3u8(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
@@ -43,10 +44,10 @@ class IPTVProxyProvider(ABC):
 
     @classmethod
     @abstractmethod
-    def initialize(cls):
+    def initialize(cls, **kwargs):
         pass
 
     @classmethod
     @abstractmethod
-    def terminate(cls):
+    def terminate(cls, **kwargs):
         pass

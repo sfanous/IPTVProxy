@@ -2,6 +2,11 @@
 
 Release History
 ===============
+7.0.0 (04-05-2019)
+------------------
+* IPTVProxy complete re-architecture
+* RIP VaderStreams
+
 6.2.6 (09-04-2019)
 ------------------
 * Fix a couple of bugs in recorder.py
@@ -166,7 +171,7 @@ Release History
 * Add optional settings file (iptv_proxy_optional_settings.json)
     * channel_name_map
         * Use it to map SmoothStreams/Fog channel names to clearer names
-    * use_smooth_streams_icons
+    * use_smoothstreams_icons
         * true to use the channel icons provided by SmoothStreams
         * false to use icons provided by SmoothStreamsProxy
 * Add EPG source configuration parameter

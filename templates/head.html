@@ -1,0 +1,72 @@
+<head>
+    <link crossorigin="anonymous"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.1/css/all.min.css"
+          integrity="sha256-7rF6RaSKyh16288E3hVdzQtHyzatA2MQRGu0cf6pqqM="
+          rel="stylesheet"/>
+    <link crossorigin="anonymous"
+          href="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.5.4/video-js.min.css"
+          integrity="sha256-TJKQPVYC8cFBnpxkfw2wItQl76qlgNmEnpthMssQIPY="
+          rel="stylesheet"/>
+    <link crossorigin="anonymous"
+          href="https://cdnjs.cloudflare.com/ajax/libs/videojs-overlay/1.1.4/videojs-overlay.css"
+          integrity="sha256-KflMcBmUiYyVi/Fgy2IqwyV9lKRFa0IXE/FkaRM2R7s="
+          rel="stylesheet"/>
+    <link href="https://www.w3schools.com/w3css/4/w3.css"
+          rel="stylesheet"/>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1"
+          name="viewport">
+    <script crossorigin="anonymous"
+            integrity="sha256-BJeo0qm959uMBGb65z40ejJYGSgR7REI4+CW1fNKwOg="
+            src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+    <script crossorigin="anonymous"
+            integrity="sha256-uC1JMW5e1U5D28+mXFxzTz4SSMCywqhxQIodqLECnfU="
+            src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.1/js/jquery.tablesorter.min.js"></script>
+    <script crossorigin="anonymous"
+            integrity="sha256-9Nt2r+tJnSd2A2CRUvnjgsD+ES1ExvjbjBNqidm9doI="
+            src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/2.2.0/js.cookie.min.js"></script>
+    <script crossorigin="anonymous"
+            integrity="sha256-w4smWWvB2YtjACp2UtjRTxyJ/mRPYHpjk/u4TOMywwQ="
+            src="https://cdn.jsdelivr.net/npm/m3u8-parser@4.3.0/dist/m3u8-parser.min.js"></script>
+    <script crossorigin="anonymous"
+            integrity="sha256-4iQZ6BVL4qNKlQ27TExEhBN1HFPvAvAMbFavKKosSWQ="
+            src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
+    <script crossorigin="anonymous"
+            integrity="sha256-KPjK8mut8idL0mWQDjXBbgz/aGYhJ0nsLiwjnYVgcwQ="
+            src="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.5.4/video.min.js"></script>
+    <script crossorigin="anonymous"
+            integrity="sha256-Iv7h2GglzGahVcHidHzdgB571K/2uVhOLCgOND5fs48="
+            src="https://cdnjs.cloudflare.com/ajax/libs/videojs-contrib-hls/5.15.0/videojs-contrib-hls.min.js"></script>
+    <script crossorigin="anonymous"
+            integrity="sha256-PDDQ1DUPo7WtyFsrnwbksRq0G8kTMMwEDBJWblKILlM="
+            src="https://cdnjs.cloudflare.com/ajax/libs/videojs-flash/2.2.0/videojs-flash.min.js"></script>
+    <script crossorigin="anonymous"
+            integrity="sha256-X50EiI4SdUvAgGOYcpOzWkMcsX8vTOdfuDV+XccNHYA="
+            src="https://cdnjs.cloudflare.com/ajax/libs/videojs-overlay/1.1.4/videojs-overlay.min.js"></script>
+    <script>
+{{ iptv_proxy_script }}
+    </script>
+    <style>
+        th.tablesorter-header {
+            background-image: url(data:image/gif;base64,R0lGODlhFQAJAIAAACMtMP///yH5BAEAAAEALAAAAAAVAAkAAAIXjI+AywnaYnhUMoqt3gZXPmVg94yJVQAAOw==);
+            background-repeat: no-repeat;
+            background-position: center right;
+            cursor: pointer;
+        }
+
+        th.tablesorter-headerDesc {
+            background-image: url(data:image/gif;base64,R0lGODlhFQAEAIAAACMtMP///yH5BAEAAAEALAAAAAAVAAQAAAINjI8Bya2wnINUMopZAQA7);
+        }
+
+        th.tablesorter-headerAsc {
+            background-image: url(data:image/gif;base64,R0lGODlhFQAEAIAAACMtMP///yH5BAEAAAEALAAAAAAVAAQAAAINjB+gC+jP2ptn0WskLQA7);
+        }
+
+        th.sorter-false {
+            background-image: none;
+            cursor: default;
+            padding: 4px;
+        }
+    </style>
+    <title>IPTVProxy {{ iptv_proxy_version }}</title>
+</head>

@@ -1,3 +1,0 @@
-                        <li class="w3-border-0"
-                            id="${date_separator_li_id_prefix}_dateSeparatorLi_${date_separator_li_id_suffix}">
-                        </li>

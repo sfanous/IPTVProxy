@@ -1,0 +1,56 @@
+<div class="w3-top"
+     id="navigationBarDiv"
+     style="padding: 0.01em 16px;">
+    <div class="w3-bar w3-light-grey"
+         id="navigationBarButtonsDiv"
+         style="padding: 1px;">
+        <button class="w3-bar-item w3-button w3-dark-grey w3-mobile"
+                id="guideButton"
+                onclick="MenuModule.openTab('guide')">Guide
+        </button>
+        <button class="w3-bar-item w3-button w3-mobile"
+                id="recordingsButton"
+                onclick="MenuModule.openTab('recordings')">Recordings
+        </button>
+        <button class="w3-bar-item w3-button w3-mobile"
+                id="configurationButton"
+                onclick="MenuModule.openTab('configuration')">Configuration
+        </button>
+        <button class="w3-bar-item w3-button w3-mobile"
+                id="monitorButton"
+                onclick="MenuModule.openTab('monitor')">Monitor
+        </button>
+        <button class="w3-bar-item w3-button w3-mobile"
+                id="aboutButton"
+                onclick="MenuModule.openTab('about')">About
+        </button>
+        <button class="w3-button w3-right w3-mobile"
+                id="settingsButton"
+                onclick="SettingsModule.openSettingsDiv()">
+            <span class="fas fa-cog fa-lg"></span>
+        </button>
+        <form action=""
+              autocomplete="off"
+              novalidate="novalidate">
+            <input class="w3-bar-item w3-input w3-right"
+                   id="searchGuideInputText"
+                   placeholder="Search..."
+                   oninput="GuideModule.searchGuide()"
+                   type="text"/>
+            <span class="w3-bar-item w3-right"
+                  id="separatorSpan"
+                  style="display: inline-block; padding: 4px;"></span>
+            <select class="w3-bar-item w3-right w3-select"
+                    id="guideGroupSelect"
+                    name="guideGroupSelect"
+                    oninput="GuideModule.updateGroup()"
+                    title="">
+                <option disabled="disabled"
+                        selected="selected"
+                        value="">Choose your option
+                </option>
+                {{ guide_group_select_options }}
+            </select>
+        </form>
+    </div>
+</div>

@@ -9,7 +9,7 @@ except ModuleNotFoundError:
 logger = logging.getLogger(__name__)
 
 
-class IPTVProxyPrivilege(object):
+class Privilege(object):
     __slots__ = []
 
     _root_user_gid = 0

@@ -1,36 +1,34 @@
 import base64
 import ipaddress
 import json
-import logging
-import logging.handlers
+import logging.config
 import os
 import re
 import socket
 import sys
 import traceback
 from argparse import ArgumentParser
-from string import Template
+from gzip import GzipFile
+from io import BytesIO
+from json import JSONDecodeError
 
 import requests
 
-from .constants import CHANNEL_ICONS_DIRECTORY_PATH
-from .constants import DEFAULT_CONFIGURATION_FILE_PATH
-from .constants import DEFAULT_DB_FILE_PATH
-from .constants import DEFAULT_HOSTNAME_LOOPBACK
-from .constants import DEFAULT_LOG_FILE_PATH
-from .constants import DEFAULT_RECORDINGS_DIRECTORY_PATH
-from .constants import DEFAULT_SSL_CERTIFICATE_FILE_PATH
-from .constants import DEFAULT_SSL_KEY_FILE_PATH
-from .constants import TEMPLATES_DIRECTORY_PATH
-from .constants import TRACE
-from .constants import VALID_LOGGING_LEVEL_VALUES
-from .enums import IPTVProxyIPAddressType
-from .formatters import IPTVProxyMultiLineFormatter
+from iptv_proxy.constants import CHANNEL_ICONS_DIRECTORY_PATH
+from iptv_proxy.constants import DEFAULT_CONFIGURATION_FILE_PATH
+from iptv_proxy.constants import DEFAULT_DB_FILE_PATH
+from iptv_proxy.constants import DEFAULT_HOSTNAME_LOOPBACK
+from iptv_proxy.constants import DEFAULT_LOG_FILE_PATH
+from iptv_proxy.constants import DEFAULT_OPTIONAL_SETTINGS_FILE_PATH
+from iptv_proxy.constants import DEFAULT_RECORDINGS_DIRECTORY_PATH
+from iptv_proxy.constants import DEFAULT_SSL_CERTIFICATE_FILE_PATH
+from iptv_proxy.constants import DEFAULT_SSL_KEY_FILE_PATH
+from iptv_proxy.enums import IPAddressType
 
 logger = logging.getLogger(__name__)
 
 
-class IPTVProxyUtility(object):
+class Utility(object):
     __slots__ = []
 
     @classmethod
@@ -70,8 +68,10 @@ class IPTVProxyUtility(object):
                                                  response_status_code,
                                                  '\n'.join(['{0:32} => {1!s}'.format(key, response_headers[key])
                                                             for key in sorted(response_headers)]),
-                                                 response_content if do_print_content else len(response_content),
-                                                 '' if do_print_content else ',')
+                                                 response_content if do_print_content
+                                                 else len(response_content),
+                                                 '' if do_print_content
+                                                 else ',')
         else:
             return 'Response\n' \
                    '[Method]\n' \
@@ -90,7 +90,7 @@ class IPTVProxyUtility(object):
 
             if response.status_code == requests.codes.OK:
                 ip_address_location = response.json()
-        except (json.JSONDecodeError, requests.exceptions.RequestException):
+        except (JSONDecodeError, requests.exceptions.RequestException):
             logger.error('Failed to determine IP address location')
 
         return ip_address_location
@@ -100,13 +100,13 @@ class IPTVProxyUtility(object):
         ip_address_object = ipaddress.ip_address(ip_address)
 
         if ip_address_object.is_loopback:
-            return IPTVProxyIPAddressType.LOOPBACK
+            return IPAddressType.LOOPBACK
         elif ip_address_object in ipaddress.ip_network('10.0.0.0/8') or \
                 ip_address_object in ipaddress.ip_network('172.16.0.0/12') or \
                 ip_address_object in ipaddress.ip_network('192.168.0.0/16'):
-            return IPTVProxyIPAddressType.PRIVATE
+            return IPAddressType.PRIVATE
         elif ip_address_object.is_global:
-            return IPTVProxyIPAddressType.PUBLIC
+            return IPAddressType.PUBLIC
 
     @classmethod
     def determine_private_ip_address(cls):
@@ -131,32 +131,23 @@ class IPTVProxyUtility(object):
 
             if response.status_code == requests.codes.OK:
                 public_ip_address = response.json()['origin']
-        except (json.JSONDecodeError, requests.exceptions.RequestException):
+        except (JSONDecodeError, requests.exceptions.RequestException):
             logger.error('Failed to determine public IP address')
 
         return public_ip_address
 
     @classmethod
-    def initialize_logging(cls, log_file_path):
-        logging.addLevelName(TRACE, 'TRACE')
-        logging.TRACE = TRACE
-        logging.trace = trace
-        logging.Logger.trace = trace
+    def gzip(cls, data):
+        compressed_bytes = BytesIO()
 
-        formatter = IPTVProxyMultiLineFormatter('%(asctime)s %(name)-40s %(funcName)-40s %(levelname)-8s %(message)s')
+        with GzipFile(fileobj=compressed_bytes, mode='w') as gzip_file:
+            if type(data) != bytes:
+                gzip_file.write(data.encode())
+            else:
+                gzip_file.write(data)
+            gzip_file.flush()
 
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(formatter)
-
-        rotating_file_handler = logging.handlers.RotatingFileHandler('{0}'.format(log_file_path),
-                                                                     maxBytes=1024 * 1024 * 10,
-                                                                     backupCount=10)
-        rotating_file_handler.setFormatter(formatter)
-
-        logging.getLogger('iptv_proxy').addHandler(console_handler)
-        logging.getLogger('iptv_proxy').addHandler(rotating_file_handler)
-
-        cls.set_logging_level(logging.INFO)
+        return compressed_bytes.getvalue()
 
     @classmethod
     def is_valid_hostname(cls, hostname):
@@ -169,15 +160,6 @@ class IPTVProxyUtility(object):
         regular_expression = re.compile("(?!-)[a-z0-9-]{1,63}(?<!-)$", re.IGNORECASE)
 
         return all(regular_expression.match(label) for label in hostname.split("."))
-
-    @classmethod
-    def is_valid_logging_level(cls, logging_level):
-        is_valid_logging_level = True
-
-        if logging_level not in VALID_LOGGING_LEVEL_VALUES:
-            is_valid_logging_level = False
-
-        return is_valid_logging_level
 
     @classmethod
     def is_valid_loopback_hostname(cls, loopback_hostname):
@@ -222,7 +204,7 @@ class IPTVProxyUtility(object):
         except ValueError:
             # This is a weak attempt to differentiate between a badly input IP address and a hostname.
             if re.match(r'\A\d+\.\d+.\d+.\d+\Z', hostname_private) or not \
-                    IPTVProxyUtility.is_valid_hostname(hostname_private):
+                    Utility.is_valid_hostname(hostname_private):
                 is_valid_private_hostname = False
 
         return is_valid_private_hostname
@@ -239,7 +221,7 @@ class IPTVProxyUtility(object):
         except ValueError:
             # This is a weak attempt to differentiate between a badly input IP address and a hostname.
             if re.match(r'\A\d+\.\d+.\d+.\d+\Z', hostname_public) or not \
-                    IPTVProxyUtility.is_valid_hostname(hostname_public):
+                    Utility.is_valid_hostname(hostname_public):
                 is_valid_public_hostname = False
 
         return is_valid_public_hostname
@@ -260,7 +242,6 @@ class IPTVProxyUtility(object):
                           stream=False,
                           timeout=60):
         try:
-            # noinspection PyUnresolvedReferences
             logger.trace('Request\n'
                          '[Method]\n'
                          '========\n{0}\n\n'
@@ -272,25 +253,29 @@ class IPTVProxyUtility(object):
                                                '[Query Parameters]\n'
                                                '==================\n{0}\n'.format('\n'.join(
                                                    ['{0:32} => {1!s}'.format(key, params[key])
-                                                    for key in sorted(params)])) if params else '',
+                                                    for key in sorted(params)])) if params
+                                               else '',
                                                '\n'
                                                '[Headers]\n'
                                                '=========\n{0}\n'.format(
                                                    '\n'.join(
                                                        ['{0:32} => {1!s}'.format(header, headers[header])
-                                                        for header in sorted(headers)])) if headers else '',
+                                                        for header in sorted(headers)])) if headers
+                                               else '',
                                                '\n'
                                                '[Cookies]\n'
                                                '=========\n{0}\n'.format(
                                                    '\n'.join(
                                                        ['{0:32} => {1!s}'.format(cookie, cookies[cookie])
-                                                        for cookie in sorted(cookies)])) if cookies else '',
+                                                        for cookie in sorted(cookies)])) if cookies
+                                               else '',
                                                '\n'
                                                '[JSON]\n'
                                                '======\n{0}\n'.format(
                                                    json.dumps(json_,
                                                               sort_keys=True,
-                                                              indent=2)) if json_ else '').strip())
+                                                              indent=2)) if json_
+                                               else '').strip())
 
             return requests_http_method(url,
                                         params=params,
@@ -316,6 +301,12 @@ class IPTVProxyUtility(object):
                             dest='configuration_file_path',
                             help='path to the configuration file',
                             metavar='configuration file path')
+        parser.add_argument('-os',
+                            action='store',
+                            default=DEFAULT_OPTIONAL_SETTINGS_FILE_PATH,
+                            dest='optional_settings_file_path',
+                            help='path to the optional settings file',
+                            metavar='optional settings file path')
         parser.add_argument('-d',
                             action='store',
                             default=DEFAULT_DB_FILE_PATH,
@@ -350,6 +341,7 @@ class IPTVProxyUtility(object):
         arguments = parser.parse_args()
 
         return (arguments.configuration_file_path,
+                arguments.optional_settings_file_path,
                 arguments.db_file_path,
                 arguments.log_file_path,
                 arguments.recordings_directory_path,
@@ -359,10 +351,10 @@ class IPTVProxyUtility(object):
     @classmethod
     def read_file(cls, file_path, in_binary=False, in_base_64=False):
         try:
-            with open(file_path, 'r{0}'.format('b' if in_binary else '')) as input_file:
+            with open(file_path, 'r{0}'.format('b' if in_binary
+                                               else '')) as input_file:
                 file_content = base64.b64encode(input_file.read()) if in_base_64 else input_file.read()
 
-                # noinspection PyUnresolvedReferences
                 logger.trace('Read file\n'
                              'File path => {0}'.format(file_path))
         except OSError:
@@ -377,23 +369,21 @@ class IPTVProxyUtility(object):
     def read_png_file(cls, file_name, in_base_64=False):
         png_file_path = os.path.join(CHANNEL_ICONS_DIRECTORY_PATH, file_name)
 
-        return IPTVProxyUtility.read_file(png_file_path, in_binary=True, in_base_64=in_base_64)
+        return Utility.read_file(png_file_path, in_binary=True, in_base_64=in_base_64)
 
     @classmethod
-    def read_template(cls, template_file_name):
-        with open(os.path.join(TEMPLATES_DIRECTORY_PATH, template_file_name), 'r') as input_file:
-            template_content = input_file.read()
+    def write_file(cls, file_content, file_path, in_binary=False):
+        try:
+            with open(file_path, 'w{0}'.format('b' if in_binary
+                                               else '')) as output_file:
+                output_file.write(file_content)
 
-            return Template(template_content)
+                logger.trace('Wrote file\n'
+                             'File path => {0}'.format(file_path))
+        except OSError:
+            logger.error('Failed to write file\n'
+                         'File path => {0}'.format(file_path))
 
-    @classmethod
-    def set_logging_level(cls, log_level):
-        logging.getLogger('iptv_proxy').setLevel(log_level)
+            raise
 
-        for handler in logger.handlers:
-            handler.setLevel(log_level)
-
-
-def trace(self, msg, *args, **kwargs):
-    if self.isEnabledFor(TRACE):
-        self._log(TRACE, msg, args, **kwargs)
+        return file_content

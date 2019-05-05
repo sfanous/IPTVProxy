@@ -1,0 +1,145 @@
+    <div class="w3-border w3-container"
+         id="recordingsDiv"
+         style="display: none; overflow-y: auto;">
+        <ul class="w3-ul w3-border-0">
+            <li>
+                <h3>
+                    <span style="font-weight: bold">Live Recordings</span>
+                    <span class="fas fa-sync w3-right"
+                          id="liveRecordingsRefreshIcon"
+                          onclick="RecordingsModule.refreshRecordings('live')"
+                          style="cursor: pointer; font-size: 24px;">
+                            </span>
+                </h3>
+            </li>
+            <li class="w3-border-0 w3-center"
+                id="liveNoRecordingsLi"
+                style="{{ live_no_recordings_li_style }}">
+                <p>You have no live recordings at the current time
+                </p>
+            </li>
+            <li class="w3-border-0"
+                id="liveRecordingsLi"
+                style="{{ live_recordings_li_style }}">
+                <table class="w3-bordered w3-table"
+                       id="liveRecordingsTable">
+                    <thead>
+                    <tr>
+                        <th></th>
+                        <th>Channel #</th>
+                        <th>Channel Name</th>
+                        <th>Program Title</th>
+                        <th>Start Date &amp; Time</th>
+                        <th>End Date &amp; Time</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {{ live_recordings_table_rows }}
+                    </tbody>
+                </table>
+            </li>
+            <li class="w3-border-0">
+            </li>
+            <li>
+                <h3>
+                    <span style="font-weight: bold">Saved Recordings</span>
+                    <span class="fas fa-sync w3-right"
+                          id="persistedRecordingsRefreshIcon"
+                          onclick="RecordingsModule.refreshRecordings('persisted')"
+                          style="cursor: pointer; font-size: 24px;">
+                            </span>
+                </h3>
+            </li>
+            <li class="w3-border-0 w3-center"
+                id="persistedNoRecordingsLi"
+                style="{{ persisted_no_recordings_li_style }}">
+                <p>You have no saved recordings at the current time
+                </p>
+            </li>
+            <li class="w3-border-0"
+                id="persistedRecordingsLi"
+                style="{{ persisted_recordings_li_style }}">
+                <table class="w3-bordered w3-table"
+                       id="persistedRecordingsTable">
+                    <thead>
+                    <tr>
+                        <th></th>
+                        <th>Channel #</th>
+                        <th>Channel Name</th>
+                        <th>Program Title</th>
+                        <th>Start Date &amp; Time</th>
+                        <th>End Date &amp; Time</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {{ persisted_recordings_table_rows }}
+                    </tbody>
+                </table>
+            </li>
+            <li class="w3-border-0">
+            </li>
+            <li>
+                <h3>
+                    <span style="font-weight: bold">Scheduled Recordings</span>
+                    <span class="fas fa-sync w3-right"
+                          id="scheduledRecordingsRefreshIcon"
+                          onclick="RecordingsModule.refreshRecordings('scheduled')"
+                          style="cursor: pointer; font-size: 24px;">
+                            </span>
+                </h3>
+            </li>
+            <li class="w3-border-0 w3-center"
+                id="scheduledNoRecordingsLi"
+                style="{{ scheduled_no_recordings_li_style }}">
+                <p>You have no scheduled recordings at the current time
+                </p>
+            </li>
+            <li class="w3-border-0"
+                id="scheduledRecordingsLi"
+                style="{{ scheduled_recordings_li_style }}">
+                <table class="w3-bordered w3-table"
+                       id="scheduledRecordingsTable">
+                    <thead>
+                    <tr>
+                        <th></th>
+                        <th>Channel #</th>
+                        <th>Channel Name</th>
+                        <th>Program Title</th>
+                        <th>Start Date &amp; Time</th>
+                        <th>End Date &amp; Time</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {{ scheduled_recordings_table_rows }}
+                    </tbody>
+                </table>
+            </li>
+            <li class="w3-border-0">
+            </li>
+            <li class="w3-border-0">
+                <div class="w3-border-no w3-display-container w3-panel"
+                     id="recordingsAlertDiv"
+                     style="display: none;">
+                            <span id="recordingsSpan"
+                                  onclick="CommonModule.resetAlertDiv('recordingsAlertDiv')"
+                                  class="w3-button w3-large w3-display-topright">&times;</span>
+                    <h3 id="recordingsHeader"></h3>
+                    <p class="w3-medium"
+                       id="recordingsMessageParagraph"></p>
+                    <p class="w3-medium"
+                       id="recordingsReasonParagraph"></p>
+                </div>
+            </li>
+            <li class="w3-right-align">
+                <button class="w3-button w3-disabled w3-black"
+                        id="recordingsClearButton"
+                        onclick="RecordingsModule.clearRecordingsRadioButtonGroup()">
+                    Clear
+                </button>
+                <button class="w3-button w3-disabled w3-red"
+                        id="recordingsActionButton"
+                        onclick="RecordingsModule.deleteRecording()">-
+                </button>
+            </li>
+        </ul>
+    </div>

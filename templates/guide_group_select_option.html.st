@@ -1,1 +1,0 @@
-                <option ${guide_group_select_option_selected}value="${guide_group_select_option_provider}|${guide_group_select_option_group}">${guide_group_select_option_group}</option>

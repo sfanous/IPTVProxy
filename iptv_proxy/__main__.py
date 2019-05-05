@@ -1,3 +1,3 @@
-from .main import main
+from iptv_proxy.main import main
 
 main()

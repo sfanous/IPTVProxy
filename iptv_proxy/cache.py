@@ -2,18 +2,20 @@ import logging
 from datetime import datetime
 from datetime import timedelta
 from threading import Event
-from threading import RLock
 from threading import Timer
 
 import pytz
+from rwlock import RWLock
 
-from .constants import CACHE_TIME_TO_LIVE
-from .enums import IPTVProxyCacheResponseType
+from iptv_proxy.configuration import OptionalSettings
+from iptv_proxy.constants import CACHE_TIME_TO_LIVE
+from iptv_proxy.constants import CACHE_WAIT_TIME
+from iptv_proxy.enums import CacheResponseType
 
 logger = logging.getLogger(__name__)
 
 
-class IPTVProxyCacheEntry(object):
+class CacheEntry(object):
     __slots__ = ['_creation_date_time_in_utc', '_expiry_date_time_in_utc', '_primed_event', '_segment_file_content']
 
     def __init__(self):
@@ -47,23 +49,22 @@ class IPTVProxyCacheEntry(object):
         self._segment_file_content = segment_file_content
 
 
-class IPTVProxyCacheManager():
+class CacheManager():
     __slots__ = []
 
     _cache = {}
     _cleanup_cache_timer = None
     _do_cache_downloaded_segments = True
-    _lock = RLock()
+    _lock = RWLock()
 
     @classmethod
     def _cleanup_cache(cls):
         current_date_time_in_utc = datetime.now(pytz.utc)
 
-        # noinspection PyUnresolvedReferences
         logger.trace('Cache cleanup started\n'
                      'Cutoff date & time => {0}'.format(current_date_time_in_utc))
 
-        with cls._lock:
+        with cls._lock.writer_lock:
             for channel_number in list(cls._cache.keys()):
                 cache_bucket = cls._cache[channel_number]
 
@@ -77,7 +78,6 @@ class IPTVProxyCacheManager():
                                         seconds=CACHE_TIME_TO_LIVE)):
                         del cache_bucket[segment_file_name]
 
-                        # noinspection PyUnresolvedReferences
                         logger.trace('Deleted expired cache entry\n'
                                      'Channel number       => {0}\n'
                                      'Segment file name    => {1}\n'
@@ -90,7 +90,6 @@ class IPTVProxyCacheManager():
                 if not cache_bucket:
                     del cls._cache[channel_number]
 
-                    # noinspection PyUnresolvedReferences
                     logger.trace('Deleted expired cache bucket\n'
                                  'Channel number => {0}'.format(channel_number))
 
@@ -104,115 +103,144 @@ class IPTVProxyCacheManager():
                 logger.debug('Deleted all cache buckets')
 
     @classmethod
-    def cancel_cleanup_cache_timer(cls):
-        if cls._cleanup_cache_timer:
-            cls._cleanup_cache_timer.cancel()
+    def _initialize_class_variables(cls):
+        try:
+            cls.set_do_cache_downloaded_segments(
+                OptionalSettings.get_optional_settings_parameter('cache_downloaded_segments'))
+        except KeyError:
+            pass
 
     @classmethod
-    def get_do_cache_downloaded_segments(cls):
-        return cls._do_cache_downloaded_segments
+    def _query_cache(cls, channel_number, segment_file_name):
+        if channel_number in cls._cache:
+            cache_bucket = cls._cache[channel_number]
 
-    @classmethod
-    def query_cache(cls, channel_number, segment_file_name):
-        with cls._lock:
-            if channel_number in cls._cache:
-                cache_bucket = cls._cache[channel_number]
+            if segment_file_name in cache_bucket:
+                cache_entry = cache_bucket[segment_file_name]
 
-                if segment_file_name in cache_bucket:
-                    cache_entry = cache_bucket[segment_file_name]
+                # Expiry date for a cache entry is set to CACHE_TIME_TO_LIVE seconds following the last time the
+                # entry was accessed
+                cache_entry.expiry_date_time_in_utc = datetime.now(pytz.utc) + timedelta(seconds=CACHE_TIME_TO_LIVE)
 
-                    # Expiry date for a cache entry is set to CACHE_TIME_TO_LIVE seconds following the last time the
-                    # entry was accessed
-                    cache_entry.expiry_date_time_in_utc = datetime.now(pytz.utc) + timedelta(seconds=CACHE_TIME_TO_LIVE)
+                if cache_entry.segment_file_content:
+                    cache_response_type = CacheResponseType.HARD_HIT
 
-                    if cache_entry.segment_file_content:
-                        cache_response_type = IPTVProxyCacheResponseType.HARD_HIT
-
-                        # noinspection PyUnresolvedReferences
-                        logger.trace('Hard hit cache entry\n'
-                                     'Channel number    => {0}\n'
-                                     'Segment file name => {1}'.format(channel_number, segment_file_name))
-                    else:
-                        cache_response_type = IPTVProxyCacheResponseType.SOFT_HIT
-
-                        # noinspection PyUnresolvedReferences
-                        logger.trace('Soft hit cache entry\n'
-                                     'Channel number    => {0}\n'
-                                     'Segment file name => {1}'.format(channel_number, segment_file_name))
+                    logger.trace('Hard hit cache entry\n'
+                                 'Channel number    => {0}\n'
+                                 'Segment file name => {1}'.format(channel_number, segment_file_name))
                 else:
-                    cache_entry = None
-                    cache_response_type = IPTVProxyCacheResponseType.MISS
+                    cache_response_type = CacheResponseType.SOFT_HIT
 
-                    cache_bucket[segment_file_name] = IPTVProxyCacheEntry()
-
-                    # noinspection PyUnresolvedReferences
-                    logger.trace('Created cache entry\n'
+                    logger.trace('Soft hit cache entry\n'
                                  'Channel number    => {0}\n'
                                  'Segment file name => {1}'.format(channel_number, segment_file_name))
             else:
                 cache_entry = None
-                cache_response_type = IPTVProxyCacheResponseType.MISS
+                cache_response_type = CacheResponseType.MISS
 
-                cls._cache[channel_number] = {}
-                cls._cache[channel_number][segment_file_name] = IPTVProxyCacheEntry()
+                cache_bucket[segment_file_name] = CacheEntry()
 
-                # noinspection PyUnresolvedReferences
-                logger.trace('Created cache bucket & entry\n'
+                logger.trace('Created cache entry\n'
                              'Channel number    => {0}\n'
                              'Segment file name => {1}'.format(channel_number, segment_file_name))
+        else:
+            cache_entry = None
+            cache_response_type = CacheResponseType.MISS
 
-            # noinspection PyUnresolvedReferences
-            logger.trace('Query cache\n'
+            cls._cache[channel_number] = {}
+            cls._cache[channel_number][segment_file_name] = CacheEntry()
+
+            logger.trace('Created cache bucket & entry\n'
                          'Channel number    => {0}\n'
-                         'Segment file name => {1}\n'
-                         'Result            => {2}'.format(channel_number,
-                                                           segment_file_name,
-                                                           cache_response_type.value))
+                         'Segment file name => {1}'.format(channel_number, segment_file_name))
 
-            return IPTVProxyCacheResponse(cache_entry, cache_response_type)
+        logger.trace('Query cache\n'
+                     'Channel number    => {0}\n'
+                     'Segment file name => {1}\n'
+                     'Result            => {2}'.format(channel_number,
+                                                       segment_file_name,
+                                                       cache_response_type.value))
 
-    @classmethod
-    def set_do_cache_downloaded_segments(cls, do_cache_downloaded_segments):
-        cls._do_cache_downloaded_segments = do_cache_downloaded_segments
-
-    @classmethod
-    def update_cache(cls, channel_number, segment_file_name, segment_file_content):
-        with cls._lock:
-            try:
-                cache_bucket = cls._cache[channel_number]
-
-                try:
-                    cache_entry = cache_bucket[segment_file_name]
-                except KeyError:
-                    cache_entry = IPTVProxyCacheEntry()
-
-                    cache_bucket[segment_file_name] = cache_entry
-            except KeyError:
-                cache_entry = IPTVProxyCacheEntry()
-
-                cls._cache[channel_number] = {}
-                cls._cache[channel_number][segment_file_name] = cache_entry
-
-            cache_entry.segment_file_content = segment_file_content
-
-            cache_entry.expiry_date_time_in_utc = datetime.now(pytz.utc) + timedelta(seconds=CACHE_TIME_TO_LIVE)
-            cache_entry.primed_event.set()
-
+        if cache_response_type == CacheResponseType.MISS:
             if cls._cleanup_cache_timer is None:
                 cls._cleanup_cache_timer = Timer(CACHE_TIME_TO_LIVE, cls._cleanup_cache)
                 cls._cleanup_cache_timer.daemon = True
                 cls._cleanup_cache_timer.start()
 
-            # noinspection PyUnresolvedReferences
-            logger.trace('Updated cache entry\n'
-                         'Channel number     => {0}\n'
-                         'Segment file name  => {1}\n'
-                         'Expiry date & time => {2}'.format(channel_number,
-                                                            segment_file_name,
-                                                            cache_entry.expiry_date_time_in_utc))
+        return CacheResponse(cache_entry, cache_response_type)
+
+    @classmethod
+    def cancel_cleanup_cache_timer(cls):
+        if cls._cleanup_cache_timer:
+            cls._cleanup_cache_timer.cancel()
+
+    @classmethod
+    def initialize(cls):
+        cls._initialize_class_variables()
+
+    @classmethod
+    def query_cache(cls, channel_number, segment_file_name):
+        segment_file_content = None
+
+        with cls._lock.reader_lock:
+            if cls._do_cache_downloaded_segments:
+                cache_response = cls._query_cache(channel_number, segment_file_name)
+
+                if cache_response.response_type == CacheResponseType.HARD_HIT:
+                    segment_file_content = cache_response.entry.segment_file_content
+                elif cache_response.response_type == CacheResponseType.SOFT_HIT:
+                    cache_response.entry.primed_event.wait(CACHE_WAIT_TIME)
+
+                    cache_response = cls._query_cache(channel_number, segment_file_name)
+
+                    if cache_response.response_type == CacheResponseType.HARD_HIT:
+                        segment_file_content = cache_response.entry.segment_file_content
+
+        return segment_file_content
+
+    @classmethod
+    def set_do_cache_downloaded_segments(cls, do_cache_downloaded_segments):
+        with cls._lock.writer_lock:
+            cls._do_cache_downloaded_segments = do_cache_downloaded_segments
+
+    @classmethod
+    def update_cache(cls, channel_number, segment_file_name, segment_file_content):
+        with cls._lock.writer_lock:
+            if cls._do_cache_downloaded_segments:
+                try:
+                    cache_bucket = cls._cache[channel_number]
+
+                    try:
+                        cache_entry = cache_bucket[segment_file_name]
+                    except KeyError:
+                        cache_entry = CacheEntry()
+
+                        cache_bucket[segment_file_name] = cache_entry
+                except KeyError:
+                    cache_entry = CacheEntry()
+
+                    cls._cache[channel_number] = {}
+                    cls._cache[channel_number][segment_file_name] = cache_entry
+
+                cache_entry.segment_file_content = segment_file_content
+
+                cache_entry.expiry_date_time_in_utc = datetime.now(pytz.utc) + timedelta(seconds=CACHE_TIME_TO_LIVE)
+                cache_entry.primed_event.set()
+
+                if cls._cleanup_cache_timer is None:
+                    cls._cleanup_cache_timer = Timer(CACHE_TIME_TO_LIVE, cls._cleanup_cache)
+                    cls._cleanup_cache_timer.daemon = True
+                    cls._cleanup_cache_timer.start()
+
+                logger.trace('Updated cache entry\n'
+                             'Channel number     => {0}\n'
+                             'Segment file name  => {1}\n'
+                             'Expiry date & time => {2}'.format(channel_number,
+                                                                segment_file_name,
+                                                                cache_entry.expiry_date_time_in_utc))
 
 
-class IPTVProxyCacheResponse():
+class CacheResponse():
     __slots__ = ['_entry', '_response_type']
 
     def __init__(self, entry, response_type):

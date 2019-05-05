@@ -3,31 +3,39 @@ import json
 import logging
 import pprint
 import re
+import sys
+import traceback
 import uuid
+import warnings
 from datetime import datetime
+from json import JSONDecodeError
 
 import pytz
 import requests
 import tzlocal
+from cerberus import Validator
 
-from .configuration import IPTVProxyConfiguration
-from .constants import VERSION
-from .enums import IPTVProxyRecordingStatus
-from .exceptions import IPTVProxyDuplicateRecordingError
-from .exceptions import IPTVProxyRecordingNotFoundError
-from .recorder import IPTVProxyPVR
-from .recorder import IPTVProxyRecording
-from .validators import IPTVProxyCerberusValidator
+from iptv_proxy.configuration import Configuration
+from iptv_proxy.constants import VERSION
+from iptv_proxy.data_model import Recording
+from iptv_proxy.db import Database
+from iptv_proxy.enums import RecordingStatus
+from iptv_proxy.exceptions import DuplicateRecordingError
+from iptv_proxy.exceptions import RecordingNotFoundError
+from iptv_proxy.providers import ProvidersController
+from iptv_proxy.recorder import PVR
 
 logger = logging.getLogger(__name__)
 
+warnings.filterwarnings('ignore')
 
-class IPTVProxyJSONAPI(object):
+
+class JSONAPI(object):
     __slots__ = ['_http_request', '_json_api_response', '_type']
 
     def __init__(self, http_request, type_):
         self._http_request = http_request
-        self._json_api_response = IPTVProxyJSONAPIResponse()
+        self._json_api_response = JSONAPIResponse()
         self._type = type_
 
     def _validate_is_request_body_empty(self):
@@ -68,7 +76,7 @@ class IPTVProxyJSONAPI(object):
         is_query_string_empty = True
 
         query_string_parameters_schema = {}
-        query_string_parameters_validator = IPTVProxyCerberusValidator(query_string_parameters_schema)
+        query_string_parameters_validator = JSONAPIValidator(query_string_parameters_schema)
 
         if not query_string_parameters_validator.validate(self._http_request.requested_query_string_parameters):
             is_query_string_empty = False
@@ -81,7 +89,8 @@ class IPTVProxyJSONAPI(object):
                 'Error Message  => {3} {4} does not support [\'{5}\'] query parameter{2}'.format(
                     self._http_request.client_ip_address,
                     self._http_request.requested_path_with_query_string,
-                    's' if len(query_string_parameters_validator.errors) > 1 else '',
+                    's' if len(query_string_parameters_validator.errors) > 1
+                    else '',
                     self._http_request.command,
                     self._type,
                     ', '.join(query_string_parameters_validator.errors)))
@@ -91,14 +100,16 @@ class IPTVProxyJSONAPI(object):
                     {
                         'status': '{0}'.format(requests.codes.BAD_REQUEST),
                         'title': 'Unsupported query parameter{0}'.format(
-                            's' if len(query_string_parameters_validator.errors) > 1 else ''),
+                            's' if len(query_string_parameters_validator.errors) > 1
+                            else ''),
                         'field': list(sorted(query_string_parameters_validator.errors)),
                         'developer_message': '{0} {1} does not support [\'{2}\'] query parameter'
                                              '{3}'.format(
                             self._http_request.command,
                             self._type,
                             ', '.join(query_string_parameters_validator.errors),
-                            's' if len(query_string_parameters_validator.errors) > 1 else ''),
+                            's' if len(query_string_parameters_validator.errors) > 1
+                            else ''),
                         'user_message': 'The request is badly formatted'
                     }
                 ]
@@ -108,7 +119,7 @@ class IPTVProxyJSONAPI(object):
         return is_query_string_empty
 
 
-class IPTVProxyJSONAPIResponse(object):
+class JSONAPIResponse(object):
     __slots__ = ['_content', '_status_code']
 
     def __init__(self):
@@ -132,94 +143,155 @@ class IPTVProxyJSONAPIResponse(object):
         self._status_code = status_code
 
 
-class IPTVProxyConfigurationJSONAPI(IPTVProxyJSONAPI):
+class JSONAPIValidator(Validator):
+    def _validate_is_channel_number_valid(self, other, field, value):
+        if other not in self.document:
+            return False
+
+        try:
+            provider_map_class = ProvidersController.get_provider_map_class(self.document[other].lower())
+            if not provider_map_class.epg_class().is_channel_number_in_epg(value):
+                self._error(field, 'must be between {0:02} and {1:02}'.format(
+                    *provider_map_class.epg_class().get_channel_numbers_range()))
+        except KeyError:
+            return False
+
+    def _validate_is_end_date_time_after_start_date_time(self, other, field, value):
+        if other not in self.document:
+            return False
+
+        end_date_time_in_utc = datetime.strptime(value, '%Y-%m-%d %H:%M:%S').replace(tzinfo=pytz.utc)
+        start_date_time_in_utc = datetime.strptime(self.document[other], '%Y-%m-%d %H:%M:%S').replace(tzinfo=pytz.utc)
+        if end_date_time_in_utc <= start_date_time_in_utc:
+            self._error(field, 'must be later than start_date_time_in_utc')
+
+    def _validate_is_end_date_time_in_the_future(self, is_end_date_time_in_the_future, field, value):
+        end_date_time_in_utc = datetime.strptime(value, '%Y-%m-%d %H:%M:%S').replace(tzinfo=pytz.utc)
+        if is_end_date_time_in_the_future and datetime.now(pytz.utc) > end_date_time_in_utc:
+            self._error(field, 'must be later than now')
+
+    def _validate_is_provider_valid(self, is_provider_valid, field, value):
+        if is_provider_valid:
+            try:
+                ProvidersController.get_provider_map_class(value.lower())
+            except KeyError:
+                self._error(field, 'must be a valid provider')
+
+    # noinspection PyMethodMayBeStatic
+    def _validate_type_datetime_string(self, value):
+        try:
+            datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+
+            return True
+        except (TypeError, ValueError):
+            return False
+
+
+class ConfigurationJSONAPI(JSONAPI):
     def __init__(self, http_request):
-        IPTVProxyJSONAPI.__init__(self, http_request, 'configuration')
+        JSONAPI.__init__(self, http_request, 'configuration')
+
+    @classmethod
+    def create_get_request_response_content(cls):
+        configuration = Configuration.get_configuration_copy()
+
+        json_api_response_content = {
+            'meta': {
+                'application': 'IPTVProxy',
+                'version': VERSION
+            },
+            'data': {
+                'type': 'configuration',
+                'id': None,
+                'attributes': {
+                    'server_hostname_loopback': configuration['SERVER_HOSTNAME_LOOPBACK'],
+                    'server_hostname_private': configuration['SERVER_HOSTNAME_PRIVATE'],
+                    'server_hostname_public': configuration['SERVER_HOSTNAME_PUBLIC'],
+                    'server_http_port': configuration['SERVER_HTTP_PORT'],
+                    'server_https_port': configuration['SERVER_HTTPS_PORT'],
+                    'server_password': configuration['SERVER_PASSWORD']
+                }
+            }
+        }
+
+        for provider_name in sorted(ProvidersController.get_providers_map_class()):
+            json_api_response_content['data']['attributes'].update(
+                ProvidersController.get_provider_map_class(
+                    provider_name).configuration_json_api_class().create_get_request_response_content(configuration))
+
+        return json_api_response_content
+
+    @classmethod
+    def create_patch_request_update_configuration_request(cls, request_body):
+        update_configuration_request = {
+            'SERVER_HOSTNAME_LOOPBACK': request_body['data']['attributes']['server_hostname_loopback'],
+            'SERVER_HOSTNAME_PRIVATE': request_body['data']['attributes']['server_hostname_private'],
+            'SERVER_HOSTNAME_PUBLIC': request_body['data']['attributes']['server_hostname_public'],
+            'SERVER_HTTPS_PORT': request_body['data']['attributes']['server_https_port'],
+            'SERVER_HTTP_PORT': request_body['data']['attributes']['server_http_port'],
+            'SERVER_PASSWORD': request_body['data']['attributes']['server_password']
+        }
+
+        for provider_name in sorted(ProvidersController.get_providers_map_class()):
+            update_configuration_request.update(ProvidersController.get_provider_map_class(
+                provider_name).configuration_json_api_class().create_patch_request_update_configuration_request(
+                request_body))
+
+        return update_configuration_request
+
+    @classmethod
+    def _create_validate_patch_request_body_schema(cls):
+        request_body_schema = {
+            'data': {
+                'required': True,
+                'schema': {
+                    'type': {
+                        'allowed': ['configuration'],
+                        'required': True,
+                    },
+                    'attributes': {
+                        'required': True,
+                        'schema': {
+                            'server_hostname_loopback': {
+                                'required': True
+                            },
+                            'server_hostname_private': {
+                                'required': True
+                            },
+                            'server_hostname_public': {
+                                'required': True
+                            },
+                            'server_http_port': {
+                                'required': True
+                            },
+                            'server_https_port': {
+                                'required': True
+                            },
+                            'server_password': {
+                                'required': True
+                            }
+                        },
+                        'type': 'dict'
+                    }
+                },
+                'type': 'dict'
+            }
+        }
+
+        for provider_name in sorted(ProvidersController.get_providers_map_class()):
+            request_body_schema['data']['schema']['attributes']['schema'].update(
+                ProvidersController.get_provider_map_class(
+                    provider_name).configuration_json_api_class().create_validate_patch_request_body_schema())
+
+        return request_body_schema
 
     def _validate_patch_request_body(self):
         is_valid_patch_request_body = True
 
         try:
             request_body = json.loads(self._http_request.request_body)
-            request_body_schema = {
-                'data': {
-                    'required': True,
-                    'schema': {
-                        'type': {
-                            'allowed': ['configuration'],
-                            'required': True,
-                        },
-                        'attributes': {
-                            'required': True,
-                            'schema': {
-                                'logging_level': {
-                                    'required': True
-                                },
-                                'server_hostname_loopback': {
-                                    'required': True
-                                },
-                                'server_hostname_private': {
-                                    'required': True
-                                },
-                                'server_hostname_public': {
-                                    'required': True
-                                },
-                                'server_http_port': {
-                                    'required': True
-                                },
-                                'server_https_port': {
-                                    'required': True
-                                },
-                                'server_password': {
-                                    'required': True
-                                },
-                                'smooth_streams_epg_source': {
-                                    'required': True
-                                },
-                                'smooth_streams_epg_url': {
-                                    'required': True
-                                },
-                                'smooth_streams_password': {
-                                    'required': True
-                                },
-                                'smooth_streams_playlist_protocol': {
-                                    'required': True
-                                },
-                                'smooth_streams_playlist_type': {
-                                    'required': True
-                                },
-                                'smooth_streams_server': {
-                                    'required': True
-                                },
-                                'smooth_streams_service': {
-                                    'required': True
-                                },
-                                'smooth_streams_username': {
-                                    'required': True
-                                },
-                                'vader_streams_password': {
-                                    'required': True
-                                },
-                                'vader_streams_playlist_protocol': {
-                                    'required': True
-                                },
-                                'vader_streams_playlist_type': {
-                                    'required': True
-                                },
-                                'vader_streams_server': {
-                                    'required': True
-                                },
-                                'vader_streams_username': {
-                                    'required': True
-                                }
-                            },
-                            'type': 'dict'
-                        }
-                    },
-                    'type': 'dict'
-                }
-            }
-            request_body_validator = IPTVProxyCerberusValidator(request_body_schema)
+            request_body_schema = ConfigurationJSONAPI._create_validate_patch_request_body_schema()
+            request_body_validator = JSONAPIValidator(request_body_schema)
 
             if not request_body_validator.validate(request_body):
                 is_valid_patch_request_body = False
@@ -248,10 +320,12 @@ class IPTVProxyConfigurationJSONAPI(IPTVProxyJSONAPI):
                             self._http_request.requested_path_with_query_string,
                             pprint.pformat(request_body, indent=4),
                             'is missing mandatory field{0} {1}'.format(
-                                's' if len(missing_required_fields) > 1 else '',
-                                missing_required_fields) if missing_required_fields else
-                            'includes unknown field{0} {1}'.format(
-                                's' if len(included_unknown_fields) > 1 else '',
+                                's' if len(missing_required_fields) > 1
+                                else '',
+                                missing_required_fields) if missing_required_fields
+                            else 'includes unknown field{0} {1}'.format(
+                                's' if len(included_unknown_fields) > 1
+                                else '',
                                 included_unknown_fields)))
 
                     self._json_api_response.content = {
@@ -263,10 +337,12 @@ class IPTVProxyConfigurationJSONAPI(IPTVProxyJSONAPI):
                                                       else included_unknown_fields),
                                 'developer_message': 'Request body {0}'.format(
                                     'is missing mandatory field{0} {1}'.format(
-                                        's' if len(missing_required_fields) > 1 else '',
-                                        missing_required_fields) if missing_required_fields else
-                                    'includes unknown field{0} {1}'.format(
-                                        's' if len(included_unknown_fields) > 1 else '',
+                                        's' if len(missing_required_fields) > 1
+                                        else '',
+                                        missing_required_fields) if missing_required_fields
+                                    else 'includes unknown field{0} {1}'.format(
+                                        's' if len(included_unknown_fields) > 1
+                                        else '',
                                         included_unknown_fields)),
                                 'user_message': 'The request is badly formatted'
                             }
@@ -326,7 +402,7 @@ class IPTVProxyConfigurationJSONAPI(IPTVProxyJSONAPI):
                         ]
                     }
                     self._json_api_response.status_code = requests.codes.UNPROCESSABLE_ENTITY
-        except (json.JSONDecodeError, TypeError):
+        except (JSONDecodeError, TypeError):
             is_valid_patch_request_body = False
 
             logger.error(
@@ -355,41 +431,7 @@ class IPTVProxyConfigurationJSONAPI(IPTVProxyJSONAPI):
 
     def process_get_request(self):
         if self._validate_is_request_body_empty() and self._validate_is_query_string_empty():
-            configuration = IPTVProxyConfiguration.get_configuration_copy()
-
-            self._json_api_response.content = {
-                'meta': {
-                    'application': 'IPTVProxy',
-                    'version': VERSION
-                },
-                'data': {
-                    'type': 'configuration',
-                    'id': None,
-                    'attributes': {
-                        'logging_level': configuration['LOGGING_LEVEL'],
-                        'server_hostname_loopback': configuration['SERVER_HOSTNAME_LOOPBACK'],
-                        'server_hostname_private': configuration['SERVER_HOSTNAME_PRIVATE'],
-                        'server_hostname_public': configuration['SERVER_HOSTNAME_PUBLIC'],
-                        'server_http_port': configuration['SERVER_HTTP_PORT'],
-                        'server_https_port': configuration['SERVER_HTTPS_PORT'],
-                        'server_password': configuration['SERVER_PASSWORD'],
-                        'smooth_streams_epg_source': configuration['SMOOTH_STREAMS_EPG_SOURCE'],
-                        'smooth_streams_epg_url': configuration['SMOOTH_STREAMS_EPG_URL']
-                        if configuration['SMOOTH_STREAMS_EPG_URL'] else '',
-                        'smooth_streams_password': configuration['SMOOTH_STREAMS_PASSWORD'],
-                        'smooth_streams_playlist_protocol': configuration['SMOOTH_STREAMS_PLAYLIST_PROTOCOL'],
-                        'smooth_streams_playlist_type': configuration['SMOOTH_STREAMS_PLAYLIST_TYPE'],
-                        'smooth_streams_server': configuration['SMOOTH_STREAMS_SERVER'],
-                        'smooth_streams_service': configuration['SMOOTH_STREAMS_SERVICE'],
-                        'smooth_streams_username': configuration['SMOOTH_STREAMS_USERNAME'],
-                        'vader_streams_password': configuration['VADER_STREAMS_PASSWORD'],
-                        'vader_streams_playlist_protocol': configuration['VADER_STREAMS_PLAYLIST_PROTOCOL'],
-                        'vader_streams_playlist_type': configuration['VADER_STREAMS_PLAYLIST_TYPE'],
-                        'vader_streams_server': configuration['VADER_STREAMS_SERVER'],
-                        'vader_streams_username': configuration['VADER_STREAMS_USERNAME']
-                    }
-                }
-            }
+            self._json_api_response.content = ConfigurationJSONAPI.create_get_request_response_content()
             self._json_api_response.status_code = requests.codes.OK
 
         return (json.dumps(self._json_api_response.content, indent=4), self._json_api_response.status_code)
@@ -398,34 +440,10 @@ class IPTVProxyConfigurationJSONAPI(IPTVProxyJSONAPI):
         if self._validate_patch_request_body() and self._validate_is_query_string_empty():
             request_body = json.loads(self._http_request.request_body)
 
-            update_configuration_request = {
-                'LOGGING_LEVEL': request_body['data']['attributes']['logging_level'].upper(),
-                'SERVER_HOSTNAME_LOOPBACK': request_body['data']['attributes']['server_hostname_loopback'],
-                'SERVER_HOSTNAME_PRIVATE': request_body['data']['attributes']['server_hostname_private'],
-                'SERVER_HOSTNAME_PUBLIC': request_body['data']['attributes']['server_hostname_public'],
-                'SERVER_HTTPS_PORT': request_body['data']['attributes']['server_https_port'],
-                'SERVER_HTTP_PORT': request_body['data']['attributes']['server_http_port'],
-                'SERVER_PASSWORD': request_body['data']['attributes']['server_password'],
-                'SMOOTH_STREAMS_EPG_SOURCE': request_body['data']['attributes']['smooth_streams_epg_source'].lower(),
-                'SMOOTH_STREAMS_EPG_URL': request_body['data']['attributes']['smooth_streams_epg_url'].lower(),
-                'SMOOTH_STREAMS_PASSWORD': request_body['data']['attributes']['smooth_streams_password'],
-                'SMOOTH_STREAMS_PLAYLIST_PROTOCOL': request_body['data']['attributes'][
-                    'smooth_streams_playlist_protocol'].lower(),
-                'SMOOTH_STREAMS_PLAYLIST_TYPE': request_body['data']['attributes'][
-                    'smooth_streams_playlist_type'].lower(),
-                'SMOOTH_STREAMS_SERVER': request_body['data']['attributes']['smooth_streams_server'].lower(),
-                'SMOOTH_STREAMS_SERVICE': request_body['data']['attributes']['smooth_streams_service'].lower(),
-                'SMOOTH_STREAMS_USERNAME': request_body['data']['attributes']['smooth_streams_username'],
-                'VADER_STREAMS_PASSWORD': request_body['data']['attributes']['vader_streams_password'],
-                'VADER_STREAMS_PLAYLIST_PROTOCOL': request_body['data']['attributes'][
-                    'vader_streams_playlist_protocol'].lower(),
-                'VADER_STREAMS_PLAYLIST_TYPE': request_body['data']['attributes'][
-                    'vader_streams_playlist_type'].lower(),
-                'VADER_STREAMS_SERVER': request_body['data']['attributes']['vader_streams_server'].lower(),
-                'VADER_STREAMS_USERNAME': request_body['data']['attributes']['vader_streams_username']
-            }
+            update_configuration_request = ConfigurationJSONAPI.create_patch_request_update_configuration_request(
+                request_body)
 
-            update_configuration_request_errors = IPTVProxyConfiguration.validate_update_configuration_request(
+            update_configuration_request_errors = Configuration.validate_update_configuration_request(
                 update_configuration_request)
 
             if update_configuration_request_errors:
@@ -457,7 +475,7 @@ class IPTVProxyConfigurationJSONAPI(IPTVProxyJSONAPI):
                 self._json_api_response.status_code = requests.codes.UNPROCESSABLE_ENTITY
             else:
                 try:
-                    IPTVProxyConfiguration.write_configuration_file(update_configuration_request)
+                    Configuration.write_configuration_file(update_configuration_request)
 
                     self._json_api_response.content = {
                         'meta': {
@@ -492,22 +510,22 @@ class IPTVProxyConfigurationJSONAPI(IPTVProxyJSONAPI):
         return (json.dumps(self._json_api_response.content, indent=4), self._json_api_response.status_code)
 
 
-class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
+class RecordingsJSONAPI(JSONAPI):
     def __init__(self, http_request):
-        IPTVProxyJSONAPI.__init__(self, http_request, 'recordings')
+        JSONAPI.__init__(self, http_request, 'recordings')
 
     def _validate_get_request_query_string(self):
         is_valid_get_request_query_string = True
 
         query_string_parameters_schema = {
             'status': {
-                'allowed': [IPTVProxyRecordingStatus.LIVE.value,
-                            IPTVProxyRecordingStatus.PERSISTED.value,
-                            IPTVProxyRecordingStatus.SCHEDULED.value],
+                'allowed': [RecordingStatus.LIVE.value,
+                            RecordingStatus.PERSISTED.value,
+                            RecordingStatus.SCHEDULED.value],
                 'type': 'string'
             }
         }
-        query_string_parameters_validator = IPTVProxyCerberusValidator(query_string_parameters_schema)
+        query_string_parameters_validator = JSONAPIValidator(query_string_parameters_schema)
 
         if not query_string_parameters_validator.validate(self._http_request.requested_query_string_parameters):
             is_valid_get_request_query_string = False
@@ -523,7 +541,8 @@ class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
                               self._http_request.requested_path_with_query_string,
                               's' if len([error_key
                                           for error_key in query_string_parameters_validator.errors
-                                          if error_key != 'status']) > 1 else '',
+                                          if error_key != 'status']) > 1
+                              else '',
                               self._http_request.command,
                               ', '.join([error_key
                                          for error_key in query_string_parameters_validator.errors
@@ -534,7 +553,8 @@ class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
                         {
                             'status': '{0}'.format(requests.codes.BAD_REQUEST),
                             'title': 'Unsupported query parameter{0}'.format(
-                                's' if len(query_string_parameters_validator.errors) > 1 else ''),
+                                's' if len(query_string_parameters_validator.errors) > 1
+                                else ''),
                             'field': list(sorted(query_string_parameters_validator.errors)),
                             'developer_message': '{0} recordings does not support [\'{1}\'] query parameter'
                                                  '{2}'.format(
@@ -544,7 +564,8 @@ class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
                                            if error_key != 'status']),
                                 's' if len([error_key
                                             for error_key in query_string_parameters_validator.errors
-                                            if error_key != 'status']) > 1 else ''),
+                                            if error_key != 'status']) > 1
+                                else ''),
                             'user_message': 'The request is badly formatted'
                         }
                     ]
@@ -628,7 +649,7 @@ class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
                     'type': 'dict'
                 }
             }
-            request_body_validator = IPTVProxyCerberusValidator(request_body_schema)
+            request_body_validator = JSONAPIValidator(request_body_schema)
 
             if not request_body_validator.validate(request_body):
                 is_valid_post_request_body = False
@@ -686,10 +707,12 @@ class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
                             self._http_request.requested_path_with_query_string,
                             pprint.pformat(request_body, indent=4),
                             'is missing mandatory field{0} {1}'.format(
-                                's' if len(missing_required_fields) > 1 else '',
-                                missing_required_fields) if missing_required_fields else
-                            'includes unknown field{0} {1}'.format(
-                                's' if len(included_unknown_fields) > 1 else '',
+                                's' if len(missing_required_fields) > 1
+                                else '',
+                                missing_required_fields) if missing_required_fields
+                            else 'includes unknown field{0} {1}'.format(
+                                's' if len(included_unknown_fields) > 1
+                                else '',
                                 included_unknown_fields)))
 
                     self._json_api_response.content = {
@@ -701,10 +724,12 @@ class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
                                                       else included_unknown_fields),
                                 'developer_message': 'Request body {0}'.format(
                                     'is missing mandatory field{0} {1}'.format(
-                                        's' if len(missing_required_fields) > 1 else '',
-                                        missing_required_fields) if missing_required_fields else
-                                    'includes unknown field{0} {1}'.format(
-                                        's' if len(included_unknown_fields) > 1 else '',
+                                        's' if len(missing_required_fields) > 1
+                                        else '',
+                                        missing_required_fields) if missing_required_fields
+                                    else 'includes unknown field{0} {1}'.format(
+                                        's' if len(included_unknown_fields) > 1
+                                        else '',
                                         included_unknown_fields)),
                                 'user_message': 'The request is badly formatted'
                             }
@@ -720,7 +745,8 @@ class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
                     if incorrect_type_fields:
                         field = incorrect_type_fields
                         developer_message = 'Request body includes field{0} with invalid type {1}'.format(
-                            's' if len(incorrect_type_fields) > 1 else '',
+                            's' if len(incorrect_type_fields) > 1
+                            else '',
                             incorrect_type_fields)
                         user_message = 'The request is badly formatted'
                     elif invalid_type_value == ['type']:
@@ -795,7 +821,7 @@ class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
                         ]
                     }
                     self._json_api_response.status_code = requests.codes.UNPROCESSABLE_ENTITY
-        except (json.JSONDecodeError, TypeError):
+        except (JSONDecodeError, TypeError):
             is_valid_post_request_body = False
 
             logger.error(
@@ -826,95 +852,100 @@ class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
         if self._validate_is_request_body_empty() and self._validate_is_query_string_empty():
             recording_id = self._http_request.requested_url_components.path[len('/recordings/'):]
 
-            try:
-                recording = IPTVProxyPVR.get_recording(recording_id)
+            with Database.get_write_lock():
+                db_session = Database.create_session()
 
-                logger.debug(
-                    'Attempting to {0} {1} recording\n'
-                    'Provider          => {2}\n'
-                    'Channel name      => {3}\n'
-                    'Channel number    => {4}\n'
-                    'Program title     => {5}\n'
-                    'Start date & time => {6}\n'
-                    'End date & time   => {7}'.format(
-                        'stop' if recording.status == IPTVProxyRecordingStatus.LIVE.value else 'delete',
-                        recording.status,
-                        recording.provider,
-                        recording.channel_name,
-                        recording.channel_number,
-                        recording.program_title,
-                        recording.provider,
-                        recording.start_date_time_in_utc.astimezone(
-                            tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S'),
-                        recording.end_date_time_in_utc.astimezone(
-                            tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S')))
+                try:
+                    recording = PVR.get_recording(db_session, recording_id)
 
-                if recording.status == IPTVProxyRecordingStatus.LIVE.value:
-                    try:
-                        IPTVProxyPVR.stop_live_recording(recording)
-                    except KeyError:
-                        raise IPTVProxyRecordingNotFoundError
-                elif recording.status == IPTVProxyRecordingStatus.PERSISTED.value:
-                    try:
-                        IPTVProxyPVR.delete_persisted_recording(recording)
-                    except OSError:
-                        raise IPTVProxyRecordingNotFoundError
-                elif recording.status == IPTVProxyRecordingStatus.SCHEDULED.value:
-                    try:
-                        IPTVProxyPVR.delete_scheduled_recording(recording)
-                    except ValueError:
-                        raise IPTVProxyRecordingNotFoundError
+                    logger.debug(
+                        'Attempting to {0} {1} recording\n'
+                        'Provider          => {2}\n'
+                        'Channel number    => {3}\n'
+                        'Channel name      => {4}\n'
+                        'Program title     => {5}\n'
+                        'Start date & time => {6}\n'
+                        'End date & time   => {7}'.format(
+                            'stop' if recording.status == RecordingStatus.LIVE.value
+                            else 'delete',
+                            recording.status,
+                            recording.provider,
+                            recording.channel_number,
+                            recording.channel_name,
+                            recording.program_title,
+                            recording.provider,
+                            recording.start_date_time_in_utc.astimezone(
+                                tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S'),
+                            recording.end_date_time_in_utc.astimezone(
+                                tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S')))
 
-                logger.info(
-                    '{0} {1} recording\n'
-                    'Provider          => {2}\n'
-                    'Channel name      => {3}\n'
-                    'Channel number    => {4}\n'
-                    'Program title     => {5}\n'
-                    'Start date & time => {6}\n'
-                    'End date & time   => {7}'.format(
-                        'Stopped' if recording.status == IPTVProxyRecordingStatus.LIVE.value else 'Deleted',
-                        recording.status,
-                        recording.provider,
-                        recording.channel_name,
-                        recording.channel_number,
-                        recording.program_title,
-                        recording.start_date_time_in_utc.astimezone(
-                            tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S'),
-                        recording.end_date_time_in_utc.astimezone(
-                            tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S')))
+                    if recording.status == RecordingStatus.LIVE.value:
+                        PVR.stop_live_recording(db_session, recording)
+                    else:
+                        PVR.delete_recording(db_session, recording)
 
-                self._json_api_response.content = {
-                    'meta': {
-                        'application': 'IPTVProxy',
-                        'version': VERSION
-                    }
-                }
-                self._json_api_response.status_code = requests.codes.OK
-            except IPTVProxyRecordingNotFoundError:
-                logger.error(
-                    'Error encountered processing request\n'
-                    'Source IP      => {0}\n'
-                    'Requested path => {1}\n'
-                    'Error Title    => Resource not found\n'
-                    'Error Message  => Recording with ID {2} does not exist'.format(
-                        self._http_request.client_ip_address,
-                        self._http_request.requested_path_with_query_string,
-                        recording_id))
+                    db_session.commit()
 
-                self._json_api_response.content = {
-                    'errors': [
-                        {
-                            'status': '{0}'.format(requests.codes.NOT_FOUND),
-                            'title': 'Resource not found',
-                            'field': None,
-                            'developer_message': 'Recording with ID {0} does not exist'.format(
-                                recording_id),
-                            'user_message': 'Requested recording no longer exists'
+                    logger.info(
+                        '{0} {1} recording\n'
+                        'Provider          => {2}\n'
+                        'Channel name      => {3}\n'
+                        'Channel number    => {4}\n'
+                        'Program title     => {5}\n'
+                        'Start date & time => {6}\n'
+                        'End date & time   => {7}'.format(
+                            'Stopped' if recording.status == RecordingStatus.LIVE.value
+                            else 'Deleted',
+                            recording.status,
+                            recording.provider,
+                            recording.channel_name,
+                            recording.channel_number,
+                            recording.program_title,
+                            recording.start_date_time_in_utc.astimezone(
+                                tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S'),
+                            recording.end_date_time_in_utc.astimezone(
+                                tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S')))
+
+                    self._json_api_response.content = {
+                        'meta': {
+                            'application': 'IPTVProxy',
+                            'version': VERSION
                         }
-                    ]
-                }
-                self._json_api_response.status_code = requests.codes.NOT_FOUND
+                    }
+                    self._json_api_response.status_code = requests.codes.OK
+                except RecordingNotFoundError:
+                    db_session.rollback()
+
+                    logger.error(
+                        'Error encountered processing request\n'
+                        'Source IP      => {0}\n'
+                        'Requested path => {1}\n'
+                        'Error Title    => Resource not found\n'
+                        'Error Message  => Recording with ID {2} does not exist'.format(
+                            self._http_request.client_ip_address,
+                            self._http_request.requested_path_with_query_string,
+                            recording_id))
+
+                    self._json_api_response.content = {
+                        'errors': [
+                            {
+                                'status': '{0}'.format(requests.codes.NOT_FOUND),
+                                'title': 'Resource not found',
+                                'field': None,
+                                'developer_message': 'Recording with ID {0} does not exist'.format(
+                                    recording_id),
+                                'user_message': 'Requested recording no longer exists'
+                            }
+                        ]
+                    }
+                    self._json_api_response.status_code = requests.codes.NOT_FOUND
+                except Exception:
+                    (type_, value_, traceback_) = sys.exc_info()
+                    logger.error('\n'.join(traceback.format_exception(type_, value_, traceback_)))
+
+                    db_session.rollback()
+                finally:
+                    db_session.close()
 
         return (json.dumps(self._json_api_response.content, indent=4), self._json_api_response.status_code)
 
@@ -922,23 +953,26 @@ class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
         if self._validate_is_request_body_empty():
             if recording_id:
                 if self._validate_is_query_string_empty():
-                    try:
-                        recording = IPTVProxyPVR.get_recording(recording_id)
+                    db_session = Database.create_session()
 
-                        server_hostname = IPTVProxyConfiguration.get_configuration_parameter(
+                    try:
+                        recording = PVR.get_recording(db_session, recording_id)
+
+                        server_hostname = Configuration.get_configuration_parameter(
                             'SERVER_HOSTNAME_{0}'.format(self._http_request.client_ip_address_type.value))
-                        server_port = IPTVProxyConfiguration.get_configuration_parameter(
-                            'SERVER_HTTP{0}_PORT'.format('S' if self._http_request.server.is_secure else ''))
+                        server_port = Configuration.get_configuration_parameter(
+                            'SERVER_HTTP{0}_PORT'.format('S' if self._http_request.server.is_secure
+                                                         else ''))
 
                         playlist_url = None
-                        if recording.status == IPTVProxyRecordingStatus.PERSISTED.value:
-                            playlist_url = IPTVProxyPVR.generate_recording_playlist_url(
+                        if recording.status == RecordingStatus.PERSISTED.value:
+                            playlist_url = PVR.generate_vod_recording_playlist_url(
                                 self._http_request.server.is_secure,
                                 server_hostname,
                                 server_port,
                                 '{0}'.format(uuid.uuid4()),
-                                recording.base_recording_directory,
-                                IPTVProxyConfiguration.get_configuration_parameter('SERVER_PASSWORD'))
+                                recording.id,
+                                Configuration.get_configuration_parameter('SERVER_PASSWORD'))
 
                         self._json_api_response.content = {
                             'meta': {
@@ -961,7 +995,7 @@ class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
                             }
                         }
                         self._json_api_response.status_code = requests.codes.OK
-                    except IPTVProxyRecordingNotFoundError:
+                    except RecordingNotFoundError:
                         logger.error(
                             'Error encountered processing request\n'
                             'Source IP      => {0}\n'
@@ -985,12 +1019,15 @@ class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
                             ]
                         }
                         self._json_api_response.status_code = requests.codes.NOT_FOUND
+                    finally:
+                        db_session.close()
             else:
                 if self._validate_get_request_query_string():
-                    server_hostname = IPTVProxyConfiguration.get_configuration_parameter(
+                    server_hostname = Configuration.get_configuration_parameter(
                         'SERVER_HOSTNAME_{0}'.format(self._http_request.client_ip_address_type.value))
-                    server_port = IPTVProxyConfiguration.get_configuration_parameter(
-                        'SERVER_HTTP{0}_PORT'.format('S' if self._http_request.server.is_secure else ''))
+                    server_port = Configuration.get_configuration_parameter(
+                        'SERVER_HTTP{0}_PORT'.format('S' if self._http_request.server.is_secure
+                                                     else ''))
 
                     self._json_api_response.content = {
                         'meta': {
@@ -1002,17 +1039,17 @@ class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
 
                     status = self._http_request.requested_query_string_parameters.get('status')
 
-                    for recording in [recording for recording in IPTVProxyPVR.get_recordings()
+                    for recording in [recording for recording in PVR.get_recordings()
                                       if status is None or status == recording.status]:
                         playlist_url = None
-                        if recording.status == IPTVProxyRecordingStatus.PERSISTED.value:
-                            playlist_url = IPTVProxyPVR.generate_recording_playlist_url(
+                        if recording.status == RecordingStatus.PERSISTED.value:
+                            playlist_url = PVR.generate_vod_recording_playlist_url(
                                 self._http_request.server.is_secure,
                                 server_hostname,
                                 server_port,
                                 '{0}'.format(uuid.uuid4()),
-                                recording.base_recording_directory,
-                                IPTVProxyConfiguration.get_configuration_parameter('SERVER_PASSWORD'))
+                                recording.id,
+                                Configuration.get_configuration_parameter('SERVER_PASSWORD'))
 
                         self._json_api_response.content['data'].append({
                             'type': 'recordings',
@@ -1037,8 +1074,8 @@ class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
         if self._validate_post_request_body() and self._validate_is_query_string_empty():
             request_body = json.loads(self._http_request.request_body)
 
-            channel_name = IPTVProxyConfiguration.get_provider(
-                html.unescape(request_body['data']['attributes']['provider']).lower())['epg'].get_channel_name(
+            channel_name = ProvidersController.get_provider_map_class(
+                html.unescape(request_body['data']['attributes']['provider']).lower()).epg_class().get_channel_name(
                 int(request_body['data']['attributes']['channel_number']))
             channel_number = request_body['data']['attributes']['channel_number']
             end_date_time_in_utc = datetime.strptime(request_body['data']['attributes']['end_date_time_in_utc'],
@@ -1049,79 +1086,92 @@ class IPTVProxyRecordingsJSONAPI(IPTVProxyJSONAPI):
             start_date_time_in_utc = datetime.strptime(request_body['data']['attributes']['start_date_time_in_utc'],
                                                        '%Y-%m-%d %H:%M:%S').replace(tzinfo=pytz.utc)
 
-            recording = IPTVProxyRecording(channel_name,
-                                           channel_number,
-                                           end_date_time_in_utc,
-                                           id_,
-                                           program_title,
-                                           provider,
-                                           start_date_time_in_utc,
-                                           IPTVProxyRecordingStatus.SCHEDULED.value)
+            recording = Recording(id_,
+                                  provider,
+                                  channel_number,
+                                  channel_name,
+                                  program_title,
+                                  start_date_time_in_utc,
+                                  end_date_time_in_utc,
+                                  RecordingStatus.SCHEDULED.value)
 
-            try:
-                IPTVProxyPVR.add_scheduled_recording(recording)
+            with Database.get_write_lock():
+                db_session = Database.create_session()
 
-                logger.info(
-                    'Scheduled recording\n'
-                    'Provider          => {0}\n'
-                    'Channel name      => {1}\n'
-                    'Channel number    => {2}\n'
-                    'Program title     => {3}\n'
-                    'Start date & time => {4}\n'
-                    'End date & time   => {5}'.format(provider,
-                                                      channel_name,
-                                                      channel_number,
-                                                      program_title,
-                                                      start_date_time_in_utc.astimezone(
-                                                          tzlocal.get_localzone()).strftime(
-                                                          '%Y-%m-%d %H:%M:%S'),
-                                                      end_date_time_in_utc.astimezone(
-                                                          tzlocal.get_localzone()).strftime(
-                                                          '%Y-%m-%d %H:%M:%S')))
+                try:
+                    PVR.add_scheduled_recording(db_session, recording)
+                    db_session.commit()
 
-                self._json_api_response.content = {
-                    'meta': {
-                        'application': 'IPTVProxy',
-                        'version': VERSION
-                    },
-                    'data': {
-                        'type': 'recordings',
-                        'id': id_,
-                        'attributes': {
-                            'channel_name': channel_name,
-                            'channel_number': channel_number,
-                            'end_date_time_in_utc': '{0}'.format(end_date_time_in_utc),
-                            'program_title': program_title,
-                            'provider': provider,
-                            'start_date_time_in_utc': '{0}'.format(start_date_time_in_utc),
-                            'status': 'scheduled'
+                    logger.info(
+                        'Scheduled recording\n'
+                        'Provider          => {0}\n'
+                        'Channel number    => {1}\n'
+                        'Channel name      => {2}\n'
+                        'Program title     => {3}\n'
+                        'Start date & time => {4}\n'
+                        'End date & time   => {5}'.format(provider,
+                                                          channel_number,
+                                                          channel_name,
+                                                          program_title,
+                                                          start_date_time_in_utc.astimezone(
+                                                              tzlocal.get_localzone()).strftime(
+                                                              '%Y-%m-%d %H:%M:%S'),
+                                                          end_date_time_in_utc.astimezone(
+                                                              tzlocal.get_localzone()).strftime(
+                                                              '%Y-%m-%d %H:%M:%S')))
+
+                    self._json_api_response.content = {
+                        'meta': {
+                            'application': 'IPTVProxy',
+                            'version': VERSION
+                        },
+                        'data': {
+                            'type': 'recordings',
+                            'id': id_,
+                            'attributes': {
+                                'channel_name': channel_name,
+                                'channel_number': channel_number,
+                                'end_date_time_in_utc': '{0}'.format(end_date_time_in_utc),
+                                'program_title': program_title,
+                                'provider': provider,
+                                'start_date_time_in_utc': '{0}'.format(start_date_time_in_utc),
+                                'status': 'scheduled'
+                            }
                         }
                     }
-                }
-                self._json_api_response.status_code = requests.codes.CREATED
-            except IPTVProxyDuplicateRecordingError:
-                logger.error(
-                    'Error encountered processing request\n'
-                    'Source IP      => {0}\n'
-                    'Requested path => {1}\n'
-                    'Post Data      => {2}\n'
-                    'Error Title    => Duplicate resource\n'
-                    'Error Message  => Recording already scheduled'.format(
-                        self._http_request.client_ip_address,
-                        self._http_request.requested_path_with_query_string,
-                        pprint.pformat(request_body, indent=4)))
+                    self._json_api_response.status_code = requests.codes.CREATED
+                except DuplicateRecordingError:
+                    db_session.rollback()
 
-                self._json_api_response.content = {
-                    'errors': [
-                        {
-                            'status': '{0}'.format(requests.codes.CONFLICT),
-                            'field': None,
-                            'title': 'Duplicate resource',
-                            'developer_message': 'Recording already scheduled',
-                            'user_message': 'The recording is already scheduled'
-                        }
-                    ]
-                }
-                self._json_api_response.status_code = requests.codes.CONFLICT
+                    logger.error(
+                        'Error encountered processing request\n'
+                        'Source IP      => {0}\n'
+                        'Requested path => {1}\n'
+                        'Post Data      => {2}\n'
+                        'Error Title    => Duplicate resource\n'
+                        'Error Message  => Recording already scheduled'.format(
+                            self._http_request.client_ip_address,
+                            self._http_request.requested_path_with_query_string,
+                            pprint.pformat(request_body, indent=4)))
+
+                    self._json_api_response.content = {
+                        'errors': [
+                            {
+                                'status': '{0}'.format(requests.codes.CONFLICT),
+                                'field': None,
+                                'title': 'Duplicate resource',
+                                'developer_message': 'Recording already scheduled',
+                                'user_message': 'The recording is already scheduled'
+                            }
+                        ]
+                    }
+                    self._json_api_response.status_code = requests.codes.CONFLICT
+                except Exception:
+                    (type_, value_, traceback_) = sys.exc_info()
+                    logger.error('\n'.join(traceback.format_exception(type_, value_, traceback_)))
+
+                    db_session.rollback()
+                finally:
+                    db_session.close()
 
         return (json.dumps(self._json_api_response.content, indent=4), self._json_api_response.status_code)

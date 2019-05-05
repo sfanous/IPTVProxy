@@ -1,0 +1,489 @@
+    <div class="w3-border w3-container"
+         id="configurationDiv"
+         style="display: none; overflow-y: auto;">
+        <ul class="w3-border-0 w3-ul">
+            <li class="w3-border-0">
+                <form action=""
+                      autocomplete="off"
+                      class="w3-container"
+                      id="configurationForm"
+                      novalidate="novalidate">
+                    <button class="w3-black w3-block w3-button"
+                            id="serverConfigurationButton"
+                            onclick="ConfigurationModule.toggleConfigurationDiv('serverConfiguration')"
+                            type="button">Server</button>
+                    <div class="w3-container w3-hide"
+                         id="serverConfigurationDiv"
+                         style="padding: 8px;">
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container">
+                                <label for="serverPasswordInput">Password</label>
+                                <span class="fas fa-eye w3-right"
+                                      id="serverTogglePasswordSpan"
+                                      onclick="ConfigurationModule.togglePasswordVisibility(event)"
+                                      style="cursor: pointer;"></span>
+                                <input class="w3-border w3-input"
+                                       id="serverPasswordInput"
+                                       name="serverPasswordInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="password"
+                                       value="{{ configuration_server_password }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="serverPasswordInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="serverHttpPortInput">HTTP Port Number</label>
+                                <input class="w3-border w3-input"
+                                       id="serverHttpPortInput"
+                                       name="serverHttpPortInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="number"
+                                       value="{{ configuration_server_http_port }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="serverHttpPortInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="serverHttpsPortInput">HTTPS Port Number</label>
+                                <input class="w3-border w3-input"
+                                       id="serverHttpsPortInput"
+                                       name="serverHttpsPortInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="number"
+                                       value="{{ configuration_server_https_port }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="serverHttpsPortInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-third">
+                                <label for="serverHostnameLoopbackInput">Loopback Hostname</label>
+                                <input class="w3-border w3-input"
+                                       id="serverHostnameLoopbackInput"
+                                       name="serverHostnameLoopbackInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_server_hostname_loopback }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="serverHostnameLoopbackInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-third">
+                                <label for="serverHostnamePrivateInput">Private LAN Hostname</label>
+                                <input class="w3-border w3-input"
+                                       id="serverHostnamePrivateInput"
+                                       name="serverHostnamePrivateInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_server_hostname_private }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="serverHostnamePrivateInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-third">
+                                <label for="serverHostnamePublicInput">Public WAN Hostname</label>
+                                <input class="w3-border w3-input"
+                                       id="serverHostnamePublicInput"
+                                       name="serverHostnamePublicInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_server_hostname_public }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="serverHostnamePublicInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="w3-black w3-block w3-button"
+                            id="smoothStreamsConfigurationButton"
+                            onclick="ConfigurationModule.toggleConfigurationDiv('smoothStreamsConfiguration')"
+                            type="button">SmoothStreams</button>
+                    <div class="w3-container w3-hide"
+                         id="smoothStreamsConfigurationDiv"
+                         style="padding: 8px;">
+                        <div class="w3-display-container w3-padding">
+                            <div class="w3-display-middle">
+                                <input {{ configuration_smoothstreams_active }}
+                                       class="w3-check"
+                                       id="smoothStreamsEnabledCheckbox"
+                                       name="smoothStreamsEnabledCheckbox"
+                                       onclick="ConfigurationModule.determineProviderConfigurationInputsState();ConfigurationModule.determineResetAndUpdateButtonsState();"
+                                       type="checkbox">
+                                <label for="smoothStreamsEnabledCheckbox">Enabled</label>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container">
+                                <label for="smoothStreamsServiceSelect">Service</label>
+                                <select class="w3-border w3-select"
+                                        id="smoothStreamsServiceSelect"
+                                        name="smoothStreamsServiceSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_view247_selected }}value="view247">Live247</option>
+                                    <option {{ configuration_viewmmasr_selected }}value="viewmmasr">MMA TV</option>
+                                    <option {{ configuration_viewss_selected }}value="viewss">StarStreams</option>
+                                    <option {{ configuration_viewstvn_selected }}value="viewstvn">StreamTVNow</option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="smoothStreamsServiceSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container">
+                                <label for="smoothStreamsServerSelect">Server</label>
+                                <select class="w3-border w3-select"
+                                        id="smoothStreamsServerSelect"
+                                        name="smoothStreamsServerSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_dap_selected }}value="dap">Asia Pacific Mix</option>
+                                    <option {{ configuration_deu_selected }}value="deu">Europe Mix</option>
+                                    <option {{ configuration_dna_selected }}value="dna">North America Mix</option>
+                                    <option {{ configuration_deu_de_selected }}value="deu-de">Europe Germany Mix</option>
+                                    <option {{ configuration_deu_nl_selected }}value="deu-nl">Europe Netherlands Mix</option>
+                                    <option {{ configuration_deu_uk_selected }}value="deu-uk">Europe UK Mix</option>
+                                    <option {{ configuration_dnae_selected }}value="dnae">North America East Mix</option>
+                                    <option {{ configuration_dnaw_selected }}value="dnaw">North America West Mix</option>
+                                    <option {{ configuration_deu_nl1_selected }}value="deu-nl1">Europe Netherlands 1 (i3d)</option>
+                                    <option {{ configuration_deu_nl2_selected }}value="deu-nl2">Europe Netherlands 2 (i3d)</option>
+                                    <option {{ configuration_deu_nl3_selected }}value="deu-nl3">Europe Netherlands 3 (Amsterdam)
+                                    </option>
+                                    <option {{ configuration_deu_nl4_selected }}value="deu-nl4">Europe Netherlands 4 (Breda)
+                                    </option>
+                                    <option {{ configuration_deu_nl5_selected }}value="deu-nl5">Europe Netherlands 5 (Enschede)
+                                    </option>
+                                    <option {{ configuration_deu_uk1_selected }}value="deu-uk1">Europe UK 1 (io)</option>
+                                    <option {{ configuration_deu_uk2_selected }}value="deu-uk2">Europe UK 2 (100TB)</option>
+                                    <option {{ configuration_dnae1_selected }}value="dnae1">North America East 1 (New Jersey)
+                                    </option>
+                                    <option {{ configuration_dnae2_selected }}value="dnae2">North America East 2 (Virginia)
+                                    </option>
+                                    <option {{ configuration_dnae3_selected }}value="dnae3">North America East 3 (Montreal)
+                                    </option>
+                                    <option {{ configuration_dnae4_selected }}value="dnae4">North America East 4 (Toronto)</option>
+                                    <option {{ configuration_dnae6_selected }}value="dnae6">North America East 6 (New York)
+                                    </option>
+                                    <option {{ configuration_dnaw1_selected }}value="dnaw1">North America West 1 (Phoenix)</option>
+                                    <option {{ configuration_dnaw2_selected }}value="dnaw2">North America West 2 (Los Angeles)
+                                    </option>
+                                    <option {{ configuration_dnaw3_selected }}value="dnaw3">North America West 3 (San Jose)
+                                    </option>
+                                    <option {{ configuration_dnaw4_selected }}value="dnaw4">North America West 4 (Chicago)</option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="smoothStreamsServerSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="smoothStreamsUsernameInput">Username</label>
+                                <input class="w3-border w3-input"
+                                       id="smoothStreamsUsernameInput"
+                                       name="smoothStreamsUsernameInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_smoothstreams_username }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="smoothStreamsUsernameInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="smoothStreamsPasswordInput">Password</label>
+                                <span class="fas fa-eye w3-right"
+                                      id="smoothStreamsTogglePasswordSpan"
+                                      onclick="ConfigurationModule.togglePasswordVisibility(event)"
+                                      style="cursor: pointer;"></span>
+                                <input class="w3-border w3-input"
+                                       id="smoothStreamsPasswordInput"
+                                       name="smoothStreamsPasswordInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="password"
+                                       value="{{ configuration_smoothstreams_password }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="smoothStreamsPasswordInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="smoothStreamsPlaylistProtocolSelect">Playlist Protocol</label>
+                                <select class="w3-border w3-select"
+                                        id="smoothStreamsPlaylistProtocolSelect"
+                                        name="smoothStreamsPlaylistProtocolSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_smoothstreams_playlist_protocol_hls_selected }}value="hls">HTTP Live
+                                        Streaming (HLS)
+                                    </option>
+                                    <option {{ configuration_smoothstreams_playlist_protocol_rtmp_selected }}value="rtmp">
+                                        Real-Time Messaging Protocol (RTMP)
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="smoothStreamsPlaylistProtocolSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="smoothStreamsPlaylistTypeSelect">Playlist Type</label>
+                                <select class="w3-border w3-select"
+                                        id="smoothStreamsPlaylistTypeSelect"
+                                        name="smoothStreamsPlaylistTypeSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_smoothstreams_playlist_type_dynamic_selected }}value="dynamic">
+                                        Dynamic
+                                    </option>
+                                    <option {{ configuration_smoothstreams_playlist_type_static_selected }}value="static">Static
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="smoothStreamsPlaylistTypeSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="smoothStreamsEpgSourceSelect">EPG Source</label>
+                                <select class="w3-border w3-select"
+                                        id="smoothStreamsEpgSourceSelect"
+                                        name="smoothStreamsEpgSourceSelect"
+                                        oninput="ConfigurationModule.determineEpgUrlLabelInputVisibility();ConfigurationModule.determineResetAndUpdateButtonsState();"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_smoothstreams_epg_source_smoothstreams_selected }}value="smoothstreams">
+                                        SmoothStreams (Main)
+                                    </option>
+                                    <option {{ configuration_smoothstreams_epg_source_fog_selected }}value="fog">Fog
+                                        (Alternative)
+                                    </option>
+                                    <option {{ configuration_smoothstreams_epg_source_other_selected }}value="other">Other
+                                        (External)
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="smoothStreamsEpgSourceSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="smoothStreamsEpgUrlInput"
+                                       id="smoothStreamsEpgUrlLabel">EPG Url</label>
+                                <input class="w3-border w3-input"
+                                       id="smoothStreamsEpgUrlInput"
+                                       name="smoothStreamsEpgUrlInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_smoothstreams_epg_url }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="smoothStreamsEpgUrlInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="w3-black w3-block w3-button"
+                            id="vaderStreamsConfigurationButton"
+                            onclick="ConfigurationModule.toggleConfigurationDiv('vaderStreamsConfiguration')"
+                            type="button">VaderStreams</button>
+                    <div class="w3-container w3-hide"
+                         id="vaderStreamsConfigurationDiv"
+                         style="padding: 8px;">
+                        <div class="w3-display-container w3-padding">
+                            <div class="w3-display-middle">
+                                <input {{ configuration_vaderstreams_active }}
+                                       class="w3-check"
+                                       id="vaderStreamsEnabledCheckbox"
+                                       name="vaderStreamsEnabledCheckbox"
+                                       onclick="ConfigurationModule.determineProviderConfigurationInputsState();ConfigurationModule.determineResetAndUpdateButtonsState();"
+                                       type="checkbox">
+                                <label for="vaderStreamsEnabledCheckbox">Enabled</label>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container">
+                                <label for="vaderStreamsServerSelect">Server</label>
+                                <select class="w3-border w3-select"
+                                        id="vaderStreamsServerSelect"
+                                        name="vaderStreamsServerSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option selected="selected"
+                                            value="auto">Auto
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="vaderStreamsServerSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="vaderStreamsUsernameInput">Username</label>
+                                <input class="w3-border w3-input"
+                                       id="vaderStreamsUsernameInput"
+                                       name="vaderStreamsUsernameInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_vaderstreams_username }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="vaderStreamsUsernameInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="vaderStreamsPasswordInput">Password</label>
+                                <span class="fas fa-eye w3-right"
+                                      id="vaderStreamsTogglePasswordSpan"
+                                      onclick="ConfigurationModule.togglePasswordVisibility(event)"
+                                      style="cursor: pointer;"></span>
+                                <input class="w3-border w3-input"
+                                       id="vaderStreamsPasswordInput"
+                                       name="vaderStreamsPasswordInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="password"
+                                       value="{{ configuration_vaderstreams_password }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="vaderStreamsPasswordInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="vaderStreamsPlaylistProtocolSelect">Playlist Protocol</label>
+                                <select class="w3-border w3-select"
+                                        id="vaderStreamsPlaylistProtocolSelect"
+                                        name="vaderStreamsPlaylistProtocolSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_vaderstreams_playlist_protocol_hls_selected }}value="hls">HTTP Live
+                                        Streaming (HLS)
+                                    </option>
+                                    <option {{ configuration_vaderstreams_playlist_protocol_mpegts_selected }}value="mpegts">MPEG
+                                        Transport Stream (MPEG-TS)
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="vaderStreamsPlaylistProtocolSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="vaderStreamsPlaylistTypeSelect">Playlist Type</label>
+                                <select class="w3-border w3-select"
+                                        id="vaderStreamsPlaylistTypeSelect"
+                                        name="vaderStreamsPlaylistTypeSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_vaderstreams_playlist_type_dynamic_selected }}value="dynamic">
+                                        Dynamic
+                                    </option>
+                                    <option {{ configuration_vaderstreams_playlist_type_static_selected }}value="static">Static
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="vaderStreamsPlaylistTypeSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="vaderStreamsEpgSourceSelect">EPG Source</label>
+                                <select class="w3-border w3-select"
+                                        id="vaderStreamsEpgSourceSelect"
+                                        name="vaderStreamsEpgSourceSelect"
+                                        oninput="ConfigurationModule.determineEpgUrlLabelInputVisibility();ConfigurationModule.determineResetAndUpdateButtonsState();"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_vaderstreams_epg_source_vaderstreams_selected }}value="vaderstreams">
+                                        VaderStreams (Main)
+                                    </option>
+                                    <option {{ configuration_vaderstreams_epg_source_other_selected }}value="other">Other
+                                        (External)
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="vaderStreamsEpgSourceSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="vaderStreamsEpgUrlInput"
+                                       id="vaderStreamsEpgUrlLabel">EPG Url</label>
+                                <input class="w3-border w3-input"
+                                       id="vaderStreamsEpgUrlInput"
+                                       name="vaderStreamsEpgUrlInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_vaderstreams_epg_url }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="vaderStreamsEpgUrlInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </li>
+            <li class="w3-border-0">
+                <div class="w3-border-no w3-display-container w3-panel"
+                     id="configurationAlertDiv"
+                     style="display: none;">
+                            <span id="configurationSpan"
+                                  onclick="CommonModule.resetAlertDiv('configurationAlertDiv')"
+                                  class="w3-button w3-large w3-display-topright">&times;</span>
+                    <h3 id="configurationHeader"></h3>
+                    <p class="w3-medium"
+                       id="configurationMessageParagraph"></p>
+                    <p class="w3-medium"
+                       id="configurationReasonParagraph"></p>
+                </div>
+            </li>
+            <li class="w3-border-0">
+                <div class="w3-right-align">
+                    <button class="w3-button w3-black w3-disabled"
+                            id="configurationResetButton"
+                            onclick="ConfigurationModule.resetConfiguration()">
+                        Reset
+                    </button>
+                    <button class="w3-button w3-red w3-disabled"
+                            id="updateConfigurationButton"
+                            onclick="ConfigurationModule.updateConfiguration()">Update
+                    </button>
+                </div>
+            </li>
+    </div>
