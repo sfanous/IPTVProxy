@@ -6,6 +6,7 @@ import logging
 import pkgutil
 import sys
 import time
+import traceback
 from threading import Event
 from threading import RLock
 from threading import Thread
@@ -86,7 +87,7 @@ class ProvidersController():
                         logger.debug(
                             'Terminating {0}'.format(cls._providers_map_class[provider_name].api_class().__name__))
 
-                        with cls._active_providers_lock:
+                        with cls._active_providers_lock.writer_lock:
                             cls._active_providers.remove(provider_name)
 
                         cls._providers_executing_termination[provider_name] = {
@@ -129,7 +130,7 @@ class ProvidersController():
                         logger.debug(
                             'Reinitializing {0}'.format(cls._providers_map_class[provider_name].api_class().__name__))
 
-                        with cls._active_providers_lock:
+                        with cls._active_providers_lock.writer_lock:
                             bisect.insort(cls._active_providers, provider_name)
 
                         cls._providers_executing_initialization[provider_name] = {
@@ -255,6 +256,10 @@ class ProvidersController():
             except Exception:
                 logger.debug('Failed to initialize {0}'.format(
                     cls._providers_map_class[provider_name].api_class().__name__))
+
+                (status, value_, traceback_) = sys.exc_info()
+
+                logger.error('\n'.join(traceback.format_exception(status, value_, traceback_)))
 
     @classmethod
     def set_active_providers(cls, active_providers):

@@ -1,9 +1,8 @@
-import hashlib
 import html
-import json
 import logging
 import pickle
 import uuid
+from collections import OrderedDict
 from datetime import datetime
 from datetime import timedelta
 from threading import RLock
@@ -11,14 +10,12 @@ from threading import RLock
 import ijson
 import pytz
 import requests
-import tzlocal
 from lxml import etree
+from rwlock import RWLock
 
 from iptv_proxy.configuration import Configuration
-from iptv_proxy.configuration import OptionalSettings
 from iptv_proxy.providers.iptv_provider.epg import ProviderEPG
 from iptv_proxy.providers.smoothstreams.constants import SmoothStreamsConstants
-from iptv_proxy.providers.smoothstreams.data_access import SmoothStreamsDatabaseAccess
 from iptv_proxy.providers.smoothstreams.data_model import SmoothStreamsChannel
 from iptv_proxy.providers.smoothstreams.data_model import SmoothStreamsProgram
 from iptv_proxy.providers.smoothstreams.data_model import SmoothStreamsSetting
@@ -75,78 +72,20 @@ logger = logging.getLogger(__name__)
 class SmoothStreamsEPG(ProviderEPG):
     __slots__ = []
 
-    _channel_name_map = {}
+    _channel_name_map = OrderedDict()
+    _channel_name_map_lock = RWLock()
     _do_use_provider_icons = False
+    _do_use_provider_icons_lock = RWLock()
     _lock = RLock()
     _provider_name = SmoothStreamsConstants.PROVIDER_NAME.lower()
     _refresh_epg_timer = None
 
     @classmethod
-    def _do_update_epg(cls):
-        do_update_epg = False
-
-        with SmoothStreamsDatabase.get_access_lock().shared_lock:
-            db_session = SmoothStreamsDatabase.create_session()
-
-            try:
-                do_use_icons = None
-                channel_name_map_md5 = None
-                epg_source = None
-                epg_url = None
-                last_epg_refresh_date_time_in_utc = None
-
-                for setting_row in SmoothStreamsDatabaseAccess.query_settings(db_session):
-                    if setting_row.name == 'do_use_icons':
-                        do_use_icons = bool(int(setting_row.value))
-                    elif setting_row.name == 'channel_name_map_md5':
-                        channel_name_map_md5 = setting_row.value
-                    elif setting_row.name == 'epg_source':
-                        epg_source = setting_row.value
-                    elif setting_row.name == 'epg_url':
-                        epg_url = setting_row.value
-                    elif setting_row.name == 'last_epg_refresh_date_time_in_utc':
-                        last_epg_refresh_date_time_in_utc = datetime.strptime(setting_row.value, '%Y-%m-%d %H:%M:%S%z')
-
-                current_date_time_in_utc = datetime.now(pytz.utc)
-
-                if do_use_icons is None or cls._do_use_provider_icons != bool(int(do_use_icons)) or \
-                        channel_name_map_md5 is None or \
-                        hashlib.md5(json.dumps(cls._channel_name_map,
-                                               sort_keys=True).encode()).hexdigest() != channel_name_map_md5 or \
-                        epg_source is None or \
-                        Configuration.get_configuration_parameter('SMOOTHSTREAMS_EPG_SOURCE') != epg_source or \
-                        (Configuration.get_configuration_parameter(
-                            'SMOOTHSTREAMS_EPG_SOURCE') == SmoothStreamsEPGSource.OTHER.value and
-                         Configuration.get_configuration_parameter(
-                             'SMOOTHSTREAMS_EPG_URL') != epg_url) or \
-                        last_epg_refresh_date_time_in_utc is None or \
-                        current_date_time_in_utc >= \
-                        last_epg_refresh_date_time_in_utc.astimezone(
-                            tzlocal.get_localzone()).replace(hour=4,
-                                                             minute=0,
-                                                             second=0,
-                                                             microsecond=0) + timedelta(days=1):
-                    do_update_epg = True
-
-            finally:
-                db_session.close()
-
-            return do_update_epg
-
-    @classmethod
-    def _initialize_class_variables(cls):
-        try:
-            cls.set_channel_name_map(OptionalSettings.get_optional_settings_parameter('smoothstreams_channel_name_map'))
-        except KeyError:
-            pass
-
-        try:
-            cls.set_do_use_provider_icons(OptionalSettings.get_optional_settings_parameter('use_smoothstreams_icons'))
-        except KeyError:
-            pass
-
-    @classmethod
-    def _parse_fog_channels_json(cls, db_session, parsed_channel_xmltv_id_to_channel):
+    def _parse_fog_channels_json(cls,
+                                 db_session,
+                                 channel_name_map,
+                                 do_use_provider_icons,
+                                 parsed_channel_xmltv_id_to_channel):
         epg_json_stream = cls._request_fog_channels_json()
 
         logger.debug('Processing Fog JSON channels\n'
@@ -190,14 +129,14 @@ class SmoothStreamsEPG(ProviderEPG):
                                                             height=None)],
                                            urls=[])
                     cls._apply_channel_transformations(channel,
-                                                       cls._channel_name_map,
-                                                       not cls._do_use_provider_icons)
+                                                       channel_name_map,
+                                                       not do_use_provider_icons)
 
                     parsed_channel_xmltv_id_to_channel[channel_xmltv_id] = channel
 
                     db_session.add(SmoothStreamsChannel(id_=channel.xmltv_id,
                                                         m3u8_group='SmoothStreams',
-                                                        number=channel_number,
+                                                        number=channel.number,
                                                         name=channel.display_names[0].text,
                                                         pickle=pickle.dumps(channel, protocol=pickle.HIGHEST_PROTOCOL),
                                                         complete_xmltv=channel.format(minimal_xmltv=False),
@@ -517,7 +456,7 @@ class SmoothStreamsEPG(ProviderEPG):
             raise
 
     @classmethod
-    def _parse_smoothstreams_epg_json(cls, db_session):
+    def _parse_smoothstreams_epg_json(cls, db_session, channel_name_map, do_use_provider_icons):
         epg_json_stream = cls._request_smoothstreams_epg_json()
 
         logger.debug('Processing SmoothStreams JSON EPG\n'
@@ -622,12 +561,12 @@ class SmoothStreamsEPG(ProviderEPG):
                                                             height=None)],
                                            urls=[])
                     cls._apply_channel_transformations(channel,
-                                                       cls._channel_name_map,
-                                                       not cls._do_use_provider_icons)
+                                                       channel_name_map,
+                                                       not do_use_provider_icons)
 
                     db_session.add(SmoothStreamsChannel(id_=channel.xmltv_id,
                                                         m3u8_group='SmoothStreams',
-                                                        number=channel_number,
+                                                        number=channel.number,
                                                         name=channel.display_names[0].text,
                                                         pickle=pickle.dumps(channel, protocol=pickle.HIGHEST_PROTOCOL),
                                                         complete_xmltv=channel.format(minimal_xmltv=False),
@@ -739,8 +678,13 @@ class SmoothStreamsEPG(ProviderEPG):
             response.raise_for_status()
 
     @classmethod
-    def _update_epg(cls):
+    def _update_epg(cls, **kwargs):
         with cls._lock:
+            super()._update_epg()
+
+            channel_name_map = kwargs['channel_name_map']
+            do_use_provider_icons = kwargs['do_use_provider_icons']
+
             was_exception_raised = False
 
             SmoothStreamsDatabase.initialize_temporary()
@@ -748,41 +692,27 @@ class SmoothStreamsEPG(ProviderEPG):
             db_session = SmoothStreamsDatabase.create_temporary_session()
 
             try:
-                epg_source = None
-
                 if Configuration.get_configuration_parameter('SMOOTHSTREAMS_EPG_SOURCE') == \
                         SmoothStreamsEPGSource.FOG.value:
                     parsed_channel_xmltv_id_to_channel = {}
 
-                    cls._parse_fog_channels_json(db_session, parsed_channel_xmltv_id_to_channel)
+                    cls._parse_fog_channels_json(db_session,
+                                                 channel_name_map,
+                                                 do_use_provider_icons,
+                                                 parsed_channel_xmltv_id_to_channel)
                     cls._parse_fog_epg_xml(db_session, parsed_channel_xmltv_id_to_channel)
-
-                    epg_source = SmoothStreamsEPGSource.FOG.value
                 elif Configuration.get_configuration_parameter('SMOOTHSTREAMS_EPG_SOURCE') == \
                         SmoothStreamsEPGSource.OTHER.value:
-                    cls._parse_external_epg_xml(db_session)
-
-                    epg_source = SmoothStreamsEPGSource.OTHER.value
+                    cls._parse_external_epg_xml(db_session,
+                                                channel_name_map=channel_name_map,
+                                                do_use_provider_icons=do_use_provider_icons)
                 elif Configuration.get_configuration_parameter('SMOOTHSTREAMS_EPG_SOURCE') == \
-                        SmoothStreamsEPGSource.SMOOTHSTREAMS.value:
-                    cls._parse_smoothstreams_epg_json(db_session)
+                        SmoothStreamsEPGSource.PROVIDER.value:
+                    cls._parse_smoothstreams_epg_json(db_session, channel_name_map, do_use_provider_icons)
 
-                    epg_source = SmoothStreamsEPGSource.SMOOTHSTREAMS.value
-
-                db_session.merge(SmoothStreamsSetting('do_use_icons', int(cls._do_use_provider_icons)))
-                db_session.merge(SmoothStreamsSetting('channel_name_map_md5',
-                                                      hashlib.md5(json.dumps(cls._channel_name_map,
-                                                                             sort_keys=True).encode()).hexdigest()))
-                db_session.merge(SmoothStreamsSetting('last_epg_refresh_date_time_in_utc',
-                                                      datetime.strftime(datetime.now(pytz.utc), '%Y-%m-%d %H:%M:%S%z')))
-                db_session.merge(SmoothStreamsSetting('epg_source', epg_source))
-
-                if epg_source == SmoothStreamsEPGSource.OTHER.value:
-                    db_session.merge(SmoothStreamsSetting('epg_url',
-                                                          Configuration.get_configuration_parameter(
-                                                              'SMOOTHSTREAMS_EPG_URL')))
-                else:
-                    SmoothStreamsDatabaseAccess.delete_setting(db_session, 'epg_url')
+                db_session.add(SmoothStreamsSetting('epg_settings_md5', cls._calculate_epg_settings_md5(**kwargs)))
+                db_session.add(SmoothStreamsSetting('last_epg_refresh_date_time_in_utc',
+                                                    datetime.strftime(datetime.now(pytz.utc), '%Y-%m-%d %H:%M:%S%z')))
 
                 db_session.commit()
             except Exception:
@@ -805,23 +735,5 @@ class SmoothStreamsEPG(ProviderEPG):
                         raise
 
     @classmethod
-    def initialize(cls, **kwargs):
-        try:
-            cls._initialize_class_variables()
-
-            if cls._do_update_epg():
-                logger.debug('Updating EPG')
-
-                cls._cancel_refresh_epg_timer()
-                cls._update_epg()
-            else:
-                with SmoothStreamsDatabase.get_access_lock().shared_lock:
-                    db_session = SmoothStreamsDatabase.create_session()
-
-                    try:
-                        cls._initialize_refresh_epg_timer(db_session)
-                    finally:
-                        db_session.close()
-        finally:
-            if 'event' in kwargs:
-                kwargs['event'].set()
+    def _terminate(cls, **kwargs):
+        pass

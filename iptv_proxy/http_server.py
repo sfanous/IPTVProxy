@@ -774,8 +774,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                             self._send_http_response()
                         else:
                             invalid_query_string = True
-            elif re.match(r'\A(.+)\.png\Z', self._requested_path_tokens[0].lower()) \
-                    and self._requested_path_tokens_length == 1:
+            elif re.match(r'\A(.+)\.png\Z', self._requested_path_tokens[1].lower()) \
+                    and self._requested_path_tokens_length == 2:
                 http_token_parameter_value = self._requested_query_string_parameters.get('http_token')
 
                 if self._screen_request(http_token_parameter_value):
@@ -783,7 +783,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                         self._do_gzip_response_content = False
 
                         try:
-                            self._response_content = Utility.read_png_file(self._requested_path_tokens[0],
+                            self._response_content = Utility.read_png_file('/'.join(self._requested_path_tokens),
                                                                            in_base_64=False)
                             self._response_status_code = requests.codes.OK
                             self._response_content_type = 'image/png'

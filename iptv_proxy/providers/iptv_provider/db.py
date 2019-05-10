@@ -1,4 +1,5 @@
 import logging
+import os
 import shutil
 import sys
 import traceback
@@ -72,6 +73,11 @@ class ProviderDatabase(ABC):
 
     @classmethod
     def initialize_temporary(cls):
+        try:
+            os.remove(cls._temporary_database_file_path)
+        except Exception:
+            pass
+
         cls._temporary_engine = create_engine('sqlite:///{0}'.format(cls._temporary_database_file_path),
                                               echo=False,
                                               module=sqlite3)

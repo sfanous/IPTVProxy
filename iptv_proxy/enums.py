@@ -27,3 +27,8 @@ class RecordingStatus(Enum):
     LIVE = 'live'
     PERSISTED = 'persisted'
     SCHEDULED = 'scheduled'
+
+
+class M388PlaylistSortOrder(Enum):
+    CHANNEL_NAME = 0
+    CHANNEL_NUMBER = 1

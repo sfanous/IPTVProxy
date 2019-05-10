@@ -3,6 +3,7 @@ import html
 import json
 import logging
 import pickle
+import urllib.parse
 from datetime import datetime
 from datetime import timedelta
 
@@ -117,7 +118,8 @@ class HTMLTemplateEngine(object):
             self._configuration['SERVER_HOSTNAME_{0}'.format(client_ip_address_type.value)],
             self._configuration['SERVER_HTTP{0}_PORT'.format('S' if is_server_secure
                                                              else '')],
-            '?http_token={0}'.format(self._configuration['SERVER_PASSWORD']) if authorization_required
+            '?http_token={0}'.format(
+                urllib.parse.quote(self._configuration['SERVER_PASSWORD'])) if authorization_required
             else '')
         channel_li_channel_number = channel.number
 

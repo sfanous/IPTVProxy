@@ -602,8 +602,10 @@ class OptionalSettings(object):
             if 'cache_downloaded_segments' not in cls._optional_settings:
                 cls._optional_settings['cache_downloaded_segments'] = True
 
-            if 'cache_downloaded_segments' not in cls._previous_optional_settings or \
-                    cls._optional_settings['cache_downloaded_segments'] != \
+            if 'cache_downloaded_segments' not in cls._previous_optional_settings:
+                cls._previous_optional_settings['cache_downloaded_segments'] = True
+
+            if cls._optional_settings['cache_downloaded_segments'] != \
                     cls._previous_optional_settings['cache_downloaded_segments']:
                 from iptv_proxy.cache import CacheManager
 
@@ -622,8 +624,10 @@ class OptionalSettings(object):
             if 'allow_insecure_lan_connections' not in cls._optional_settings:
                 cls._optional_settings['allow_insecure_lan_connections'] = True
 
-            if 'allow_insecure_lan_connections' not in cls._previous_optional_settings or \
-                    cls._optional_settings['allow_insecure_lan_connections'] != \
+            if 'allow_insecure_lan_connections' not in cls._previous_optional_settings:
+                cls._previous_optional_settings['allow_insecure_lan_connections'] = True
+
+            if cls._optional_settings['allow_insecure_lan_connections'] != \
                     cls._previous_optional_settings['allow_insecure_lan_connections']:
                 from iptv_proxy.http_server import HTTPRequestHandler
 
@@ -642,8 +646,10 @@ class OptionalSettings(object):
             if 'allow_insecure_wan_connections' not in cls._optional_settings:
                 cls._optional_settings['allow_insecure_wan_connections'] = False
 
-            if 'allow_insecure_wan_connections' not in cls._previous_optional_settings or \
-                    cls._optional_settings['allow_insecure_wan_connections'] != \
+            if 'allow_insecure_wan_connections' not in cls._previous_optional_settings:
+                cls._previous_optional_settings['allow_insecure_wan_connections'] = False
+
+            if cls._optional_settings['allow_insecure_wan_connections'] != \
                     cls._previous_optional_settings['allow_insecure_wan_connections']:
                 from iptv_proxy.http_server import HTTPRequestHandler
 
@@ -662,8 +668,10 @@ class OptionalSettings(object):
             if 'lan_connections_require_credentials' not in cls._optional_settings:
                 cls._optional_settings['lan_connections_require_credentials'] = False
 
-            if 'lan_connections_require_credentials' not in cls._previous_optional_settings or \
-                    cls._optional_settings['lan_connections_require_credentials'] != \
+            if 'lan_connections_require_credentials' not in cls._previous_optional_settings:
+                cls._previous_optional_settings['lan_connections_require_credentials'] = False
+
+            if cls._optional_settings['lan_connections_require_credentials'] != \
                     cls._previous_optional_settings['lan_connections_require_credentials']:
                 from iptv_proxy.http_server import HTTPRequestHandler
 
@@ -682,8 +690,10 @@ class OptionalSettings(object):
             if 'wan_connections_require_credentials' not in cls._optional_settings:
                 cls._optional_settings['wan_connections_require_credentials'] = True
 
-            if 'wan_connections_require_credentials' not in cls._previous_optional_settings or \
-                    cls._optional_settings['wan_connections_require_credentials'] != \
+            if 'wan_connections_require_credentials' not in cls._previous_optional_settings:
+                cls._previous_optional_settings['wan_connections_require_credentials'] = True
+
+            if cls._optional_settings['wan_connections_require_credentials'] != \
                     cls._previous_optional_settings['wan_connections_require_credentials']:
                 from iptv_proxy.http_server import HTTPRequestHandler
 

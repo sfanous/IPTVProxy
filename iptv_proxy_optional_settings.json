@@ -3,9 +3,35 @@
   "allow_insecure_wan_connections": false,
   "auto_generate_self_signed_certificate": true,
   "cache_downloaded_segments": true,
+  "beast_channel_group_map": {
+    "name": {},
+    "number": {}
+  },
+  "beast_channel_name_map": {},
+  "beast_ignored_channels": {
+    "name": [],
+    "number": []
+  },
+  "beast_ignored_m3u8_groups": [],
+  "beast_m3u8_group_map": {},
+  "crystalclear_channel_group_map": {
+    "name": {},
+    "number": {}
+  },
+  "crystalclear_channel_name_map": {},
+  "crystalclear_ignored_channels": {
+    "name": [],
+    "number": []
+  },
+  "crystalclear_ignored_m3u8_groups": [],
+  "crystalclear_m3u8_group_map": {},
   "lan_connections_require_credentials": false,
+  "reduce_beast_delay": true,
+  "reduce_crystalclear_delay": true,
   "reduce_vaderstreams_delay": true,
   "smoothstreams_channel_name_map": {},
+  "use_beast_icons": false,
+  "use_crystalclear_icons": false,
   "use_smoothstreams_icons": false,
   "use_vaderstreams_icons": false,
   "vaderstreams_channel_name_map": {},

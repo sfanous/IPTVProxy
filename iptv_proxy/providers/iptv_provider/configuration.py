@@ -227,9 +227,10 @@ class ProviderConfiguration(object):
 
             # <editor-fold desc="Detect and handle updates to the EPG_URL option">
             if 'EPG' in cls._configuration_schema and 'url' in cls._configuration_schema['EPG']:
+                epg_source_parameter_name = '{0}_EPG_SOURCE'.format(configuration_parameter_name_prefix)
                 epg_url_parameter_name = '{0}_EPG_URL'.format(configuration_parameter_name_prefix)
 
-                if configuration[epg_url_parameter_name] == provider_map_class.epg_source_enum().OTHER.value:
+                if configuration[epg_source_parameter_name] == provider_map_class.epg_source_enum().OTHER.value:
                     if configuration[epg_url_parameter_name] != previous_configuration[epg_url_parameter_name]:
                         do_reinitialize = True
 
@@ -527,7 +528,9 @@ class ProviderConfiguration(object):
                                                             username) if username is not None
                     else '',
                     '{0}_PASSWORD          => {1}\n'.format(configuration_parameter_name_prefix,
-                                                            password) if password is not None
+                                                            password if SecurityManager.is_password_decrypted(password)
+                                                            else SecurityManager.decrypt_password(password).decode())
+                    if password is not None
                     else '',
                     '{0}_PLAYLIST_PROTOCOL => {1}\n'.format(configuration_parameter_name_prefix,
                                                             playlist_protocol) if playlist_protocol is not None
@@ -656,15 +659,16 @@ class ProviderOptionalSettings(object):
         do_reinitialize = False
 
         # <editor-fold desc="Detect and handle reduce_delay change">
-        if hasattr(provider_map_class.api_class(), 'set_do_reduce_hls_stream_delay'):
+        if provider_map_class.api_class().is_attribute_supported('_do_reduce_hls_stream_delay'):
             reduce_delay_key_name = 'reduce_{0}_delay'.format(cls._provider_name)
 
             if reduce_delay_key_name not in optional_settings:
                 optional_settings[reduce_delay_key_name] = True
 
-            if reduce_delay_key_name not in previous_optional_settings or \
-                    (optional_settings[reduce_delay_key_name] !=
-                     previous_optional_settings[reduce_delay_key_name]):
+            if reduce_delay_key_name not in previous_optional_settings:
+                previous_optional_settings[reduce_delay_key_name] = True
+
+            if optional_settings[reduce_delay_key_name] != previous_optional_settings[reduce_delay_key_name]:
                 message_to_log.append(
                     'Detected a change in the {0} setting\n'
                     'Old value => {1}\n'
@@ -675,16 +679,44 @@ class ProviderOptionalSettings(object):
                 provider_map_class.api_class().set_do_reduce_hls_stream_delay(optional_settings[reduce_delay_key_name])
         # </editor-fold>
 
+        # <editor-fold desc="Detect and handle channel_group_map change">
+        if provider_map_class.epg_class().is_attribute_supported('_channel_group_map'):
+            channel_group_map_key_name = '{0}_channel_group_map'.format(cls._provider_name)
+
+            if channel_group_map_key_name not in optional_settings:
+                optional_settings[channel_group_map_key_name] = {'name': {}, 'number': {}}
+
+            if channel_group_map_key_name not in previous_optional_settings:
+                previous_optional_settings[channel_group_map_key_name] = {'name': {}, 'number': {}}
+
+            if optional_settings[channel_group_map_key_name] != previous_optional_settings[channel_group_map_key_name]:
+                do_reinitialize = True
+
+                message_to_log.append(
+                    'Detected a change in the {0} setting\n'
+                    'Old value => {1}\n'
+                    'New value => {2}\n'.format(channel_group_map_key_name,
+                                                json.dumps(
+                                                    previous_optional_settings[channel_group_map_key_name],
+                                                    indent=2),
+                                                json.dumps(optional_settings[channel_group_map_key_name],
+                                                           indent=2)))
+
+                provider_map_class.epg_class().set_channel_group_map(
+                    optional_settings[channel_group_map_key_name])
+        # </editor-fold>
+
         # <editor-fold desc="Detect and handle channel_name_map change">
-        if hasattr(provider_map_class.epg_class(), 'set_channel_name_map'):
+        if provider_map_class.epg_class().is_attribute_supported('_channel_name_map'):
             channel_name_map_key_name = '{0}_channel_name_map'.format(cls._provider_name)
 
             if channel_name_map_key_name not in optional_settings:
                 optional_settings[channel_name_map_key_name] = {}
 
-            if channel_name_map_key_name not in previous_optional_settings or \
-                    (optional_settings[channel_name_map_key_name] !=
-                     previous_optional_settings[channel_name_map_key_name]):
+            if channel_name_map_key_name not in previous_optional_settings:
+                previous_optional_settings[channel_name_map_key_name] = {}
+
+            if optional_settings[channel_name_map_key_name] != previous_optional_settings[channel_name_map_key_name]:
                 do_reinitialize = True
 
                 message_to_log.append(
@@ -700,24 +732,103 @@ class ProviderOptionalSettings(object):
         # </editor-fold>
 
         # <editor-fold desc="Detect and handle use_icons change">
-        if hasattr(provider_map_class.epg_class(), 'set_do_use_provider_icons'):
-            use_icons_key_name = 'use_{0}_icons'.format(cls._provider_name)
+        if provider_map_class.epg_class().is_attribute_supported('_do_use_provider_icons'):
+            ignored_m3u8_groups_key_name = 'use_{0}_icons'.format(cls._provider_name)
 
-            if use_icons_key_name not in optional_settings:
-                optional_settings[use_icons_key_name] = False
+            if ignored_m3u8_groups_key_name not in optional_settings:
+                optional_settings[ignored_m3u8_groups_key_name] = False
 
-            if use_icons_key_name not in previous_optional_settings or \
-                    optional_settings[use_icons_key_name] != previous_optional_settings[use_icons_key_name]:
+            if ignored_m3u8_groups_key_name not in previous_optional_settings:
+                previous_optional_settings[ignored_m3u8_groups_key_name] = False
+
+            if optional_settings[ignored_m3u8_groups_key_name] != \
+                    previous_optional_settings[ignored_m3u8_groups_key_name]:
                 do_reinitialize = True
 
                 message_to_log.append(
                     'Detected a change in the {0} setting\n'
                     'Old value => {1}\n'
-                    'New value => {2}\n'.format(use_icons_key_name,
-                                                json.dumps(previous_optional_settings[use_icons_key_name]),
-                                                json.dumps(optional_settings[use_icons_key_name])))
+                    'New value => {2}\n'.format(ignored_m3u8_groups_key_name,
+                                                json.dumps(previous_optional_settings[ignored_m3u8_groups_key_name]),
+                                                json.dumps(optional_settings[ignored_m3u8_groups_key_name])))
 
-                provider_map_class.epg_class().set_do_use_provider_icons(optional_settings[use_icons_key_name])
+                provider_map_class.epg_class().set_do_use_provider_icons(
+                    optional_settings[ignored_m3u8_groups_key_name])
+        # </editor-fold>
+
+        # <editor-fold desc="Detect and handle ignored_channels change">
+        if provider_map_class.epg_class().is_attribute_supported('_ignored_channels'):
+            ignored_m3u8_groups_key_name = '{0}_ignored_channels'.format(cls._provider_name)
+
+            if ignored_m3u8_groups_key_name not in optional_settings:
+                optional_settings[ignored_m3u8_groups_key_name] = {'name': {}, 'number': {}}
+
+            if ignored_m3u8_groups_key_name not in previous_optional_settings:
+                previous_optional_settings[ignored_m3u8_groups_key_name] = {'name': {}, 'number': {}}
+
+            if optional_settings[ignored_m3u8_groups_key_name] != \
+                    previous_optional_settings[ignored_m3u8_groups_key_name]:
+                do_reinitialize = True
+
+                message_to_log.append(
+                    'Detected a change in the {0} setting\n'
+                    'Old value => {1}\n'
+                    'New value => {2}\n'.format(ignored_m3u8_groups_key_name,
+                                                json.dumps(previous_optional_settings[ignored_m3u8_groups_key_name]),
+                                                json.dumps(optional_settings[ignored_m3u8_groups_key_name])))
+
+                provider_map_class.epg_class().set_ignored_channels(optional_settings[ignored_m3u8_groups_key_name])
+        # </editor-fold>
+
+        # <editor-fold desc="Detect and handle ignored_m3u8_groups change">
+        if provider_map_class.epg_class().is_attribute_supported('_ignored_m3u8_groups'):
+            ignored_m3u8_groups_key_name = '{0}_ignored_channels'.format(cls._provider_name)
+
+            if ignored_m3u8_groups_key_name not in optional_settings:
+                optional_settings[ignored_m3u8_groups_key_name] = []
+
+            if ignored_m3u8_groups_key_name not in previous_optional_settings:
+                previous_optional_settings[ignored_m3u8_groups_key_name] = []
+
+            if optional_settings[ignored_m3u8_groups_key_name] != \
+                    previous_optional_settings[ignored_m3u8_groups_key_name]:
+                do_reinitialize = True
+
+                message_to_log.append(
+                    'Detected a change in the {0} setting\n'
+                    'Old value => {1}\n'
+                    'New value => {2}\n'.format(ignored_m3u8_groups_key_name,
+                                                json.dumps(
+                                                    previous_optional_settings[ignored_m3u8_groups_key_name]),
+                                                json.dumps(optional_settings[ignored_m3u8_groups_key_name])))
+
+                provider_map_class.epg_class().set_ignored_channels(
+                    optional_settings[ignored_m3u8_groups_key_name])
+        # </editor-fold>
+
+        # <editor-fold desc="Detect and handle m3u8_group_map change">
+        if provider_map_class.epg_class().is_attribute_supported('_m3u8_group_map'):
+            m3u8_group_map_key_name = '{0}_ignored_channels'.format(cls._provider_name)
+
+            if m3u8_group_map_key_name not in optional_settings:
+                optional_settings[m3u8_group_map_key_name] = {}
+
+            if m3u8_group_map_key_name not in previous_optional_settings:
+                previous_optional_settings[m3u8_group_map_key_name] = {}
+
+            if optional_settings[m3u8_group_map_key_name] != previous_optional_settings[m3u8_group_map_key_name]:
+                do_reinitialize = True
+
+                message_to_log.append(
+                    'Detected a change in the {0} setting\n'
+                    'Old value => {1}\n'
+                    'New value => {2}\n'.format(m3u8_group_map_key_name,
+                                                json.dumps(
+                                                    previous_optional_settings[m3u8_group_map_key_name]),
+                                                json.dumps(optional_settings[m3u8_group_map_key_name])))
+
+                provider_map_class.epg_class().set_ignored_channels(
+                    optional_settings[m3u8_group_map_key_name])
         # </editor-fold>
 
         if message_to_log:

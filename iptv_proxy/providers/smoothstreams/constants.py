@@ -8,7 +8,6 @@ class SmoothStreamsConstants(object):
     EPG_TIME_DELTA_HOURS = 1
     FOG_CHANNELS_JSON_FILE_NAME = 'channels.json'
     FOG_EPG_BASE_URL = 'https://guide.smoothstreams.tv/altepg/'
-    FOG_EPG_TIME_DELTA_HOURS = 6
     FOG_EPG_XML_FILE_NAME = 'xmltv5.xml'
     PROVIDER_NAME = 'SmoothStreams'
     TEMPORARY_DB_FILE_NAME = 'smoothstreams_temp.db'

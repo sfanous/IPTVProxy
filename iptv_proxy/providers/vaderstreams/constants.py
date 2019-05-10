@@ -19,6 +19,5 @@ class VaderStreamsConstants(object):
     VALID_PLAYLIST_TYPE_VALUES = ['dynamic', 'static']
     VALID_SERVER_VALUES = ['auto']
     XML_EPG_FILE_NAME = 'p2.xml.gz'
-    XML_EPG_TIME_DELTA_HOURS = 4
 
     _provider_name = PROVIDER_NAME.lower()

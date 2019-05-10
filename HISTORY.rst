@@ -2,6 +2,12 @@
 
 Release History
 ===============
+7.1.0 (10-05-2019)
+------------------
+* Added Crystal Clear and Beast Providers
+* Code cleanup and refactoring
+* Various bug fixes
+
 7.0.0 (04-05-2019)
 ------------------
 * IPTVProxy complete re-architecture

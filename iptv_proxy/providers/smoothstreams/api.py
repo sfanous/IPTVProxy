@@ -1,5 +1,4 @@
 import logging
-import pickle
 import re
 import sys
 import traceback
@@ -16,6 +15,7 @@ import tzlocal
 from rwlock import RWLock
 
 from iptv_proxy.configuration import Configuration
+from iptv_proxy.enums import M388PlaylistSortOrder
 from iptv_proxy.providers.iptv_provider.api import Provider
 from iptv_proxy.providers.smoothstreams.constants import SmoothStreamsConstants
 from iptv_proxy.providers.smoothstreams.data_access import SmoothStreamsDatabaseAccess
@@ -69,6 +69,25 @@ class SmoothStreams(Provider):
             return True
 
     @classmethod
+    def _generate_playlist_m3u8_static_track_url(cls, track_information, **kwargs):
+        channel_number = kwargs['channel_number']
+        playlist_protocol = kwargs['playlist_protocol']
+        authorization_token = kwargs['authorization_token']
+
+        track_information.append(
+            '{0}://{1}.smoothstreams.tv:{2}/{3}/ch{4:02}q1.stream{5}?wmsAuthSign={6}\n'.format(
+                'https' if playlist_protocol in ['hls', 'mpegts']
+                else 'rtmp',
+                Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVER'),
+                '443' if playlist_protocol in ['hls', 'mpegts']
+                else '3635',
+                Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVICE'),
+                int(channel_number),
+                '/mpeg.2ts' if playlist_protocol == 'mpegts'
+                else '',
+                authorization_token))
+
+    @classmethod
     def _get_session_parameter(cls, parameter_name):
         with cls._session_lock.reader_lock:
             return cls._session[parameter_name]
@@ -82,6 +101,41 @@ class SmoothStreams(Provider):
     def _hijack_nimble_session_id(cls, hijacked_nimble_session_id, hijacking_nimble_session_id):
         with cls._nimble_session_id_map_lock.writer_lock:
             cls._nimble_session_id_map[hijacked_nimble_session_id] = hijacking_nimble_session_id
+
+    @classmethod
+    def _initialize(cls, **kwargs):
+        do_refresh_session = False
+
+        if 'do_refresh_session' in kwargs:
+            do_refresh_session = kwargs['do_refresh_session']
+        else:
+            with SmoothStreamsDatabase.get_access_lock().shared_lock:
+                db_session = SmoothStreamsDatabase.create_session()
+
+                try:
+                    setting_row = SmoothStreamsDatabaseAccess.query_setting(db_session, 'session')
+
+                    if setting_row is not None:
+                        cls._session = jsonpickle.decode(setting_row.value)
+
+                        current_date_time_in_utc = datetime.now(pytz.utc)
+
+                        if current_date_time_in_utc < cls._session['expires_on']:
+                            logger.debug('Loaded SmoothStreams session\n'
+                                         'Authorization token => {0}\n'
+                                         'Expires on          => {1}'.format(cls._session['authorization_token'],
+                                                                             cls._session['expires_on'].astimezone(
+                                                                                 tzlocal.get_localzone()).strftime(
+                                                                                 '%Y-%m-%d %H:%M:%S%z')))
+                        else:
+                            do_refresh_session = True
+                    else:
+                        do_refresh_session = True
+                finally:
+                    db_session.close()
+
+        if do_refresh_session:
+            cls.refresh_session(force_refresh=True)
 
     @classmethod
     def _map_nimble_session_id(cls,
@@ -198,9 +252,22 @@ class SmoothStreams(Provider):
         return session
 
     @classmethod
+    def _retrieve_fresh_authorization_token(cls):
+        try:
+            session = cls._refresh_session()
+
+            return session['authorization_token']
+        except (KeyError, requests.exceptions.HTTPError):
+            logger.error('Failed to retrieve a fresh SmoothStreams authorization token')
+
+    @classmethod
     def _set_session_parameter(cls, parameter_name, parameter_value):
         with cls._session_lock.writer_lock:
             cls._session[parameter_name] = parameter_value
+
+    @classmethod
+    def _terminate(cls, **kwargs):
+        pass
 
     @classmethod
     def _timed_refresh_session(cls):
@@ -412,196 +479,10 @@ class SmoothStreams(Provider):
             response.raise_for_status()
 
     @classmethod
-    def generate_playlist_m3u8(cls,
-                               is_server_secure,
-                               client_ip_address,
-                               client_uuid,
-                               requested_query_string_parameters):
-        http_token = requested_query_string_parameters.get('http_token')
-        playlist_protocol = requested_query_string_parameters.get('protocol')
-        playlist_type = requested_query_string_parameters.get('type')
-
-        try:
-            client_ip_address_type = Utility.determine_ip_address_type(client_ip_address)
-            server_hostname = Configuration.get_configuration_parameter(
-                'SERVER_HOSTNAME_{0}'.format(client_ip_address_type.value))
-            server_port = Configuration.get_configuration_parameter(
-                'SERVER_HTTP{0}_PORT'.format('S' if is_server_secure
-                                             else ''))
-
-            playlist_m3u8 = ['#EXTM3U x-tvg-url="{0}://{1}:{2}/live/smoothstreams/epg.xml"\n'.format(
-                'https' if is_server_secure
-                else 'http',
-                server_hostname,
-                server_port)]
-
-            generate_playlist_m3u8_tracks_mapping = dict(client_uuid=client_uuid,
-                                                         http_token=http_token,
-                                                         is_server_secure=is_server_secure,
-                                                         playlist_protocol=playlist_protocol,
-                                                         playlist_type=playlist_type,
-                                                         server_hostname=server_hostname,
-                                                         server_port=server_port)
-
-            playlist_m3u8.append(''.join(cls.generate_playlist_m3u8_tracks(generate_playlist_m3u8_tracks_mapping)))
-
-            logger.debug('Generated live SmoothStreams playlist.m3u8')
-
-            return ''.join(playlist_m3u8)
-        except (KeyError, ValueError):
-            (status, value_, traceback_) = sys.exc_info()
-
-            logger.error('\n'.join(traceback.format_exception(status, value_, traceback_)))
-
-    @classmethod
-    def generate_playlist_m3u8_track_url(cls, generate_playlist_m3u8_track_url_mapping):
-        channel_number = generate_playlist_m3u8_track_url_mapping['channel_number']
-        client_uuid = generate_playlist_m3u8_track_url_mapping['client_uuid']
-        http_token = generate_playlist_m3u8_track_url_mapping['http_token']
-        is_server_secure = generate_playlist_m3u8_track_url_mapping['is_server_secure']
-        playlist_protocol = generate_playlist_m3u8_track_url_mapping['playlist_protocol']
-        server_hostname = generate_playlist_m3u8_track_url_mapping['server_hostname']
-        server_port = generate_playlist_m3u8_track_url_mapping['server_port']
-
-        return '{0}://{1}:{2}/live/smoothstreams/playlist.m3u8?' \
-               'channel_number={3:02}&' \
-               'client_uuid={4}&' \
-               'http_token={5}&' \
-               'protocol={6}'.format('https' if is_server_secure
-                                     else 'http',
-                                     server_hostname,
-                                     server_port,
-                                     int(channel_number),
-                                     client_uuid,
-                                     urllib.parse.quote(http_token) if http_token
-                                     else '',
-                                     playlist_protocol)
-
-    @classmethod
-    def generate_playlist_m3u8_tracks(cls, generate_playlist_m3u8_tracks_mapping):
-        client_uuid = generate_playlist_m3u8_tracks_mapping['client_uuid']
-        http_token = generate_playlist_m3u8_tracks_mapping['http_token']
-        is_server_secure = generate_playlist_m3u8_tracks_mapping['is_server_secure']
-        playlist_protocol = generate_playlist_m3u8_tracks_mapping['playlist_protocol']
-        playlist_type = generate_playlist_m3u8_tracks_mapping['playlist_type']
-        server_hostname = generate_playlist_m3u8_tracks_mapping['server_hostname']
-        server_port = generate_playlist_m3u8_tracks_mapping['server_port']
-
-        if playlist_protocol not in SmoothStreamsConstants.VALID_PLAYLIST_PROTOCOL_VALUES:
-            playlist_protocol = Configuration.get_configuration_parameter('SMOOTHSTREAMS_PLAYLIST_PROTOCOL')
-
-        if playlist_type not in SmoothStreamsConstants.VALID_PLAYLIST_TYPE_VALUES:
-            playlist_type = Configuration.get_configuration_parameter('SMOOTHSTREAMS_PLAYLIST_TYPE')
-
-        authorization_token = cls._get_session_parameter('authorization_token')
-        did_retrieve_fresh_authorization_token = False
-        tracks = []
-
-        with SmoothStreamsDatabase.get_access_lock().shared_lock:
-            db_session = SmoothStreamsDatabase.create_session()
-
-            try:
-                for channel_row in SmoothStreamsDatabaseAccess.query_channels_pickle(db_session):
-                    channel = pickle.loads(channel_row.pickle)
-
-                    tracks.append(
-                        '#EXTINF:-1 group-title="{0}" '
-                        'tvg-id="{1}" '
-                        'tvg-name="{2}" '
-                        'tvg-logo="{3}" '
-                        'channel-id="{4}",{2}\n'.format(
-                            channel.m3u8_group,
-                            channel.xmltv_id,
-                            channel.display_names[0].text,
-                            channel.icons[0].source.format('s' if is_server_secure
-                                                           else '',
-                                                           server_hostname,
-                                                           server_port,
-                                                           '?http_token={0}'.format(
-                                                               urllib.parse.quote(http_token)) if http_token
-                                                           else '').replace(' ', '%20'),
-                            channel.number))
-
-                    if playlist_type == 'dynamic':
-                        generate_playlist_m3u8_track_url_mapping = dict(channel_number=channel.number,
-                                                                        client_uuid=client_uuid,
-                                                                        http_token=http_token,
-                                                                        is_server_secure=is_server_secure,
-                                                                        playlist_protocol=playlist_protocol,
-                                                                        server_hostname=server_hostname,
-                                                                        server_port=server_port)
-
-                        tracks.append('{0}\n'.format(
-                            cls.generate_playlist_m3u8_track_url(generate_playlist_m3u8_track_url_mapping)))
-                    elif playlist_type == 'static':
-                        if not did_retrieve_fresh_authorization_token:
-                            try:
-                                session = cls._refresh_session()
-                                authorization_token = session['authorization_token']
-                            except (KeyError, requests.exceptions.HTTPError):
-                                logger.error('Failed to retrieve a fresh SmoothStreams authorization token')
-
-                            did_retrieve_fresh_authorization_token = True
-
-                        tracks.append(
-                            '{0}://{1}.smoothstreams.tv:{2}/{3}/ch{4:02}q1.stream{5}?wmsAuthSign={6}\n'.format(
-                                'https' if playlist_protocol in ['hls', 'mpegts']
-                                else 'rtmp',
-                                Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVER'),
-                                '443' if playlist_protocol in ['hls', 'mpegts']
-                                else '3635',
-                                Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVICE'),
-                                int(channel.number),
-                                '/mpeg.2ts' if playlist_protocol == 'mpegts'
-                                else '',
-                                authorization_token))
-            finally:
-                db_session.close()
-
-        return tracks
-
-    @classmethod
-    def get_supported_protocols(cls):
-        return SmoothStreamsConstants.VALID_PLAYLIST_PROTOCOL_VALUES
-
-    @classmethod
-    def initialize(cls, **kwargs):
-        try:
-            do_refresh_session = False
-
-            if 'do_refresh_session' in kwargs:
-                do_refresh_session = kwargs['do_refresh_session']
-            else:
-                with SmoothStreamsDatabase.get_access_lock().shared_lock:
-                    db_session = SmoothStreamsDatabase.create_session()
-
-                    try:
-                        setting_row = SmoothStreamsDatabaseAccess.query_setting(db_session, 'session')
-
-                        if setting_row is not None:
-                            cls._session = jsonpickle.decode(setting_row.value)
-
-                            current_date_time_in_utc = datetime.now(pytz.utc)
-
-                            if current_date_time_in_utc < cls._session['expires_on']:
-                                logger.debug('Loaded SmoothStreams session\n'
-                                             'Authorization token => {0}\n'
-                                             'Expires on          => {1}'.format(cls._session['authorization_token'],
-                                                                                 cls._session['expires_on'].astimezone(
-                                                                                     tzlocal.get_localzone()).strftime(
-                                                                                     '%Y-%m-%d %H:%M:%S%z')))
-                            else:
-                                do_refresh_session = True
-                        else:
-                            do_refresh_session = True
-                    finally:
-                        db_session.close()
-
-            if do_refresh_session:
-                cls.refresh_session(force_refresh=True)
-        finally:
-            if 'event' in kwargs:
-                kwargs['event'].set()
+    def generate_playlist_m3u8_tracks(cls,
+                                      generate_playlist_m3u8_tracks_mapping,
+                                      sort_by=M388PlaylistSortOrder.CHANNEL_NUMBER):
+        return super().generate_playlist_m3u8_tracks(generate_playlist_m3u8_tracks_mapping, sort_by=sort_by)
 
     @classmethod
     def refresh_session(cls, force_refresh=False):
@@ -645,11 +526,3 @@ class SmoothStreams(Provider):
 
                 logger.debug('Started SmoothStreams session refresh timer\n'
                              'Interval => {0} seconds'.format(interval))
-
-    @classmethod
-    def terminate(cls, **kwargs):
-        try:
-            cls._cancel_refresh_session_timer()
-        finally:
-            if 'event' in kwargs:
-                kwargs['event'].set()

@@ -1,14 +1,10 @@
 import base64
 import json
 import logging
-import pickle
 import re
-import sys
-import traceback
 import urllib.parse
 from datetime import datetime
 
-import m3u8
 import pytz
 import requests
 from rwlock import RWLock
@@ -17,8 +13,6 @@ from iptv_proxy.configuration import Configuration
 from iptv_proxy.configuration import OptionalSettings
 from iptv_proxy.providers.iptv_provider.api import Provider
 from iptv_proxy.providers.vaderstreams.constants import VaderStreamsConstants
-from iptv_proxy.providers.vaderstreams.data_access import VaderStreamsDatabaseAccess
-from iptv_proxy.providers.vaderstreams.db import VaderStreamsDatabase
 from iptv_proxy.providers.vaderstreams.epg import VaderStreamsEPG
 from iptv_proxy.proxy import IPTVProxy
 from iptv_proxy.security import SecurityManager
@@ -45,12 +39,37 @@ class VaderStreams(Provider):
         return base64.b64encode(json.dumps(credentials, separators=(',', ':')).encode()).decode()
 
     @classmethod
+    def _generate_playlist_m3u8_static_track_url(cls, track_information, **kwargs):
+        channel_number = kwargs['channel_number']
+        playlist_protocol = kwargs['playlist_protocol']
+        authorization_token = kwargs['authorization_token']
+
+        track_information.append(
+            'http://vapi.vaders.tv/play/{0:02}.{1}?token={2}\n'.format(
+                channel_number,
+                'm3u8' if playlist_protocol == 'hls'
+                else 'ts',
+                authorization_token))
+
+    @classmethod
+    def _initialize(cls, **kwargs):
+        pass
+
+    @classmethod
     def _initialize_class_variables(cls):
         try:
             cls.set_do_reduce_hls_stream_delay(
                 OptionalSettings.get_optional_settings_parameter('reduce_vaderstreams_delay'))
         except KeyError:
             pass
+
+    @classmethod
+    def _retrieve_fresh_authorization_token(cls):
+        return cls._calculate_token()
+
+    @classmethod
+    def _terminate(cls, **kwargs):
+        pass
 
     @classmethod
     def download_chunks_m3u8(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
@@ -107,53 +126,14 @@ class VaderStreams(Provider):
                                                                     is_content_text=True,
                                                                     do_print_content=True))
 
-            chunks_m3u8 = response.text
-
             with cls._do_reduce_hls_stream_delay_lock.reader_lock:
                 if cls._do_reduce_hls_stream_delay:
-                    do_reduce_hls_stream_delay = False
-
-                    try:
-                        last_requested_channel_number = IPTVProxy.get_serviceable_client_parameter(
-                            client_uuid,
-                            'last_requested_channel_number')
-
-                        if channel_number != last_requested_channel_number:
-                            do_reduce_hls_stream_delay = True
-                        else:
-                            last_requested_ts_file_path = IPTVProxy.get_serviceable_client_parameter(
-                                client_uuid,
-                                'last_requested_ts_file_path')
-
-                            m3u8_object = m3u8.loads(response.text)
-
-                            delete_segments_up_to_index = None
-
-                            for (segment_index, segment) in enumerate(m3u8_object.segments):
-                                if last_requested_ts_file_path in segment.uri:
-                                    delete_segments_up_to_index = segment_index
-
-                                    break
-
-                            if delete_segments_up_to_index:
-                                for i in range(delete_segments_up_to_index + 1):
-                                    m3u8_object.segments.pop(0)
-
-                                    m3u8_object.media_sequence += 1
-
-                                chunks_m3u8 = m3u8_object.dumps()
-                    except KeyError:
-                        do_reduce_hls_stream_delay = True
-
-                    if do_reduce_hls_stream_delay:
-                        m3u8_object = m3u8.loads(response.text)
-
-                        for i in range(len(m3u8_object.segments) - 3):
-                            m3u8_object.segments.pop(0)
-
-                            m3u8_object.media_sequence += 1
-
-                        chunks_m3u8 = m3u8_object.dumps()
+                    chunks_m3u8 = cls._reduce_hls_stream_delay(response.text,
+                                                               client_uuid,
+                                                               channel_number,
+                                                               number_of_segments_to_keep=3)
+                else:
+                    chunks_m3u8 = response.text
 
             IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
 
@@ -341,163 +321,6 @@ class VaderStreams(Provider):
             logger.error(Utility.assemble_response_from_log_message(response))
 
             response.raise_for_status()
-
-    @classmethod
-    def generate_playlist_m3u8(cls,
-                               is_server_secure,
-                               client_ip_address,
-                               client_uuid,
-                               requested_query_string_parameters):
-        http_token = requested_query_string_parameters.get('http_token')
-        playlist_protocol = requested_query_string_parameters.get('playlist_protocol')
-        playlist_type = requested_query_string_parameters.get('playlist_type')
-
-        try:
-            client_ip_address_type = Utility.determine_ip_address_type(client_ip_address)
-            server_hostname = Configuration.get_configuration_parameter(
-                'SERVER_HOSTNAME_{0}'.format(client_ip_address_type.value))
-            server_port = Configuration.get_configuration_parameter(
-                'SERVER_HTTP{0}_PORT'.format('S' if is_server_secure
-                                             else ''))
-
-            playlist_m3u8 = ['#EXTM3U x-tvg-url="{0}://{1}:{2}/live/vadertreams/epg.xml"\n'.format(
-                'https' if is_server_secure
-                else 'http',
-                server_hostname,
-                server_port)]
-
-            generate_playlist_m3u8_tracks_mapping = dict(client_uuid=client_uuid,
-                                                         http_token=http_token,
-                                                         is_server_secure=is_server_secure,
-                                                         playlist_protocol=playlist_protocol,
-                                                         playlist_type=playlist_type,
-                                                         server_hostname=server_hostname,
-                                                         server_port=server_port)
-
-            playlist_m3u8.append(''.join(cls.generate_playlist_m3u8_tracks(generate_playlist_m3u8_tracks_mapping)))
-
-            logger.debug('Generated live playlist.m3u8')
-
-            return ''.join(playlist_m3u8)
-        except (KeyError, ValueError):
-            (status, value_, traceback_) = sys.exc_info()
-
-            logger.error('\n'.join(traceback.format_exception(status, value_, traceback_)))
-
-    @classmethod
-    def generate_playlist_m3u8_track_url(cls, generate_playlist_m3u8_track_url_mapping):
-        channel_number = generate_playlist_m3u8_track_url_mapping['channel_number']
-        client_uuid = generate_playlist_m3u8_track_url_mapping['client_uuid']
-        http_token = generate_playlist_m3u8_track_url_mapping['http_token']
-        is_server_secure = generate_playlist_m3u8_track_url_mapping['is_server_secure']
-        playlist_protocol = generate_playlist_m3u8_track_url_mapping['playlist_protocol']
-        server_hostname = generate_playlist_m3u8_track_url_mapping['server_hostname']
-        server_port = generate_playlist_m3u8_track_url_mapping['server_port']
-
-        return '{0}://{1}:{2}/live/vaderstreams/playlist.m3u8?' \
-               'channel_number={3:02}&' \
-               'client_uuid={4}&' \
-               'http_token={5}&' \
-               'protocol={6}'.format('https' if is_server_secure
-                                     else 'http',
-                                     server_hostname,
-                                     server_port,
-                                     int(channel_number),
-                                     client_uuid,
-                                     urllib.parse.quote(http_token) if http_token
-                                     else '',
-                                     playlist_protocol)
-
-    @classmethod
-    def generate_playlist_m3u8_tracks(cls, generate_playlist_m3u8_tracks_mapping):
-        client_uuid = generate_playlist_m3u8_tracks_mapping['client_uuid']
-        http_token = generate_playlist_m3u8_tracks_mapping['http_token']
-        is_server_secure = generate_playlist_m3u8_tracks_mapping['is_server_secure']
-        playlist_protocol = generate_playlist_m3u8_tracks_mapping['playlist_protocol']
-        playlist_type = generate_playlist_m3u8_tracks_mapping['playlist_type']
-        server_hostname = generate_playlist_m3u8_tracks_mapping['server_hostname']
-        server_port = generate_playlist_m3u8_tracks_mapping['server_port']
-
-        if playlist_protocol not in VaderStreamsConstants.VALID_PLAYLIST_PROTOCOL_VALUES:
-            playlist_protocol = Configuration.get_configuration_parameter('VADERSTREAMS_PLAYLIST_PROTOCOL')
-
-        if playlist_type not in VaderStreamsConstants.VALID_PLAYLIST_TYPE_VALUES:
-            playlist_type = Configuration.get_configuration_parameter('VADERSTREAMS_PLAYLIST_TYPE')
-
-        tracks = {}
-
-        with VaderStreamsDatabase.get_access_lock().shared_lock:
-            db_session = VaderStreamsDatabase.create_session()
-
-            try:
-                for channel_row in VaderStreamsDatabaseAccess.query_channels_pickle(db_session):
-                    channel = pickle.loads(channel_row.pickle)
-
-                    track_information = [
-                        '#EXTINF:-1 group-title="{0}" '
-                        'tvg-id="{1}" '
-                        'tvg-name="{2}" '
-                        'tvg-logo="{3}" '
-                        'channel-id="{4}",{2}\n'.format(
-                            channel.m3u8_group,
-                            channel.xmltv_id,
-                            channel.display_names[0].text,
-                            channel.icons[0].source.format('s' if is_server_secure
-                                                           else '',
-                                                           server_hostname,
-                                                           server_port,
-                                                           '?http_token={0}'.format(
-                                                               urllib.parse.quote(http_token)) if http_token
-                                                           else '').replace(' ', '%20'),
-                            channel.number)]
-
-                    if playlist_type == 'dynamic':
-                        generate_playlist_m3u8_track_url_mapping = dict(channel_number=channel.number,
-                                                                        client_uuid=client_uuid,
-                                                                        http_token=http_token,
-                                                                        is_server_secure=is_server_secure,
-                                                                        playlist_protocol=playlist_protocol,
-                                                                        server_hostname=server_hostname,
-                                                                        server_port=server_port)
-
-                        track_information.append('{0}\n'.format(
-                            cls.generate_playlist_m3u8_track_url(generate_playlist_m3u8_track_url_mapping)))
-                    elif playlist_type == 'static':
-                        track_information.append(
-                            'http://vapi.vaders.tv/play/{0:02}.{1}?token={2}\n'.format(
-                                channel.number,
-                                'm3u8' if playlist_protocol == 'hls'
-                                else 'ts',
-                                cls._calculate_token()))
-
-                    tracks['{0} {1} {2}'.format(channel.m3u8_group,
-                                                channel.display_names[0].text,
-                                                channel.number)] = ''.join(track_information)
-            finally:
-                db_session.close()
-
-        return [tracks[channel_name] for channel_name in sorted(tracks,
-                                                                key=lambda channel_name_: channel_name_.lower())]
-
-    @classmethod
-    def get_supported_protocols(cls):
-        return VaderStreamsConstants.VALID_PLAYLIST_PROTOCOL_VALUES
-
-    @classmethod
-    def initialize(cls, **kwargs):
-        try:
-            pass
-        finally:
-            if 'event' in kwargs:
-                kwargs['event'].set()
-
-    @classmethod
-    def terminate(cls, **kwargs):
-        try:
-            pass
-        finally:
-            if 'event' in kwargs:
-                kwargs['event'].set()
 
     @classmethod
     def set_do_reduce_hls_stream_delay(cls, do_reduce_hls_stream_delay):

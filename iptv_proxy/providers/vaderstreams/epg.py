@@ -1,25 +1,21 @@
-import hashlib
 import html
-import json
 import logging
 import pickle
 import uuid
+from collections import OrderedDict
 from datetime import datetime
-from datetime import timedelta
 from gzip import GzipFile
 from threading import RLock
 
 import ijson
 import pytz
 import requests
-import tzlocal
 from lxml import etree
+from rwlock import RWLock
 
 from iptv_proxy.configuration import Configuration
-from iptv_proxy.configuration import OptionalSettings
 from iptv_proxy.providers.iptv_provider.epg import ProviderEPG
 from iptv_proxy.providers.vaderstreams.constants import VaderStreamsConstants
-from iptv_proxy.providers.vaderstreams.data_access import VaderStreamsDatabaseAccess
 from iptv_proxy.providers.vaderstreams.data_model import VaderStreamsChannel
 from iptv_proxy.providers.vaderstreams.data_model import VaderStreamsProgram
 from iptv_proxy.providers.vaderstreams.data_model import VaderStreamsSetting
@@ -77,75 +73,13 @@ logger = logging.getLogger(__name__)
 class VaderStreamsEPG(ProviderEPG):
     __slots__ = []
 
-    _channel_name_map = {}
+    _channel_name_map = OrderedDict()
+    _channel_name_map_lock = RWLock()
     _do_use_provider_icons = False
+    _do_use_provider_icons_lock = RWLock()
     _lock = RLock()
     _provider_name = VaderStreamsConstants.PROVIDER_NAME.lower()
     _refresh_epg_timer = None
-
-    @classmethod
-    def _do_update_epg(cls):
-        do_update_epg = False
-
-        with VaderStreamsDatabase.get_access_lock().shared_lock:
-            db_session = VaderStreamsDatabase.create_session()
-
-            try:
-                do_use_icons = None
-                channel_name_map_md5 = None
-                epg_source = None
-                epg_url = None
-                last_epg_refresh_date_time_in_utc = None
-
-                for setting_row in VaderStreamsDatabaseAccess.query_settings(db_session):
-                    if setting_row.name == 'do_use_icons':
-                        do_use_icons = bool(int(setting_row.value))
-                    elif setting_row.name == 'channel_name_map_md5':
-                        channel_name_map_md5 = setting_row.value
-                    elif setting_row.name == 'epg_source':
-                        epg_source = setting_row.value
-                    elif setting_row.name == 'epg_url':
-                        epg_url = setting_row.value
-                    elif setting_row.name == 'last_epg_refresh_date_time_in_utc':
-                        last_epg_refresh_date_time_in_utc = datetime.strptime(setting_row.value, '%Y-%m-%d %H:%M:%S%z')
-
-                current_date_time_in_utc = datetime.now(pytz.utc)
-
-                if do_use_icons is None or cls._do_use_provider_icons != bool(int(do_use_icons)) or \
-                        channel_name_map_md5 is None or \
-                        hashlib.md5(json.dumps(cls._channel_name_map,
-                                               sort_keys=True).encode()).hexdigest() != channel_name_map_md5 or \
-                        epg_source is None or \
-                        Configuration.get_configuration_parameter('VADERSTREAMS_EPG_SOURCE') != epg_source or \
-                        (Configuration.get_configuration_parameter(
-                            'VADERSTREAMS_EPG_SOURCE') == VaderStreamsEPGSource.OTHER.value and
-                         Configuration.get_configuration_parameter(
-                             'VADERSTREAMS_EPG_URL') != epg_url) or \
-                        last_epg_refresh_date_time_in_utc is None or \
-                        current_date_time_in_utc >= \
-                        last_epg_refresh_date_time_in_utc.astimezone(
-                            tzlocal.get_localzone()).replace(hour=4,
-                                                             minute=0,
-                                                             second=0,
-                                                             microsecond=0) + timedelta(days=1):
-                    do_update_epg = True
-
-            finally:
-                db_session.close()
-
-            return do_update_epg
-
-    @classmethod
-    def _initialize_class_variables(cls):
-        try:
-            cls.set_channel_name_map(OptionalSettings.get_optional_settings_parameter('vaderstreams_channel_name_map'))
-        except KeyError:
-            pass
-
-        try:
-            cls.set_do_use_provider_icons(OptionalSettings.get_optional_settings_parameter('use_vaderstreams_icons'))
-        except KeyError:
-            pass
 
     @classmethod
     def _parse_categories_json(cls):
@@ -179,6 +113,8 @@ class VaderStreamsEPG(ProviderEPG):
     def _parse_channels_json(cls,
                              db_session,
                              categories_map,
+                             channel_name_map,
+                             do_use_provider_icons,
                              parsed_channel_xmltv_id_to_channel,
                              parsed_channel_number_to_channel):
         for category_id in categories_map:
@@ -231,8 +167,8 @@ class VaderStreamsEPG(ProviderEPG):
                                                                         height=None)],
                                                        urls=[])
                                 cls._apply_channel_transformations(channel,
-                                                                   cls._channel_name_map,
-                                                                   not cls._do_use_provider_icons)
+                                                                   channel_name_map,
+                                                                   not do_use_provider_icons)
 
                                 if channel_xmltv_id in parsed_channel_xmltv_id_to_channel:
                                     parsed_channel_xmltv_id_to_channel[channel_xmltv_id].append(channel)
@@ -242,8 +178,8 @@ class VaderStreamsEPG(ProviderEPG):
 
                                 db_session.add(VaderStreamsChannel(
                                     id_=channel.xmltv_id,
-                                    m3u8_group=channel_m3u8_group,
-                                    number=channel_number,
+                                    m3u8_group=channel.m3u8_group,
+                                    number=channel.number,
                                     name=channel.display_names[0].text,
                                     pickle=pickle.dumps(channel, protocol=pickle.HIGHEST_PROTOCOL),
                                     complete_xmltv=channel.format(minimal_xmltv=False),
@@ -275,13 +211,15 @@ class VaderStreamsEPG(ProviderEPG):
                 raise
 
     @classmethod
-    def _parse_epg_json(cls, db_session, parsed_channel_xmltv_id_to_channel):
+    def _parse_epg_json(cls, db_session, channel_name_map, do_use_provider_icons, parsed_channel_xmltv_id_to_channel):
         categories_map = cls._parse_categories_json()
 
         parsed_channel_number_to_channel = {}
 
         cls._parse_channels_json(db_session,
                                  categories_map,
+                                 channel_name_map,
+                                 do_use_provider_icons,
                                  parsed_channel_xmltv_id_to_channel,
                                  parsed_channel_number_to_channel)
         cls._parse_matchcenter_schedule_json(db_session, parsed_channel_number_to_channel)
@@ -777,8 +715,17 @@ class VaderStreamsEPG(ProviderEPG):
             response.raise_for_status()
 
     @classmethod
-    def _update_epg(cls):
+    def _terminate(cls, **kwargs):
+        pass
+
+    @classmethod
+    def _update_epg(cls, **kwargs):
         with cls._lock:
+            super()._update_epg()
+
+            channel_name_map = kwargs['channel_name_map']
+            do_use_provider_icons = kwargs['do_use_provider_icons']
+
             was_exception_raised = False
 
             VaderStreamsDatabase.initialize_temporary()
@@ -788,32 +735,21 @@ class VaderStreamsEPG(ProviderEPG):
             try:
                 if Configuration.get_configuration_parameter('VADERSTREAMS_EPG_SOURCE') == \
                         VaderStreamsEPGSource.OTHER.value:
-                    cls._parse_external_epg_xml(db_session)
-
-                    cls._source = VaderStreamsEPGSource.OTHER.value
+                    cls._parse_external_epg_xml(db_session,
+                                                channel_name_map=channel_name_map,
+                                                do_use_provider_icons=do_use_provider_icons)
                 elif Configuration.get_configuration_parameter('VADERSTREAMS_EPG_SOURCE') == \
-                        VaderStreamsEPGSource.VADERSTREAMS.value:
+                        VaderStreamsEPGSource.PROVIDER.value:
                     parsed_channel_xmltv_id_to_channel = {}
 
-                    cls._parse_epg_json(db_session, parsed_channel_xmltv_id_to_channel)
+                    cls._parse_epg_json(db_session,
+                                        channel_name_map,
+                                        do_use_provider_icons, parsed_channel_xmltv_id_to_channel)
                     cls._parse_epg_xml(db_session, parsed_channel_xmltv_id_to_channel)
 
-                    cls._source = VaderStreamsEPGSource.VADERSTREAMS.value
-
-                db_session.merge(VaderStreamsSetting('do_use_icons', int(cls._do_use_provider_icons)))
-                db_session.merge(VaderStreamsSetting('channel_name_map_md5',
-                                                     hashlib.md5(json.dumps(cls._channel_name_map,
-                                                                            sort_keys=True).encode()).hexdigest()))
-                db_session.merge(VaderStreamsSetting('last_epg_refresh_date_time_in_utc',
-                                                     datetime.strftime(datetime.now(pytz.utc), '%Y-%m-%d %H:%M:%S%z')))
-                db_session.merge(VaderStreamsSetting('epg_source', cls._source))
-
-                if cls._source == VaderStreamsEPGSource.OTHER.value:
-                    db_session.merge(VaderStreamsSetting('epg_url',
-                                                         Configuration.get_configuration_parameter(
-                                                             'VADERSTREAMS_EPG_URL')))
-                else:
-                    VaderStreamsDatabaseAccess.delete_setting(db_session, 'epg_url')
+                db_session.add(VaderStreamsSetting('epg_settings_md5', cls._calculate_epg_settings_md5(**kwargs)))
+                db_session.add(VaderStreamsSetting('last_epg_refresh_date_time_in_utc',
+                                                   datetime.strftime(datetime.now(pytz.utc), '%Y-%m-%d %H:%M:%S%z')))
 
                 db_session.commit()
             except Exception:
@@ -832,25 +768,3 @@ class VaderStreamsEPG(ProviderEPG):
                         VaderStreamsDatabase.migrate()
                     except Exception:
                         cls._initialize_refresh_epg_timer(db_session, do_set_timer_for_retry=True)
-
-    @classmethod
-    def initialize(cls, **kwargs):
-        try:
-            cls._initialize_class_variables()
-
-            if cls._do_update_epg():
-                logger.debug('Updating EPG')
-
-                cls._cancel_refresh_epg_timer()
-                cls._update_epg()
-            else:
-                with VaderStreamsDatabase.get_access_lock().shared_lock:
-                    db_session = VaderStreamsDatabase.create_session()
-
-                    try:
-                        cls._initialize_refresh_epg_timer(db_session)
-                    finally:
-                        db_session.close()
-        finally:
-            if 'event' in kwargs:
-                kwargs['event'].set()
