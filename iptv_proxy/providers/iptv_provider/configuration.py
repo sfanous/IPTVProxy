@@ -782,7 +782,7 @@ class ProviderOptionalSettings(object):
 
         # <editor-fold desc="Detect and handle ignored_m3u8_groups change">
         if provider_map_class.epg_class().is_attribute_supported('_ignored_m3u8_groups'):
-            ignored_m3u8_groups_key_name = '{0}_ignored_channels'.format(cls._provider_name)
+            ignored_m3u8_groups_key_name = '{0}_ignored_m3u8_groups'.format(cls._provider_name)
 
             if ignored_m3u8_groups_key_name not in optional_settings:
                 optional_settings[ignored_m3u8_groups_key_name] = []
@@ -808,7 +808,7 @@ class ProviderOptionalSettings(object):
 
         # <editor-fold desc="Detect and handle m3u8_group_map change">
         if provider_map_class.epg_class().is_attribute_supported('_m3u8_group_map'):
-            m3u8_group_map_key_name = '{0}_ignored_channels'.format(cls._provider_name)
+            m3u8_group_map_key_name = '{0}_m3u8_group_map'.format(cls._provider_name)
 
             if m3u8_group_map_key_name not in optional_settings:
                 optional_settings[m3u8_group_map_key_name] = {}

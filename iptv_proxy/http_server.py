@@ -223,7 +223,9 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
             if self._active_providers_map_class:
                 self._cookies['guide_provider'] = self._active_providers_map_class[sorted(
                     self._active_providers_map_class)[0]].api_class().__name__
-                del self._cookies['guide_group']
+
+                if 'guide_group' in self._cookies:
+                    del self._cookies['guide_group']
 
         if self._cookies.get('guide_provider') is not None:
             if self._cookies.get('guide_group') is None:
@@ -713,8 +715,12 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                 if self._transport_layer_requirements_satisfied():
                     if self._is_logged_in():
                         if not set(self._requested_query_string_parameters) - {'refresh_epg'}:
-                            request_guide_provider_cookie_value = urllib.parse.unquote(
-                                self._cookies.get('guide_provider').value)
+                            try:
+                                request_guide_provider_cookie_value = urllib.parse.unquote(
+                                    self._cookies.get('guide_provider').value)
+                            except AttributeError:
+                                request_guide_provider_cookie_value = self._active_providers_map_class[sorted(
+                                    self._active_providers_map_class)[0]].api_class().__name__
 
                             self._create_settings_cookies()
 
@@ -774,8 +780,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                             self._send_http_response()
                         else:
                             invalid_query_string = True
-            elif re.match(r'\A(.+)\.png\Z', self._requested_path_tokens[1].lower()) \
-                    and self._requested_path_tokens_length == 2:
+            elif self._requested_path_tokens_length == 2 and \
+                    re.match(r'\A(.+)\.png\Z', self._requested_path_tokens[1].lower()):
                 http_token_parameter_value = self._requested_query_string_parameters.get('http_token')
 
                 if self._screen_request(http_token_parameter_value):
