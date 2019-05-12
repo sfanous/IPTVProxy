@@ -181,7 +181,7 @@ class Provider(ABC):
     @classmethod
     def generate_playlist_m3u8_tracks(cls,
                                       generate_playlist_m3u8_tracks_mapping,
-                                      sort_by=M388PlaylistSortOrder.CHANNEL_NAME):
+                                      sort_by=M388PlaylistSortOrder.CHANNEL_NAME.value):
         client_uuid = generate_playlist_m3u8_tracks_mapping['client_uuid']
         http_token = generate_playlist_m3u8_tracks_mapping['http_token']
         is_server_secure = generate_playlist_m3u8_tracks_mapping['is_server_secure']

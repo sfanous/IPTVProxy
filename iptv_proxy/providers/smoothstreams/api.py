@@ -481,7 +481,7 @@ class SmoothStreams(Provider):
     @classmethod
     def generate_playlist_m3u8_tracks(cls,
                                       generate_playlist_m3u8_tracks_mapping,
-                                      sort_by=M388PlaylistSortOrder.CHANNEL_NUMBER):
+                                      sort_by=M388PlaylistSortOrder.CHANNEL_NUMBER.value):
         return super().generate_playlist_m3u8_tracks(generate_playlist_m3u8_tracks_mapping, sort_by=sort_by)
 
     @classmethod
