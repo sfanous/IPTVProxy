@@ -110,8 +110,11 @@ class ProviderEPG(ABC):
 
                         break
 
-            if channel.number in channel_group_map['number']:
-                channel.m3u8_group = channel_group_map['number'][channel.number]
+            for channel_group_name in sorted(channel_group_map['number']):
+                if channel.number in channel_group_map['number'][channel_group_name]:
+                    channel.m3u8_group = channel_group_name
+
+                    break
 
         if m3u8_group_map is not None:
             for m3u8_group_map_regular_expression in m3u8_group_map:
@@ -959,8 +962,9 @@ class SmartersProviderEPG(ProviderEPG):
                 if re.search(channel_group_map_regular_expression, display_name.text):
                     return False
 
-        if channel.number in channel_group_map['number']:
-            return False
+        for channel_group_name in sorted(channel_group_map['number']):
+            if channel.number in channel_group_map['number'][channel_group_name]:
+                return False
 
         for ignored_m3u8_group_regular_expression in ignored_m3u8_groups:
             if re.search(ignored_m3u8_group_regular_expression, channel.m3u8_group):

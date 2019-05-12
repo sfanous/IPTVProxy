@@ -673,8 +673,10 @@ class ProviderOptionalSettings(object):
                     'Detected a change in the {0} setting\n'
                     'Old value => {1}\n'
                     'New value => {2}\n'.format(reduce_delay_key_name,
-                                                json.dumps(previous_optional_settings[reduce_delay_key_name]),
-                                                json.dumps(optional_settings[reduce_delay_key_name])))
+                                                json.dumps(previous_optional_settings[reduce_delay_key_name],
+                                                           indent=2),
+                                                json.dumps(optional_settings[reduce_delay_key_name],
+                                                           indent=2)))
 
                 provider_map_class.api_class().set_do_reduce_hls_stream_delay(optional_settings[reduce_delay_key_name])
         # </editor-fold>
@@ -749,8 +751,10 @@ class ProviderOptionalSettings(object):
                     'Detected a change in the {0} setting\n'
                     'Old value => {1}\n'
                     'New value => {2}\n'.format(ignored_m3u8_groups_key_name,
-                                                json.dumps(previous_optional_settings[ignored_m3u8_groups_key_name]),
-                                                json.dumps(optional_settings[ignored_m3u8_groups_key_name])))
+                                                json.dumps(previous_optional_settings[ignored_m3u8_groups_key_name],
+                                                           indent=2),
+                                                json.dumps(optional_settings[ignored_m3u8_groups_key_name],
+                                                           indent=2)))
 
                 provider_map_class.epg_class().set_do_use_provider_icons(
                     optional_settings[ignored_m3u8_groups_key_name])
@@ -774,8 +778,10 @@ class ProviderOptionalSettings(object):
                     'Detected a change in the {0} setting\n'
                     'Old value => {1}\n'
                     'New value => {2}\n'.format(ignored_m3u8_groups_key_name,
-                                                json.dumps(previous_optional_settings[ignored_m3u8_groups_key_name]),
-                                                json.dumps(optional_settings[ignored_m3u8_groups_key_name])))
+                                                json.dumps(previous_optional_settings[ignored_m3u8_groups_key_name],
+                                                           indent=2),
+                                                json.dumps(optional_settings[ignored_m3u8_groups_key_name],
+                                                           indent=2)))
 
                 provider_map_class.epg_class().set_ignored_channels(optional_settings[ignored_m3u8_groups_key_name])
         # </editor-fold>
@@ -799,8 +805,10 @@ class ProviderOptionalSettings(object):
                     'Old value => {1}\n'
                     'New value => {2}\n'.format(ignored_m3u8_groups_key_name,
                                                 json.dumps(
-                                                    previous_optional_settings[ignored_m3u8_groups_key_name]),
-                                                json.dumps(optional_settings[ignored_m3u8_groups_key_name])))
+                                                    previous_optional_settings[ignored_m3u8_groups_key_name],
+                                                    indent=2),
+                                                json.dumps(optional_settings[ignored_m3u8_groups_key_name],
+                                                           indent=2)))
 
                 provider_map_class.epg_class().set_ignored_channels(
                     optional_settings[ignored_m3u8_groups_key_name])
@@ -824,8 +832,10 @@ class ProviderOptionalSettings(object):
                     'Old value => {1}\n'
                     'New value => {2}\n'.format(m3u8_group_map_key_name,
                                                 json.dumps(
-                                                    previous_optional_settings[m3u8_group_map_key_name]),
-                                                json.dumps(optional_settings[m3u8_group_map_key_name])))
+                                                    previous_optional_settings[m3u8_group_map_key_name],
+                                                    indent=2),
+                                                json.dumps(optional_settings[m3u8_group_map_key_name],
+                                                           indent=2)))
 
                 provider_map_class.epg_class().set_ignored_channels(
                     optional_settings[m3u8_group_map_key_name])
