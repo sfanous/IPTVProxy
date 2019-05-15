@@ -207,7 +207,7 @@ class PVR(object):
     @classmethod
     def cleanup_live_recording(cls, recording):
         with cls._live_recordings_to_recording_thread_lock:
-            del cls._live_recordings_to_recording_thread_lock[recording.id]
+            del cls._live_recordings_to_recording_thread[recording.id]
 
     @classmethod
     def delete_recording(cls, db_session, recording):
@@ -514,14 +514,22 @@ class RecordingThread(Thread):
             hls_client = HLSClient(self._id, self._recording.provider.lower(), self._recording.channel_number)
 
             playlist_m3u8_object = m3u8.loads(hls_client.download_playlist_m3u8())
+            chunks_m3u8_object = None
 
-            chunks_url = '/live/{0}/{1}'.format(self._recording.provider.lower(),
-                                                playlist_m3u8_object.data['playlists'][0]['uri'])
+            try:
+                chunks_url = '/live/{0}/{1}'.format(self._recording.provider.lower(),
+                                                    playlist_m3u8_object.data['playlists'][0]['uri'])
+            except IndexError:
+                chunks_m3u8_object = playlist_m3u8_object
 
             downloaded_segment_file_names = []
 
             while not self._stop_recording_event.is_set():
-                chunks_m3u8_object = m3u8.loads(hls_client.download_chunks_m3u8(chunks_url))
+                try:
+                    chunks_m3u8_object = m3u8.loads(hls_client.download_chunks_m3u8(chunks_url))
+                except NameError:
+                    if chunks_m3u8_object is None:
+                        chunks_m3u8_object = m3u8.loads(hls_client.download_playlist_m3u8())
 
                 chunks_m3u8_download_date_time_in_utc = datetime.now(pytz.utc)
                 chunks_m3u8_total_duration = 0
@@ -584,6 +592,8 @@ class RecordingThread(Thread):
                         current_date_time_in_utc - chunks_m3u8_download_date_time_in_utc).total_seconds()
                 if wait_duration > 0:
                     self._stop_recording_event.wait(wait_duration)
+
+                chunks_m3u8_object = None
 
             self._recording.status = RecordingStatus.PERSISTED.value
 
