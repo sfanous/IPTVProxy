@@ -94,6 +94,8 @@ class ProviderEPG(ABC):
     _provider_name = None
     _refresh_epg_timer = None
     _supported_attributes = []
+    _update_times = None
+    _update_times_lock = None
 
     @classmethod
     def _apply_channel_transformations(cls,
@@ -200,13 +202,28 @@ class ProviderEPG(ABC):
                 current_date_time_in_utc = datetime.now(pytz.utc)
 
                 if cls._calculate_epg_settings_md5(**kwargs) != epg_settings_md5 or \
-                        current_date_time_in_utc >= \
-                        last_epg_refresh_date_time_in_utc.astimezone(
-                            tzlocal.get_localzone()).replace(hour=4,
-                                                             minute=0,
-                                                             second=0,
-                                                             microsecond=0) + timedelta(days=1):
+                        current_date_time_in_utc >= last_epg_refresh_date_time_in_utc + timedelta(days=1):
                     do_update_epg = True
+                else:
+                    with cls._update_times_lock.reader_lock:
+                        next_epg_refresh_minimum_interval = 86400
+
+                        for update_time in cls._update_times:
+                            next_epg_refresh_date_time_in_utc = last_epg_refresh_date_time_in_utc.astimezone(
+                                tzlocal.get_localzone()).replace(hour=int(update_time[0:2]),
+                                                                 minute=int(update_time[3:5]),
+                                                                 second=int(update_time[6:8])).astimezone(pytz.utc)
+
+                            interval = (next_epg_refresh_date_time_in_utc -
+                                        last_epg_refresh_date_time_in_utc).total_seconds()
+
+                            if 0 < interval < next_epg_refresh_minimum_interval:
+                                next_epg_refresh_minimum_interval = interval
+
+                                if current_date_time_in_utc > next_epg_refresh_date_time_in_utc:
+                                    do_update_epg = True
+
+                                    break
 
             finally:
                 db_session.close()
@@ -239,15 +256,7 @@ class ProviderEPG(ABC):
 
             cls._update_epg(**kwargs)
         else:
-            provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
-
-            with provider_map_class.database_class().get_access_lock().shared_lock:
-                db_session = provider_map_class.database_class().create_session()
-
-                try:
-                    cls._initialize_refresh_epg_timer(db_session)
-                finally:
-                    db_session.close()
+            cls._initialize_refresh_epg_timer()
 
     @classmethod
     def _initialize_class_variables(cls):
@@ -294,8 +303,15 @@ class ProviderEPG(ABC):
             except KeyError:
                 pass
 
+        if cls._update_times_lock is not None:
+            try:
+                cls.set_update_times(OptionalSettings.get_optional_settings_parameter(
+                    '{0}_epg_update_times'.format(cls._provider_name)))
+            except KeyError:
+                pass
+
     @classmethod
-    def _initialize_refresh_epg_timer(cls, db_session, do_set_timer_for_retry=False):
+    def _initialize_refresh_epg_timer(cls, do_set_timer_for_retry=False):
         current_date_time_in_utc = datetime.now(pytz.utc)
 
         if do_set_timer_for_retry:
@@ -306,22 +322,22 @@ class ProviderEPG(ABC):
 
             cls._start_refresh_epg_timer((refresh_epg_date_time_in_utc - current_date_time_in_utc).total_seconds())
         else:
-            setting_row = ProvidersController.get_provider_map_class(
-                cls._provider_name).database_access_class().query_setting(db_session,
-                                                                          'last_epg_refresh_date_time_in_utc')
+            with cls._update_times_lock.reader_lock:
+                minimum_refresh_epg_time_interval = 172800
 
-            if setting_row is not None:
-                last_epg_refresh_date_time_in_utc = datetime.strptime(setting_row.value, '%Y-%m-%d %H:%M:%S%z')
+                for update_time in cls._update_times:
+                    refresh_epg_date_time_in_utc = current_date_time_in_utc.astimezone(
+                        tzlocal.get_localzone()).replace(hour=int(update_time[0:2]),
+                                                         minute=int(update_time[3:5]),
+                                                         second=int(update_time[6:8])).astimezone(pytz.utc)
 
-                if cls._refresh_epg_timer is None:
-                    refresh_epg_date_time_in_utc = (last_epg_refresh_date_time_in_utc.astimezone(
-                        tzlocal.get_localzone()).replace(hour=4,
-                                                         minute=0,
-                                                         second=0,
-                                                         microsecond=0) + timedelta(days=1)).astimezone(pytz.utc)
+                    interval = (refresh_epg_date_time_in_utc - current_date_time_in_utc).total_seconds()
 
-                    cls._start_refresh_epg_timer(
-                        (refresh_epg_date_time_in_utc - current_date_time_in_utc).total_seconds())
+                    if 0 < interval < minimum_refresh_epg_time_interval:
+                        minimum_refresh_epg_time_interval = interval
+
+                cls._cancel_refresh_epg_timer()
+                cls._start_refresh_epg_timer(minimum_refresh_epg_time_interval)
 
     @classmethod
     def _parse_external_epg_xml(cls, db_session, **kwargs):
@@ -936,6 +952,11 @@ class ProviderEPG(ABC):
             cls._m3u8_group_map = m3u8_group_map
 
     @classmethod
+    def set_update_times(cls, epg_update_times):
+        with cls._update_times_lock.writer_lock:
+            cls._update_times = epg_update_times
+
+    @classmethod
     def terminate(cls, **kwargs):
         try:
             cls._cancel_refresh_epg_timer()
@@ -1547,12 +1568,14 @@ class SmartersProviderEPG(ProviderEPG):
 
                 raise
             finally:
-                cls._initialize_refresh_epg_timer(db_session, do_set_timer_for_retry=was_exception_raised)
-
                 db_session.close()
+
+                cls._initialize_refresh_epg_timer(do_set_timer_for_retry=was_exception_raised)
 
                 if not was_exception_raised:
                     try:
                         provider_map_class.database_class().migrate()
                     except Exception:
-                        cls._initialize_refresh_epg_timer(db_session, do_set_timer_for_retry=True)
+                        cls._initialize_refresh_epg_timer(do_set_timer_for_retry=True)
+
+                        raise

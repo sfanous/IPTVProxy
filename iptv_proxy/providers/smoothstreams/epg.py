@@ -79,6 +79,8 @@ class SmoothStreamsEPG(ProviderEPG):
     _lock = RLock()
     _provider_name = SmoothStreamsConstants.PROVIDER_NAME.lower()
     _refresh_epg_timer = None
+    _update_times = ['06:00:00']
+    _update_times_lock = RWLock()
 
     @classmethod
     def _parse_fog_channels_json(cls,
@@ -722,7 +724,7 @@ class SmoothStreamsEPG(ProviderEPG):
 
                 raise
             finally:
-                cls._initialize_refresh_epg_timer(db_session, do_set_timer_for_retry=was_exception_raised)
+                cls._initialize_refresh_epg_timer(do_set_timer_for_retry=was_exception_raised)
 
                 db_session.close()
 
@@ -730,7 +732,7 @@ class SmoothStreamsEPG(ProviderEPG):
                     try:
                         SmoothStreamsDatabase.migrate()
                     except Exception:
-                        cls._initialize_refresh_epg_timer(db_session, do_set_timer_for_retry=True)
+                        cls._initialize_refresh_epg_timer(do_set_timer_for_retry=True)
 
                         raise
 

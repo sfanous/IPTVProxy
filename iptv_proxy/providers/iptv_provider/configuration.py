@@ -675,8 +675,7 @@ class ProviderOptionalSettings(object):
                     'New value => {2}\n'.format(reduce_delay_key_name,
                                                 json.dumps(previous_optional_settings[reduce_delay_key_name],
                                                            indent=2),
-                                                json.dumps(optional_settings[reduce_delay_key_name],
-                                                           indent=2)))
+                                                json.dumps(optional_settings[reduce_delay_key_name], indent=2)))
 
                 provider_map_class.api_class().set_do_reduce_hls_stream_delay(optional_settings[reduce_delay_key_name])
         # </editor-fold>
@@ -698,14 +697,11 @@ class ProviderOptionalSettings(object):
                     'Detected a change in the {0} setting\n'
                     'Old value => {1}\n'
                     'New value => {2}\n'.format(channel_group_map_key_name,
-                                                json.dumps(
-                                                    previous_optional_settings[channel_group_map_key_name],
-                                                    indent=2),
-                                                json.dumps(optional_settings[channel_group_map_key_name],
-                                                           indent=2)))
+                                                json.dumps(previous_optional_settings[channel_group_map_key_name],
+                                                           indent=2),
+                                                json.dumps(optional_settings[channel_group_map_key_name], indent=2)))
 
-                provider_map_class.epg_class().set_channel_group_map(
-                    optional_settings[channel_group_map_key_name])
+                provider_map_class.epg_class().set_channel_group_map(optional_settings[channel_group_map_key_name])
         # </editor-fold>
 
         # <editor-fold desc="Detect and handle channel_name_map change">
@@ -727,63 +723,59 @@ class ProviderOptionalSettings(object):
                     'New value => {2}\n'.format(channel_name_map_key_name,
                                                 json.dumps(previous_optional_settings[channel_name_map_key_name],
                                                            indent=2),
-                                                json.dumps(optional_settings[channel_name_map_key_name],
-                                                           indent=2)))
+                                                json.dumps(optional_settings[channel_name_map_key_name], indent=2)))
 
                 provider_map_class.epg_class().set_channel_name_map(optional_settings[channel_name_map_key_name])
         # </editor-fold>
 
         # <editor-fold desc="Detect and handle use_icons change">
         if provider_map_class.epg_class().is_attribute_supported('_do_use_provider_icons'):
-            ignored_m3u8_groups_key_name = 'use_{0}_icons'.format(cls._provider_name)
+            use_provider_icons_key_name = 'use_{0}_icons'.format(cls._provider_name)
 
-            if ignored_m3u8_groups_key_name not in optional_settings:
-                optional_settings[ignored_m3u8_groups_key_name] = False
+            if use_provider_icons_key_name not in optional_settings:
+                optional_settings[use_provider_icons_key_name] = False
 
-            if ignored_m3u8_groups_key_name not in previous_optional_settings:
-                previous_optional_settings[ignored_m3u8_groups_key_name] = False
+            if use_provider_icons_key_name not in previous_optional_settings:
+                previous_optional_settings[use_provider_icons_key_name] = False
 
-            if optional_settings[ignored_m3u8_groups_key_name] != \
-                    previous_optional_settings[ignored_m3u8_groups_key_name]:
+            if optional_settings[use_provider_icons_key_name] != \
+                    previous_optional_settings[use_provider_icons_key_name]:
                 do_reinitialize = True
 
                 message_to_log.append(
                     'Detected a change in the {0} setting\n'
                     'Old value => {1}\n'
-                    'New value => {2}\n'.format(ignored_m3u8_groups_key_name,
-                                                json.dumps(previous_optional_settings[ignored_m3u8_groups_key_name],
+                    'New value => {2}\n'.format(use_provider_icons_key_name,
+                                                json.dumps(previous_optional_settings[use_provider_icons_key_name],
                                                            indent=2),
-                                                json.dumps(optional_settings[ignored_m3u8_groups_key_name],
-                                                           indent=2)))
+                                                json.dumps(optional_settings[use_provider_icons_key_name], indent=2)))
 
-                provider_map_class.epg_class().set_do_use_provider_icons(
-                    optional_settings[ignored_m3u8_groups_key_name])
+                provider_map_class.epg_class().set_do_use_icons_key_name(optional_settings[use_provider_icons_key_name])
         # </editor-fold>
 
         # <editor-fold desc="Detect and handle ignored_channels change">
         if provider_map_class.epg_class().is_attribute_supported('_ignored_channels'):
-            ignored_m3u8_groups_key_name = '{0}_ignored_channels'.format(cls._provider_name)
+            ignored_channels_key_name = '{0}_ignored_channels_key_name'.format(cls._provider_name)
 
-            if ignored_m3u8_groups_key_name not in optional_settings:
-                optional_settings[ignored_m3u8_groups_key_name] = {'name': {}, 'number': {}}
+            if ignored_channels_key_name not in optional_settings:
+                optional_settings[ignored_channels_key_name] = {'name': {}, 'number': {}}
 
-            if ignored_m3u8_groups_key_name not in previous_optional_settings:
-                previous_optional_settings[ignored_m3u8_groups_key_name] = {'name': {}, 'number': {}}
+            if ignored_channels_key_name not in previous_optional_settings:
+                previous_optional_settings[ignored_channels_key_name] = {'name': {}, 'number': {}}
 
-            if optional_settings[ignored_m3u8_groups_key_name] != \
-                    previous_optional_settings[ignored_m3u8_groups_key_name]:
+            if optional_settings[ignored_channels_key_name] != previous_optional_settings[ignored_channels_key_name]:
                 do_reinitialize = True
 
                 message_to_log.append(
                     'Detected a change in the {0} setting\n'
                     'Old value => {1}\n'
-                    'New value => {2}\n'.format(ignored_m3u8_groups_key_name,
-                                                json.dumps(previous_optional_settings[ignored_m3u8_groups_key_name],
+                    'New value => {2}\n'.format(ignored_channels_key_name,
+                                                json.dumps(previous_optional_settings[ignored_channels_key_name],
                                                            indent=2),
-                                                json.dumps(optional_settings[ignored_m3u8_groups_key_name],
-                                                           indent=2)))
+                                                json.dumps(optional_settings[ignored_channels_key_name], indent=2)))
 
-                provider_map_class.epg_class().set_ignored_channels(optional_settings[ignored_m3u8_groups_key_name])
+                provider_map_class.epg_class().set_ignored_channels_key_name(
+                    optional_settings[ignored_channels_key_name])
         # </editor-fold>
 
         # <editor-fold desc="Detect and handle ignored_m3u8_groups change">
@@ -804,14 +796,11 @@ class ProviderOptionalSettings(object):
                     'Detected a change in the {0} setting\n'
                     'Old value => {1}\n'
                     'New value => {2}\n'.format(ignored_m3u8_groups_key_name,
-                                                json.dumps(
-                                                    previous_optional_settings[ignored_m3u8_groups_key_name],
-                                                    indent=2),
-                                                json.dumps(optional_settings[ignored_m3u8_groups_key_name],
-                                                           indent=2)))
+                                                json.dumps(previous_optional_settings[ignored_m3u8_groups_key_name],
+                                                           indent=2),
+                                                json.dumps(optional_settings[ignored_m3u8_groups_key_name], indent=2)))
 
-                provider_map_class.epg_class().set_ignored_channels(
-                    optional_settings[ignored_m3u8_groups_key_name])
+                provider_map_class.epg_class().set_ignored_m3u8_groups(optional_settings[ignored_m3u8_groups_key_name])
         # </editor-fold>
 
         # <editor-fold desc="Detect and handle m3u8_group_map change">
@@ -831,14 +820,35 @@ class ProviderOptionalSettings(object):
                     'Detected a change in the {0} setting\n'
                     'Old value => {1}\n'
                     'New value => {2}\n'.format(m3u8_group_map_key_name,
-                                                json.dumps(
-                                                    previous_optional_settings[m3u8_group_map_key_name],
-                                                    indent=2),
-                                                json.dumps(optional_settings[m3u8_group_map_key_name],
-                                                           indent=2)))
+                                                json.dumps(previous_optional_settings[m3u8_group_map_key_name],
+                                                           indent=2),
+                                                json.dumps(optional_settings[m3u8_group_map_key_name], indent=2)))
 
-                provider_map_class.epg_class().set_ignored_channels(
-                    optional_settings[m3u8_group_map_key_name])
+                provider_map_class.epg_class().set_m3u8_group_map(optional_settings[m3u8_group_map_key_name])
+        # </editor-fold>
+
+        # <editor-fold desc="Detect and handle epg_update_times change">
+        if provider_map_class.epg_class().is_attribute_supported('_update_times'):
+            epg_update_times_key_name = '{0}_epg_update_times'.format(cls._provider_name)
+
+            if epg_update_times_key_name not in optional_settings:
+                optional_settings[epg_update_times_key_name] = ['06:00:00']
+
+            if epg_update_times_key_name not in previous_optional_settings:
+                previous_optional_settings[epg_update_times_key_name] = ['06:00:00']
+
+            if optional_settings[epg_update_times_key_name] != previous_optional_settings[epg_update_times_key_name]:
+                do_reinitialize = True
+
+                message_to_log.append(
+                    'Detected a change in the {0} setting\n'
+                    'Old value => {1}\n'
+                    'New value => {2}\n'.format(epg_update_times_key_name,
+                                                json.dumps(previous_optional_settings[epg_update_times_key_name],
+                                                           indent=2),
+                                                json.dumps(optional_settings[epg_update_times_key_name], indent=2)))
+
+                provider_map_class.epg_class().set_update_times(optional_settings[epg_update_times_key_name])
         # </editor-fold>
 
         if message_to_log:

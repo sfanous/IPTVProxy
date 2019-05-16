@@ -28,3 +28,5 @@ class CrystalClearEPG(SmartersProviderEPG):
     _m3u8_group_map_lock = RWLock()
     _provider_name = CrystalClearConstants.PROVIDER_NAME.lower()
     _refresh_epg_timer = None
+    _update_times = ['06:00:00']
+    _update_times_lock = RWLock()

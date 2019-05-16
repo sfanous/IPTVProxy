@@ -2,6 +2,11 @@
 
 Release History
 ===============
+7.1.6 (16-05-2019)
+------------------
+* Add functionality to make EPG update time configurable per provider
+* Various bug fixes
+
 7.1.5 (16-05-2019)
 ------------------
 * Enable the configuring of Beast and CrystalClear from the web UI
