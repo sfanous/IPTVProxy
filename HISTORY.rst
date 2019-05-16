@@ -2,6 +2,11 @@
 
 Release History
 ===============
+7.1.5 (16-05-2019)
+------------------
+* Enable the configuring of Beast and CrystalClear from the web UI
+* Various bug fixes
+
 7.1.4 (15-05-2019)
 ------------------
 * Various bug fixes

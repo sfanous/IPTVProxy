@@ -172,6 +172,30 @@ class HTMLTemplateEngine(object):
             'configuration_server_hostname_loopback': self._configuration['SERVER_HOSTNAME_LOOPBACK'],
             'configuration_server_hostname_private': self._configuration['SERVER_HOSTNAME_PRIVATE'],
             'configuration_server_hostname_public': self._configuration['SERVER_HOSTNAME_PUBLIC'],
+            'configuration_beast_active':
+                'checked="checked"' if 'beast' in active_providers_map_class
+                else '',
+            'configuration_beast_username': '',
+            'configuration_beast_password': '',
+            'configuration_beast_playlist_protocol_hls_selected': '',
+            'configuration_beast_playlist_protocol_mpegts_selected': '',
+            'configuration_beast_playlist_type_dynamic_selected': '',
+            'configuration_beast_playlist_type_static_selected': '',
+            'configuration_beast_epg_source_beast_selected': '',
+            'configuration_beast_epg_source_other_selected': '',
+            'configuration_beast_epg_url': '',
+            'configuration_crystalclear_active':
+                'checked="checked"' if 'crystalclear' in active_providers_map_class
+                else '',
+            'configuration_crystalclear_username': '',
+            'configuration_crystalclear_password': '',
+            'configuration_crystalclear_playlist_protocol_hls_selected': '',
+            'configuration_crystalclear_playlist_protocol_mpegts_selected': '',
+            'configuration_crystalclear_playlist_type_dynamic_selected': '',
+            'configuration_crystalclear_playlist_type_static_selected': '',
+            'configuration_crystalclear_epg_source_crystalclear_selected': '',
+            'configuration_crystalclear_epg_source_other_selected': '',
+            'configuration_crystalclear_epg_url': '',
             'configuration_smoothstreams_active':
                 'checked="checked"' if 'smoothstreams' in active_providers_map_class
                 else '',
@@ -224,8 +248,49 @@ class HTMLTemplateEngine(object):
             'configuration_vaderstreams_playlist_type_static_selected': '',
             'configuration_vaderstreams_epg_source_vaderstreams_selected': '',
             'configuration_vaderstreams_epg_source_other_selected': '',
-            'configuration_vaderstreams_epg_url': '',
+            'configuration_vaderstreams_epg_url': ''
         }
+
+        if 'BEAST_USERNAME' in self._configuration:
+            configuration_div_template_fields['configuration_beast_username'] = self._configuration['BEAST_USERNAME']
+        if 'BEAST_PASSWORD' in self._configuration:
+            configuration_div_template_fields['configuration_beast_password'] = self._configuration['BEAST_PASSWORD']
+        if 'BEAST_PLAYLIST_PROTOCOL' in self._configuration:
+            configuration_div_template_fields['configuration_beast_playlist_protocol_{0}_selected'.format(
+                self._configuration['BEAST_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
+        if 'BEAST_PLAYLIST_TYPE' in self._configuration:
+            configuration_div_template_fields['configuration_beast_playlist_type_{0}_selected'.format(
+                self._configuration['BEAST_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
+        if 'BEAST_EPG_SOURCE' in self._configuration:
+            configuration_div_template_fields['configuration_beast_epg_source_{0}_selected'.format(
+                self._configuration['BEAST_EPG_SOURCE'].lower())] = 'selected="selected" '
+        if 'BEAST_EPG_URL' in self._configuration:
+            if self._configuration['BEAST_EPG_URL'] is None:
+                configuration_div_template_fields['configuration_beast_epg_url'] = ''
+            else:
+                configuration_div_template_fields['configuration_beast_epg_url'] = self._configuration['BEAST_EPG_URL']
+        
+        if 'CRYSTALCLEAR_USERNAME' in self._configuration:
+            configuration_div_template_fields['configuration_crystalclear_username'] = self._configuration[
+                'CRYSTALCLEAR_USERNAME']
+        if 'CRYSTALCLEAR_PASSWORD' in self._configuration:
+            configuration_div_template_fields['configuration_crystalclear_password'] = self._configuration[
+                'CRYSTALCLEAR_PASSWORD']
+        if 'CRYSTALCLEAR_PLAYLIST_PROTOCOL' in self._configuration:
+            configuration_div_template_fields['configuration_crystalclear_playlist_protocol_{0}_selected'.format(
+                self._configuration['CRYSTALCLEAR_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
+        if 'CRYSTALCLEAR_PLAYLIST_TYPE' in self._configuration:
+            configuration_div_template_fields['configuration_crystalclear_playlist_type_{0}_selected'.format(
+                self._configuration['CRYSTALCLEAR_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
+        if 'CRYSTALCLEAR_EPG_SOURCE' in self._configuration:
+            configuration_div_template_fields['configuration_crystalclear_epg_source_{0}_selected'.format(
+                self._configuration['CRYSTALCLEAR_EPG_SOURCE'].lower())] = 'selected="selected" '
+        if 'CRYSTALCLEAR_EPG_URL' in self._configuration:
+            if self._configuration['CRYSTALCLEAR_EPG_URL'] is None:
+                configuration_div_template_fields['configuration_crystalclear_epg_url'] = ''
+            else:
+                configuration_div_template_fields['configuration_crystalclear_epg_url'] = self._configuration[
+                    'CRYSTALCLEAR_EPG_URL']
 
         if 'SMOOTHSTREAMS_SERVICE' in self._configuration:
             configuration_div_template_fields['configuration_{0}_selected'.format(

@@ -14,7 +14,7 @@ const HttpCodes = {
     SERVICE_UNAVAILABLE_ERROR: 503
 };
 
-const Providers = ['smoothStreams', 'vaderStreams'];
+const Providers = ['beast', 'crystalclear', 'smoothStreams', 'vaderStreams'];
 
 const SortOrder = {
     ASCENDING: 0,
@@ -627,8 +627,15 @@ const GuideModule = (function () {
 
     const sortChannels = function (criteria, order) {
         const guideUl = $('#guideUl');
+        const channelLis = $('[id$="_channelLi"]');
 
-        $('[id$="_channelLi"]').sort(function (a, b) {
+        channelLis.each(function () {
+            const channelLi = $(this);
+
+            channelLi.removeClass('w3-border-0')
+        });
+
+        channelLis.sort(function (a, b) {
             const aChannelLi = $(a);
             const bChannelLi = $(b);
 
@@ -677,7 +684,7 @@ const GuideModule = (function () {
             const channelProgramsLi = $(this);
             const channelProgramsLiId = channelProgramsLi.prop('id');
 
-            $('[id$="_channelLi"]').each(function () {
+            channelLis.each(function () {
                 const channelLi = $(this);
                 const channelLiId = channelLi.prop('id');
 
@@ -688,6 +695,8 @@ const GuideModule = (function () {
                 }
             });
         });
+
+        channelLis.last().addClass('w3-border-0');
 
         $('#noMatchingProgramLi').appendTo(guideUl);
 
@@ -1495,6 +1504,17 @@ const RecordingsModule = (function () {
 })();
 
 const ConfigurationModule = (function () {
+    let _beastConfigurationButton = null;
+    let _beastConfigurationDiv = null;
+    let _beastEnabledCheckbox = null;
+    let _beastEpgSourceSelect = null;
+    let _beastEpgUrlLabel = null;
+    let _beastEpgUrlInput = null;
+    let _beastPasswordInput = null;
+    let _beastPlaylistProtocolSelect = null;
+    let _beastPlaylistTypeSelect = null;
+    let _beastTogglePasswordSpan = null;
+    let _beastUsernameInput = null;
     let _configurationAlertDiv = null;
     let _configurationForm = null;
     let _configurationHeader = null;
@@ -1502,6 +1522,17 @@ const ConfigurationModule = (function () {
     let _configurationReasonParagraph = null;
     let _configurationResetButton = null;
     let _configurationSpan = null;
+    let _crystalClearConfigurationButton = null;
+    let _crystalClearConfigurationDiv = null;
+    let _crystalClearEnabledCheckbox = null;
+    let _crystalClearEpgSourceSelect = null;
+    let _crystalClearEpgUrlLabel = null;
+    let _crystalClearEpgUrlInput = null;
+    let _crystalClearPasswordInput = null;
+    let _crystalClearPlaylistProtocolSelect = null;
+    let _crystalClearPlaylistTypeSelect = null;
+    let _crystalClearTogglePasswordSpan = null;
+    let _crystalClearUsernameInput = null;
     let _errorSpans = null;
     let _lastAppliedConfigurationSerialization = null;
     let _serverConfigurationButton = null;
@@ -1546,6 +1577,18 @@ const ConfigurationModule = (function () {
         _serverHostnameLoopbackInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _serverHostnamePrivateInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _serverHostnamePublicInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _beastUsernameInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _beastPasswordInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _beastPlaylistProtocolSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _beastPlaylistTypeSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _beastEpgSourceSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _beastEpgUrlInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _crystalClearUsernameInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _crystalClearPasswordInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _crystalClearPlaylistProtocolSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _crystalClearPlaylistTypeSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _crystalClearEpgSourceSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _crystalClearEpgUrlInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _smoothStreamsServiceSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _smoothStreamsServerSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _smoothStreamsUsernameInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
@@ -1710,6 +1753,17 @@ const ConfigurationModule = (function () {
     };
 
     const init = function () {
+        _beastConfigurationButton = $('#beastConfigurationButton');
+        _beastConfigurationDiv = $('#beastConfigurationDiv');
+        _beastEnabledCheckbox = $('#beastEnabledCheckbox');
+        _beastEpgSourceSelect = $('#beastEpgSourceSelect');
+        _beastEpgUrlLabel = $('#beastEpgUrlLabel');
+        _beastEpgUrlInput = $('#beastEpgUrlInput');
+        _beastPasswordInput = $('#beastPasswordInput');
+        _beastPlaylistProtocolSelect = $('#beastPlaylistProtocolSelect');
+        _beastPlaylistTypeSelect = $('#beastPlaylistTypeSelect');
+        _beastTogglePasswordSpan = $('#beastTogglePasswordSpan');
+        _beastUsernameInput = $('#beastUsernameInput');
         _configurationAlertDiv = $('#configurationAlertDiv');
         _configurationForm = $('#configurationForm');
         _configurationHeader = $('#configurationHeader');
@@ -1717,6 +1771,17 @@ const ConfigurationModule = (function () {
         _configurationReasonParagraph = $('#configurationReasonParagraph');
         _configurationResetButton = $('#configurationResetButton');
         _configurationSpan = $('#configurationSpan');
+        _crystalClearConfigurationButton = $('#crystalClearConfigurationButton');
+        _crystalClearConfigurationDiv = $('#crystalClearConfigurationDiv');
+        _crystalClearEnabledCheckbox = $('#crystalClearEnabledCheckbox');
+        _crystalClearEpgSourceSelect = $('#crystalClearEpgSourceSelect');
+        _crystalClearEpgUrlLabel = $('#crystalClearEpgUrlLabel');
+        _crystalClearEpgUrlInput = $('#crystalClearEpgUrlInput');
+        _crystalClearPasswordInput = $('#crystalClearPasswordInput');
+        _crystalClearPlaylistProtocolSelect = $('#crystalClearPlaylistProtocolSelect');
+        _crystalClearPlaylistTypeSelect = $('#crystalClearPlaylistTypeSelect');
+        _crystalClearTogglePasswordSpan = $('#crystalClearTogglePasswordSpan');
+        _crystalClearUsernameInput = $('#crystalClearUsernameInput');
         _errorSpans = $('[id$=ErrorSpan]');
         _serverConfigurationButton = $('#serverConfigurationButton');
         _serverConfigurationDiv = $('#serverConfigurationDiv');
@@ -1782,26 +1847,31 @@ const ConfigurationModule = (function () {
             _serverHostnameLoopbackInput.val(data['data']['attributes']['server_hostname_loopback']);
             _serverHostnamePrivateInput.val(data['data']['attributes']['server_hostname_private']);
             _serverHostnamePublicInput.val(data['data']['attributes']['server_hostname_public']);
-            _smoothStreamsServiceSelect
-                .val(data['data']['attributes']['smoothstreams_service'].toLowerCase());
-            _smoothStreamsServerSelect
-                .val(data['data']['attributes']['smoothstreams_server'].toLowerCase());
+            _beastUsernameInput.val(data['data']['attributes']['beast_username']);
+            _beastPasswordInput.val(data['data']['attributes']['beast_password']);
+            _beastPlaylistProtocolSelect.val(data['data']['attributes']['beast_playlist_protocol'].toLowerCase());
+            _beastPlaylistTypeSelect.val(data['data']['attributes']['beast_playlist_type'].toLowerCase());
+            _beastEpgSourceSelect.val(data['data']['attributes']['beast_epg_source'].toLowerCase());
+            _beastEpgUrlInput.val(data['data']['attributes']['beast_epg_url']);
+            _crystalClearUsernameInput.val(data['data']['attributes']['crystalclear_username']);
+            _crystalClearPasswordInput.val(data['data']['attributes']['crystalclear_password']);
+            _crystalClearPlaylistProtocolSelect.val(data['data']['attributes']['crystalclear_playlist_protocol'].toLowerCase());
+            _crystalClearPlaylistTypeSelect.val(data['data']['attributes']['crystalclear_playlist_type'].toLowerCase());
+            _crystalClearEpgSourceSelect.val(data['data']['attributes']['crystalclear_epg_source'].toLowerCase());
+            _crystalClearEpgUrlInput.val(data['data']['attributes']['crystalclear_epg_url']);
+            _smoothStreamsServiceSelect.val(data['data']['attributes']['smoothstreams_service'].toLowerCase());
+            _smoothStreamsServerSelect.val(data['data']['attributes']['smoothstreams_server'].toLowerCase());
             _smoothStreamsUsernameInput.val(data['data']['attributes']['smoothstreams_username']);
             _smoothStreamsPasswordInput.val(data['data']['attributes']['smoothstreams_password']);
-            _smoothStreamsPlaylistProtocolSelect
-                .val(data['data']['attributes']['smoothstreams_playlist_protocol'].toLowerCase());
-            _smoothStreamsPlaylistTypeSelect
-                .val(data['data']['attributes']['smoothstreams_playlist_type'].toLowerCase());
+            _smoothStreamsPlaylistProtocolSelect.val(data['data']['attributes']['smoothstreams_playlist_protocol'].toLowerCase());
+            _smoothStreamsPlaylistTypeSelect.val(data['data']['attributes']['smoothstreams_playlist_type'].toLowerCase());
             _smoothStreamsEpgSourceSelect.val(data['data']['attributes']['smoothstreams_epg_source'].toLowerCase());
             _smoothStreamsEpgUrlInput.val(data['data']['attributes']['smoothstreams_epg_url']);
-            _vaderStreamsServerSelect
-                .val(data['data']['attributes']['vaderstreams_server'].toLowerCase());
+            _vaderStreamsServerSelect.val(data['data']['attributes']['vaderstreams_server'].toLowerCase());
             _vaderStreamsUsernameInput.val(data['data']['attributes']['vaderstreams_username']);
             _vaderStreamsPasswordInput.val(data['data']['attributes']['vaderstreams_password']);
-            _vaderStreamsPlaylistProtocolSelect
-                .val(data['data']['attributes']['vaderstreams_playlist_protocol'].toLowerCase());
-            _vaderStreamsPlaylistTypeSelect
-                .val(data['data']['attributes']['vaderstreams_playlist_type'].toLowerCase());
+            _vaderStreamsPlaylistProtocolSelect.val(data['data']['attributes']['vaderstreams_playlist_protocol'].toLowerCase());
+            _vaderStreamsPlaylistTypeSelect.val(data['data']['attributes']['vaderstreams_playlist_type'].toLowerCase());
             _vaderStreamsEpgSourceSelect.val(data['data']['attributes']['vaderstreams_epg_source'].toLowerCase());
             _vaderStreamsEpgUrlInput.val(data['data']['attributes']['vaderstreams_epg_url']);
 
@@ -1848,16 +1918,22 @@ const ConfigurationModule = (function () {
 
         if (eventTarget.prop('id') === 'serverTogglePasswordSpan') {
             passwordInput = _serverPasswordInput;
+        } else if (eventTarget.prop('id') === 'beastTogglePasswordSpan') {
+            passwordInput = _beastPasswordInput;
+        } else if (eventTarget.prop('id') === 'crystalClearTogglePasswordSpan') {
+            passwordInput = _crystalClearPasswordInput;
         } else if (eventTarget.prop('id') === 'smoothStreamsTogglePasswordSpan') {
             passwordInput = _smoothStreamsPasswordInput;
         } else if (eventTarget.prop('id') === 'vaderStreamsTogglePasswordSpan') {
             passwordInput = _vaderStreamsPasswordInput;
         }
 
-        if (passwordInput.prop('type') === 'text') {
-            passwordInput.prop('type', 'password');
-        } else {
-            passwordInput.prop('type', 'text');
+        if (passwordInput) {
+            if (passwordInput.prop('type') === 'text') {
+                passwordInput.prop('type', 'password');
+            } else {
+                passwordInput.prop('type', 'text');
+            }
         }
 
         eventTarget.toggleClass('fa-eye fa-eye-slash');
@@ -1874,6 +1950,20 @@ const ConfigurationModule = (function () {
         const serverHostnameLoopbackInputValue = _serverHostnameLoopbackInput.val();
         const serverHostnamePrivateInputValue = _serverHostnamePrivateInput.val();
         const serverHostnamePublicInputValue = _serverHostnamePublicInput.val();
+        const beastEnabledCheckboxChecked = _beastEnabledCheckbox.is(':checked');
+        const beastUsernameInputValue = _beastUsernameInput.val();
+        const beastPasswordInputValue = _beastPasswordInput.val();
+        const beastPlaylistProtocolSelectValue = _beastPlaylistProtocolSelect.val();
+        const beastPlaylistTypeSelectValue = _beastPlaylistTypeSelect.val();
+        const beastEpgSourceSelectValue = _beastEpgSourceSelect.val();
+        const beastEpgUrlInputValue = _beastEpgUrlInput.val();
+        const crystalClearEnabledCheckboxChecked = _crystalClearEnabledCheckbox.is(':checked');
+        const crystalClearUsernameInputValue = _crystalClearUsernameInput.val();
+        const crystalClearPasswordInputValue = _crystalClearPasswordInput.val();
+        const crystalClearPlaylistProtocolSelectValue = _crystalClearPlaylistProtocolSelect.val();
+        const crystalClearPlaylistTypeSelectValue = _crystalClearPlaylistTypeSelect.val();
+        const crystalClearEpgSourceSelectValue = _crystalClearEpgSourceSelect.val();
+        const crystalClearEpgUrlInputValue = _crystalClearEpgUrlInput.val();
         const smoothStreamsEnabledCheckboxChecked = _smoothStreamsEnabledCheckbox.is(':checked');
         const smoothStreamsServiceSelectValue = _smoothStreamsServiceSelect.val();
         const smoothStreamsServerSelectValue = _smoothStreamsServerSelect.val();
@@ -1905,6 +1995,20 @@ const ConfigurationModule = (function () {
                                                  'server_hostname_loopback': serverHostnameLoopbackInputValue,
                                                  'server_hostname_private': serverHostnamePrivateInputValue,
                                                  'server_hostname_public': serverHostnamePublicInputValue,
+                                                 'beast_enabled': beastEnabledCheckboxChecked,
+                                                 'beast_username': beastUsernameInputValue,
+                                                 'beast_password': beastPasswordInputValue,
+                                                 'beast_playlist_protocol': beastPlaylistProtocolSelectValue,
+                                                 'beast_playlist_type': beastPlaylistTypeSelectValue,
+                                                 'beast_epg_source': beastEpgSourceSelectValue,
+                                                 'beast_epg_url': beastEpgUrlInputValue,
+                                                 'crystalclear_enabled': crystalClearEnabledCheckboxChecked,
+                                                 'crystalclear_username': crystalClearUsernameInputValue,
+                                                 'crystalclear_password': crystalClearPasswordInputValue,
+                                                 'crystalclear_playlist_protocol': crystalClearPlaylistProtocolSelectValue,
+                                                 'crystalclear_playlist_type': crystalClearPlaylistTypeSelectValue,
+                                                 'crystalclear_epg_source': crystalClearEpgSourceSelectValue,
+                                                 'crystalclear_epg_url': crystalClearEpgUrlInputValue,
                                                  'smoothstreams_enabled': smoothStreamsEnabledCheckboxChecked,
                                                  'smoothstreams_service': smoothStreamsServiceSelectValue,
                                                  'smoothstreams_server': smoothStreamsServerSelectValue,

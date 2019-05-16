@@ -99,6 +99,268 @@
                         </div>
                     </div>
                     <button class="w3-black w3-block w3-button"
+                            id="beastConfigurationButton"
+                            onclick="ConfigurationModule.toggleConfigurationDiv('beastConfiguration')"
+                            type="button">Beast</button>
+                    <div class="w3-container w3-hide"
+                         id="beastConfigurationDiv"
+                         style="padding: 8px;">
+                        <div class="w3-display-container w3-padding">
+                            <div class="w3-display-middle">
+                                <input {{ configuration_beast_active }}
+                                       class="w3-check"
+                                       id="beastEnabledCheckbox"
+                                       name="beastEnabledCheckbox"
+                                       onclick="ConfigurationModule.determineProviderConfigurationInputsState();ConfigurationModule.determineResetAndUpdateButtonsState();"
+                                       type="checkbox">
+                                <label for="beastEnabledCheckbox">Enabled</label>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="beastUsernameInput">Username</label>
+                                <input class="w3-border w3-input"
+                                       id="beastUsernameInput"
+                                       name="beastUsernameInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_beast_username }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="beastUsernameInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="beastPasswordInput">Password</label>
+                                <span class="fas fa-eye w3-right"
+                                      id="beastTogglePasswordSpan"
+                                      onclick="ConfigurationModule.togglePasswordVisibility(event)"
+                                      style="cursor: pointer;"></span>
+                                <input class="w3-border w3-input"
+                                       id="beastPasswordInput"
+                                       name="beastPasswordInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="password"
+                                       value="{{ configuration_beast_password }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="beastPasswordInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="beastPlaylistProtocolSelect">Playlist Protocol</label>
+                                <select class="w3-border w3-select"
+                                        id="beastPlaylistProtocolSelect"
+                                        name="beastPlaylistProtocolSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_beast_playlist_protocol_hls_selected }}value="hls">HTTP Live
+                                        Streaming (HLS)
+                                    </option>
+                                    <option {{ configuration_beast_playlist_protocol_mpegts_selected }}value="mpegts">MPEG
+                                        Transport Stream (MPEG-TS)
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="beastPlaylistProtocolSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="beastPlaylistTypeSelect">Playlist Type</label>
+                                <select class="w3-border w3-select"
+                                        id="beastPlaylistTypeSelect"
+                                        name="beastPlaylistTypeSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_beast_playlist_type_dynamic_selected }}value="dynamic">
+                                        Dynamic
+                                    </option>
+                                    <option {{ configuration_beast_playlist_type_static_selected }}value="static">Static
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="beastPlaylistTypeSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="beastEpgSourceSelect">EPG Source</label>
+                                <select class="w3-border w3-select"
+                                        id="beastEpgSourceSelect"
+                                        name="beastEpgSourceSelect"
+                                        oninput="ConfigurationModule.determineEpgUrlLabelInputVisibility();ConfigurationModule.determineResetAndUpdateButtonsState();"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_beast_epg_source_beast_selected }}value="beast">
+                                        Beast (Main)
+                                    </option>
+                                    <option {{ configuration_beast_epg_source_other_selected }}value="other">Other
+                                        (External)
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="beastEpgSourceSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="beastEpgUrlInput"
+                                       id="beastEpgUrlLabel">EPG Url</label>
+                                <input class="w3-border w3-input"
+                                       id="beastEpgUrlInput"
+                                       name="beastEpgUrlInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_beast_epg_url }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="beastEpgUrlInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="w3-black w3-block w3-button"
+                            id="crystalClearConfigurationButton"
+                            onclick="ConfigurationModule.toggleConfigurationDiv('crystalClearConfiguration')"
+                            type="button">CrystalClear</button>
+                    <div class="w3-container w3-hide"
+                         id="crystalClearConfigurationDiv"
+                         style="padding: 8px;">
+                        <div class="w3-display-container w3-padding">
+                            <div class="w3-display-middle">
+                                <input {{ configuration_crystalclear_active }}
+                                       class="w3-check"
+                                       id="crystalClearEnabledCheckbox"
+                                       name="crystalClearEnabledCheckbox"
+                                       onclick="ConfigurationModule.determineProviderConfigurationInputsState();ConfigurationModule.determineResetAndUpdateButtonsState();"
+                                       type="checkbox">
+                                <label for="crystalClearEnabledCheckbox">Enabled</label>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="crystalClearUsernameInput">Username</label>
+                                <input class="w3-border w3-input"
+                                       id="crystalClearUsernameInput"
+                                       name="crystalClearUsernameInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_crystalclear_username }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="crystalClearUsernameInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="crystalClearPasswordInput">Password</label>
+                                <span class="fas fa-eye w3-right"
+                                      id="crystalClearTogglePasswordSpan"
+                                      onclick="ConfigurationModule.togglePasswordVisibility(event)"
+                                      style="cursor: pointer;"></span>
+                                <input class="w3-border w3-input"
+                                       id="crystalClearPasswordInput"
+                                       name="crystalClearPasswordInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="password"
+                                       value="{{ configuration_crystalclear_password }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="crystalClearPasswordInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="crystalClearPlaylistProtocolSelect">Playlist Protocol</label>
+                                <select class="w3-border w3-select"
+                                        id="crystalClearPlaylistProtocolSelect"
+                                        name="crystalClearPlaylistProtocolSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_crystalclear_playlist_protocol_hls_selected }}value="hls">HTTP Live
+                                        Streaming (HLS)
+                                    </option>
+                                    <option {{ configuration_crystalclear_playlist_protocol_mpegts_selected }}value="mpegts">MPEG
+                                        Transport Stream (MPEG-TS)
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="crystalClearPlaylistProtocolSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="crystalClearPlaylistTypeSelect">Playlist Type</label>
+                                <select class="w3-border w3-select"
+                                        id="crystalClearPlaylistTypeSelect"
+                                        name="crystalClearPlaylistTypeSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_crystalclear_playlist_type_dynamic_selected }}value="dynamic">
+                                        Dynamic
+                                    </option>
+                                    <option {{ configuration_crystalclear_playlist_type_static_selected }}value="static">Static
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="crystalClearPlaylistTypeSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="crystalClearEpgSourceSelect">EPG Source</label>
+                                <select class="w3-border w3-select"
+                                        id="crystalClearEpgSourceSelect"
+                                        name="crystalClearEpgSourceSelect"
+                                        oninput="ConfigurationModule.determineEpgUrlLabelInputVisibility();ConfigurationModule.determineResetAndUpdateButtonsState();"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_crystalclear_epg_source_crystalclear_selected }}value="crystalClear">
+                                        CrystalClear (Main)
+                                    </option>
+                                    <option {{ configuration_crystalclear_epg_source_other_selected }}value="other">Other
+                                        (External)
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="crystalClearEpgSourceSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="crystalClearEpgUrlInput"
+                                       id="crystalClearEpgUrlLabel">EPG Url</label>
+                                <input class="w3-border w3-input"
+                                       id="crystalClearEpgUrlInput"
+                                       name="crystalClearEpgUrlInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_crystalclear_epg_url }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="crystalClearEpgUrlInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="w3-black w3-block w3-button"
                             id="smoothStreamsConfigurationButton"
                             onclick="ConfigurationModule.toggleConfigurationDiv('smoothStreamsConfiguration')"
                             type="button">SmoothStreams</button>
