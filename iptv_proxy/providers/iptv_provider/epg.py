@@ -220,7 +220,9 @@ class ProviderEPG(ABC):
                             if 0 < interval < next_epg_refresh_minimum_interval:
                                 next_epg_refresh_minimum_interval = interval
 
-                                if current_date_time_in_utc > next_epg_refresh_date_time_in_utc:
+                                if current_date_time_in_utc > next_epg_refresh_date_time_in_utc or \
+                                        current_date_time_in_utc > \
+                                        next_epg_refresh_date_time_in_utc + timedelta(days=1):
                                     do_update_epg = True
 
                                     break
@@ -335,6 +337,8 @@ class ProviderEPG(ABC):
 
                     if 0 < interval < minimum_refresh_epg_time_interval:
                         minimum_refresh_epg_time_interval = interval
+                    elif interval + 86400 < minimum_refresh_epg_time_interval:
+                        minimum_refresh_epg_time_interval = interval + 86400
 
                 cls._cancel_refresh_epg_timer()
                 cls._start_refresh_epg_timer(minimum_refresh_epg_time_interval)

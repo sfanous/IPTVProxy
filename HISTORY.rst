@@ -2,6 +2,10 @@
 
 Release History
 ===============
+7.1.7 (17-05-2019)
+------------------
+* Various bug fixes
+
 7.1.6 (16-05-2019)
 ------------------
 * Add functionality to make EPG update time configurable per provider
