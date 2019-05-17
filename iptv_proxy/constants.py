@@ -56,4 +56,4 @@ RESOURCES_DIRECTORY_PATH = os.path.join(sys.path[0], 'resources')
 TEMPLATES_BYTECODE_CACHE_DIRECTORY_PATH = os.path.join(sys.path[0], 'templates', 'byte_code_cache')
 TEMPLATES_DIRECTORY_PATH = os.path.join(sys.path[0], 'templates')
 TRACE = 5
-VERSION = '7.1.7'
+VERSION = '7.1.8'

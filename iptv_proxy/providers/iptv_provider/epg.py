@@ -219,13 +219,14 @@ class ProviderEPG(ABC):
 
                             if 0 < interval < next_epg_refresh_minimum_interval:
                                 next_epg_refresh_minimum_interval = interval
+                            else:
+                                next_epg_refresh_date_time_in_utc = next_epg_refresh_date_time_in_utc + \
+                                                                    timedelta(days=1)
 
-                                if current_date_time_in_utc > next_epg_refresh_date_time_in_utc or \
-                                        current_date_time_in_utc > \
-                                        next_epg_refresh_date_time_in_utc + timedelta(days=1):
-                                    do_update_epg = True
+                            if current_date_time_in_utc > next_epg_refresh_date_time_in_utc:
+                                do_update_epg = True
 
-                                    break
+                                break
 
             finally:
                 db_session.close()
