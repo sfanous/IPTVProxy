@@ -1,7 +1,10 @@
 import logging
 from threading import RLock
 
-from pysqlite3 import dbapi2 as sqlite3
+try:
+    from pysqlite3 import dbapi2 as sqlite3
+except ImportError:
+    import sqlite3
 from sqlalchemy import create_engine
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
