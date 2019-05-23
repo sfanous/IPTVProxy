@@ -2,6 +2,11 @@
 
 Release History
 ===============
+7.2.0 (19-05-2019)
+------------------
+* Made IPTVProxy PyInstaller compatible
+* Various bug fixes
+
 7.1.9 (19-05-2019)
 ------------------
 * Various bug fixes

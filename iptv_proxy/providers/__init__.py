@@ -14,8 +14,6 @@ from threading import Thread
 from rwlock import RWLock
 
 from iptv_proxy.exceptions import ProviderNotFoundError
-from iptv_proxy.providers.smoothstreams.map import SmoothStreamsMap
-from iptv_proxy.providers.vaderstreams.map import VaderStreamsMap
 
 logger = logging.getLogger(__name__)
 
