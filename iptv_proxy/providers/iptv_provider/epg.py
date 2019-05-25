@@ -125,7 +125,7 @@ class ProviderEPG(ABC):
 
                     break
 
-        channel.xmltv_id = '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID, '{0} - (1)'.format(channel.number,
+        channel.xmltv_id = '{0}'.format(uuid.uuid3(uuid.NAMESPACE_OID, '{0} - {1}'.format(channel.number,
                                                                                           channel.m3u8_group)))
 
         do_set_channel_display_names = False

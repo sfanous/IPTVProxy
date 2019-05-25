@@ -58,6 +58,8 @@ class Logging(object):
             try:
                 with open(LOGGING_CONFIGURATION_FILE_PATH, 'r') as logging_configuration_file:
                     logging.config.dictConfig(json.load(logging_configuration_file))
+            except FileNotFoundError:
+                raise
             except Exception:
                 (type_, value_, traceback_) = sys.exc_info()
                 logger.error('\n'.join(traceback.format_exception(type_, value_, traceback_)))
