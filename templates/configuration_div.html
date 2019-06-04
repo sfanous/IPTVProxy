@@ -216,7 +216,7 @@
                             </div>
                             <div class="w3-cell w3-container w3-half">
                                 <label for="beastEpgUrlInput"
-                                       id="beastEpgUrlLabel">EPG Url</label>
+                                       id="beastEpgUrlLabel">EPG URL</label>
                                 <input class="w3-border w3-input"
                                        id="beastEpgUrlInput"
                                        name="beastEpgUrlInput"
@@ -225,6 +225,137 @@
                                        value="{{ configuration_beast_epg_url }}"/>
                                 <span class="w3-font-red w3-tiny"
                                       id="beastEpgUrlInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="w3-black w3-block w3-button"
+                            id="coolAsIceConfigurationButton"
+                            onclick="ConfigurationModule.toggleConfigurationDiv('coolAsIceConfiguration')"
+                            type="button">CoolAsIce</button>
+                    <div class="w3-container w3-hide"
+                         id="coolAsIceConfigurationDiv"
+                         style="padding: 8px;">
+                        <div class="w3-display-container w3-padding">
+                            <div class="w3-display-middle">
+                                <input {{ configuration_coolasice_active }}
+                                       class="w3-check"
+                                       id="coolAsIceEnabledCheckbox"
+                                       name="coolAsIceEnabledCheckbox"
+                                       onclick="ConfigurationModule.determineProviderConfigurationInputsState();ConfigurationModule.determineResetAndUpdateButtonsState();"
+                                       type="checkbox">
+                                <label for="coolAsIceEnabledCheckbox">Enabled</label>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="coolAsIceUsernameInput">Username</label>
+                                <input class="w3-border w3-input"
+                                       id="coolAsIceUsernameInput"
+                                       name="coolAsIceUsernameInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_coolasice_username }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="coolAsIceUsernameInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="coolAsIcePasswordInput">Password</label>
+                                <span class="fas fa-eye w3-right"
+                                      id="coolAsIceTogglePasswordSpan"
+                                      onclick="ConfigurationModule.togglePasswordVisibility(event)"
+                                      style="cursor: pointer;"></span>
+                                <input class="w3-border w3-input"
+                                       id="coolAsIcePasswordInput"
+                                       name="coolAsIcePasswordInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="password"
+                                       value="{{ configuration_coolasice_password }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="coolAsIcePasswordInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="coolAsIcePlaylistProtocolSelect">Playlist Protocol</label>
+                                <select class="w3-border w3-select"
+                                        id="coolAsIcePlaylistProtocolSelect"
+                                        name="coolAsIcePlaylistProtocolSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_coolasice_playlist_protocol_hls_selected }}value="hls">HTTP Live
+                                        Streaming (HLS)
+                                    </option>
+                                    <option {{ configuration_coolasice_playlist_protocol_mpegts_selected }}value="mpegts">MPEG
+                                        Transport Stream (MPEG-TS)
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="coolAsIcePlaylistProtocolSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="coolAsIcePlaylistTypeSelect">Playlist Type</label>
+                                <select class="w3-border w3-select"
+                                        id="coolAsIcePlaylistTypeSelect"
+                                        name="coolAsIcePlaylistTypeSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_coolasice_playlist_type_dynamic_selected }}value="dynamic">
+                                        Dynamic
+                                    </option>
+                                    <option {{ configuration_coolasice_playlist_type_static_selected }}value="static">Static
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="coolAsIcePlaylistTypeSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="coolAsIceEpgSourceSelect">EPG Source</label>
+                                <select class="w3-border w3-select"
+                                        id="coolAsIceEpgSourceSelect"
+                                        name="coolAsIceEpgSourceSelect"
+                                        oninput="ConfigurationModule.determineEpgUrlLabelInputVisibility();ConfigurationModule.determineResetAndUpdateButtonsState();"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_coolasice_epg_source_coolasice_selected }}value="coolAsIce">
+                                        CoolAsIce (Main)
+                                    </option>
+                                    <option {{ configuration_coolasice_epg_source_other_selected }}value="other">Other
+                                        (External)
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="coolAsIceEpgSourceSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="coolAsIceEpgUrlInput"
+                                       id="coolAsIceEpgUrlLabel">EPG URL</label>
+                                <input class="w3-border w3-input"
+                                       id="coolAsIceEpgUrlInput"
+                                       name="coolAsIceEpgUrlInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_coolasice_epg_url }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="coolAsIceEpgUrlInputErrorSpan"
                                       style="color: red;"></span>
                             </div>
                         </div>
@@ -347,7 +478,7 @@
                             </div>
                             <div class="w3-cell w3-container w3-half">
                                 <label for="crystalClearEpgUrlInput"
-                                       id="crystalClearEpgUrlLabel">EPG Url</label>
+                                       id="crystalClearEpgUrlLabel">EPG URL</label>
                                 <input class="w3-border w3-input"
                                        id="crystalClearEpgUrlInput"
                                        name="crystalClearEpgUrlInput"
@@ -356,6 +487,137 @@
                                        value="{{ configuration_crystalclear_epg_url }}"/>
                                 <span class="w3-font-red w3-tiny"
                                       id="crystalClearEpgUrlInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="w3-black w3-block w3-button"
+                            id="infernoConfigurationButton"
+                            onclick="ConfigurationModule.toggleConfigurationDiv('infernoConfiguration')"
+                            type="button">Inferno</button>
+                    <div class="w3-container w3-hide"
+                         id="infernoConfigurationDiv"
+                         style="padding: 8px;">
+                        <div class="w3-display-container w3-padding">
+                            <div class="w3-display-middle">
+                                <input {{ configuration_inferno_active }}
+                                       class="w3-check"
+                                       id="infernoEnabledCheckbox"
+                                       name="infernoEnabledCheckbox"
+                                       onclick="ConfigurationModule.determineProviderConfigurationInputsState();ConfigurationModule.determineResetAndUpdateButtonsState();"
+                                       type="checkbox">
+                                <label for="infernoEnabledCheckbox">Enabled</label>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="infernoUsernameInput">Username</label>
+                                <input class="w3-border w3-input"
+                                       id="infernoUsernameInput"
+                                       name="infernoUsernameInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_inferno_username }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="infernoUsernameInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="infernoPasswordInput">Password</label>
+                                <span class="fas fa-eye w3-right"
+                                      id="infernoTogglePasswordSpan"
+                                      onclick="ConfigurationModule.togglePasswordVisibility(event)"
+                                      style="cursor: pointer;"></span>
+                                <input class="w3-border w3-input"
+                                       id="infernoPasswordInput"
+                                       name="infernoPasswordInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="password"
+                                       value="{{ configuration_inferno_password }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="infernoPasswordInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="infernoPlaylistProtocolSelect">Playlist Protocol</label>
+                                <select class="w3-border w3-select"
+                                        id="infernoPlaylistProtocolSelect"
+                                        name="infernoPlaylistProtocolSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_inferno_playlist_protocol_hls_selected }}value="hls">HTTP Live
+                                        Streaming (HLS)
+                                    </option>
+                                    <option {{ configuration_inferno_playlist_protocol_mpegts_selected }}value="mpegts">MPEG
+                                        Transport Stream (MPEG-TS)
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="infernoPlaylistProtocolSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="infernoPlaylistTypeSelect">Playlist Type</label>
+                                <select class="w3-border w3-select"
+                                        id="infernoPlaylistTypeSelect"
+                                        name="infernoPlaylistTypeSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_inferno_playlist_type_dynamic_selected }}value="dynamic">
+                                        Dynamic
+                                    </option>
+                                    <option {{ configuration_inferno_playlist_type_static_selected }}value="static">Static
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="infernoPlaylistTypeSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="infernoEpgSourceSelect">EPG Source</label>
+                                <select class="w3-border w3-select"
+                                        id="infernoEpgSourceSelect"
+                                        name="infernoEpgSourceSelect"
+                                        oninput="ConfigurationModule.determineEpgUrlLabelInputVisibility();ConfigurationModule.determineResetAndUpdateButtonsState();"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_inferno_epg_source_inferno_selected }}value="inferno">
+                                        Inferno (Main)
+                                    </option>
+                                    <option {{ configuration_inferno_epg_source_other_selected }}value="other">Other
+                                        (External)
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="infernoEpgSourceSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="infernoEpgUrlInput"
+                                       id="infernoEpgUrlLabel">EPG URL</label>
+                                <input class="w3-border w3-input"
+                                       id="infernoEpgUrlInput"
+                                       name="infernoEpgUrlInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_inferno_epg_url }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="infernoEpgUrlInputErrorSpan"
                                       style="color: red;"></span>
                             </div>
                         </div>
@@ -554,7 +816,7 @@
                             </div>
                             <div class="w3-cell w3-container w3-half">
                                 <label for="smoothStreamsEpgUrlInput"
-                                       id="smoothStreamsEpgUrlLabel">EPG Url</label>
+                                       id="smoothStreamsEpgUrlLabel">EPG URL</label>
                                 <input class="w3-border w3-input"
                                        id="smoothStreamsEpgUrlInput"
                                        name="smoothStreamsEpgUrlInput"
@@ -706,7 +968,7 @@
                             </div>
                             <div class="w3-cell w3-container w3-half">
                                 <label for="vaderStreamsEpgUrlInput"
-                                       id="vaderStreamsEpgUrlLabel">EPG Url</label>
+                                       id="vaderStreamsEpgUrlLabel">EPG URL</label>
                                 <input class="w3-border w3-input"
                                        id="vaderStreamsEpgUrlInput"
                                        name="vaderStreamsEpgUrlInput"

@@ -2,6 +2,11 @@
 
 Release History
 ===============
+7.3.0 (03-06-2019)
+------------------
+* Added CoolAsIce and Inferno Providers
+* Various bug fixes
+
 7.2.1 (25-05-2019)
 ------------------
 * Various bug fixes

@@ -7,33 +7,109 @@
     "name": {},
     "number": {}
   },
-  "beast_channel_name_map": {},
+  "beast_channel_name_map": {
+  },
+  "beast_epg_update_times": [
+    "00:00:00",
+    "06:00:00",
+    "12:00:00",
+    "18:00:00"
+  ],
   "beast_ignored_channels": {
     "name": [],
     "number": []
   },
-  "beast_ignored_m3u8_groups": [],
-  "beast_m3u8_group_map": {},
+  "beast_ignored_m3u8_groups": [
+  ],
+  "beast_m3u8_group_map": {
+  },
+  "coolasice_channel_group_map": {
+    "name": {
+    },
+    "number": {
+    }
+  },
+  "coolasice_channel_name_map": {
+  },
+  "coolasice_epg_update_times": [
+    "00:00:00",
+    "06:00:00",
+    "12:00:00",
+    "18:00:00"
+  ],
+  "coolasice_ignored_channels": {
+    "name": [
+    ],
+    "number": [
+    ]
+  },
+  "coolasice_ignored_m3u8_groups": [
+  ],
+  "coolasice_m3u8_group_map": {
+  },
   "crystalclear_channel_group_map": {
     "name": {},
     "number": {}
   },
-  "crystalclear_channel_name_map": {},
+  "crystalclear_channel_name_map": {
+  },
+  "crystalclear_epg_update_times": [
+    "00:00:00",
+    "06:00:00",
+    "12:00:00",
+    "18:00:00"
+  ],
   "crystalclear_ignored_channels": {
     "name": [],
     "number": []
   },
-  "crystalclear_ignored_m3u8_groups": [],
-  "crystalclear_m3u8_group_map": {},
+  "crystalclear_ignored_m3u8_groups": [
+  ],
+  "crystalclear_m3u8_group_map": {
+  },
+  "inferno_channel_group_map": {
+    "name": {},
+    "number": {}
+  },
+  "inferno_channel_name_map": {
+  },
+  "inferno_epg_update_times": [
+    "00:00:00",
+    "06:00:00",
+    "12:00:00",
+    "18:00:00"
+  ],
+  "inferno_ignored_channels": {
+    "name": [],
+    "number": []
+  },
+  "inferno_ignored_m3u8_groups": [
+  ],
+  "inferno_m3u8_group_map": {
+  },
   "lan_connections_require_credentials": false,
   "reduce_beast_delay": true,
   "reduce_crystalclear_delay": true,
   "reduce_vaderstreams_delay": true,
-  "smoothstreams_channel_name_map": {},
+  "smoothstreams_channel_name_map": {
+  },
+  "smoothstreams_epg_update_times": [
+    "00:00:00",
+    "06:00:00",
+    "12:00:00",
+    "18:00:00"
+  ],
   "use_beast_icons": false,
   "use_crystalclear_icons": false,
   "use_smoothstreams_icons": false,
   "use_vaderstreams_icons": false,
-  "vaderstreams_channel_name_map": {},
+  "vaderstreams_channel_name_map": {
+  },
+  "vaderstreams_epg_update_times": [
+    "00:00:00",
+    "06:00:00",
+    "12:00:00",
+    "18:00:00"
+  ],
   "wan_connections_require_credentials": true
 }

@@ -184,6 +184,18 @@ class HTMLTemplateEngine(object):
             'configuration_beast_epg_source_beast_selected': '',
             'configuration_beast_epg_source_other_selected': '',
             'configuration_beast_epg_url': '',
+            'configuration_coolasice_active':
+                'checked="checked"' if 'coolasice' in active_providers_map_class
+                else '',
+            'configuration_coolasice_username': '',
+            'configuration_coolasice_password': '',
+            'configuration_coolasice_playlist_protocol_hls_selected': '',
+            'configuration_coolasice_playlist_protocol_mpegts_selected': '',
+            'configuration_coolasice_playlist_type_dynamic_selected': '',
+            'configuration_coolasice_playlist_type_static_selected': '',
+            'configuration_coolasice_epg_source_coolasice_selected': '',
+            'configuration_coolasice_epg_source_other_selected': '',
+            'configuration_coolasice_epg_url': '',
             'configuration_crystalclear_active':
                 'checked="checked"' if 'crystalclear' in active_providers_map_class
                 else '',
@@ -196,6 +208,18 @@ class HTMLTemplateEngine(object):
             'configuration_crystalclear_epg_source_crystalclear_selected': '',
             'configuration_crystalclear_epg_source_other_selected': '',
             'configuration_crystalclear_epg_url': '',
+            'configuration_inferno_active':
+                'checked="checked"' if 'inferno' in active_providers_map_class
+                else '',
+            'configuration_inferno_username': '',
+            'configuration_inferno_password': '',
+            'configuration_inferno_playlist_protocol_hls_selected': '',
+            'configuration_inferno_playlist_protocol_mpegts_selected': '',
+            'configuration_inferno_playlist_type_dynamic_selected': '',
+            'configuration_inferno_playlist_type_static_selected': '',
+            'configuration_inferno_epg_source_inferno_selected': '',
+            'configuration_inferno_epg_source_other_selected': '',
+            'configuration_inferno_epg_url': '',
             'configuration_smoothstreams_active':
                 'checked="checked"' if 'smoothstreams' in active_providers_map_class
                 else '',
@@ -269,7 +293,29 @@ class HTMLTemplateEngine(object):
                 configuration_div_template_fields['configuration_beast_epg_url'] = ''
             else:
                 configuration_div_template_fields['configuration_beast_epg_url'] = self._configuration['BEAST_EPG_URL']
-        
+
+        if 'COOLASICE_USERNAME' in self._configuration:
+            configuration_div_template_fields['configuration_coolasice_username'] = self._configuration[
+                'COOLASICE_USERNAME']
+        if 'COOLASICE_PASSWORD' in self._configuration:
+            configuration_div_template_fields['configuration_coolasice_password'] = self._configuration[
+                'COOLASICE_PASSWORD']
+        if 'COOLASICE_PLAYLIST_PROTOCOL' in self._configuration:
+            configuration_div_template_fields['configuration_coolasice_playlist_protocol_{0}_selected'.format(
+                self._configuration['COOLASICE_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
+        if 'COOLASICE_PLAYLIST_TYPE' in self._configuration:
+            configuration_div_template_fields['configuration_coolasice_playlist_type_{0}_selected'.format(
+                self._configuration['COOLASICE_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
+        if 'COOLASICE_EPG_SOURCE' in self._configuration:
+            configuration_div_template_fields['configuration_coolasice_epg_source_{0}_selected'.format(
+                self._configuration['COOLASICE_EPG_SOURCE'].lower())] = 'selected="selected" '
+        if 'COOLASICE_EPG_URL' in self._configuration:
+            if self._configuration['COOLASICE_EPG_URL'] is None:
+                configuration_div_template_fields['configuration_coolasice_epg_url'] = ''
+            else:
+                configuration_div_template_fields['configuration_coolasice_epg_url'] = self._configuration[
+                    'COOLASICE_EPG_URL']
+
         if 'CRYSTALCLEAR_USERNAME' in self._configuration:
             configuration_div_template_fields['configuration_crystalclear_username'] = self._configuration[
                 'CRYSTALCLEAR_USERNAME']
@@ -291,6 +337,28 @@ class HTMLTemplateEngine(object):
             else:
                 configuration_div_template_fields['configuration_crystalclear_epg_url'] = self._configuration[
                     'CRYSTALCLEAR_EPG_URL']
+
+        if 'INFERNO_USERNAME' in self._configuration:
+            configuration_div_template_fields['configuration_inferno_username'] = self._configuration[
+                'INFERNO_USERNAME']
+        if 'INFERNO_PASSWORD' in self._configuration:
+            configuration_div_template_fields['configuration_inferno_password'] = self._configuration[
+                'INFERNO_PASSWORD']
+        if 'INFERNO_PLAYLIST_PROTOCOL' in self._configuration:
+            configuration_div_template_fields['configuration_inferno_playlist_protocol_{0}_selected'.format(
+                self._configuration['INFERNO_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
+        if 'INFERNO_PLAYLIST_TYPE' in self._configuration:
+            configuration_div_template_fields['configuration_inferno_playlist_type_{0}_selected'.format(
+                self._configuration['INFERNO_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
+        if 'INFERNO_EPG_SOURCE' in self._configuration:
+            configuration_div_template_fields['configuration_inferno_epg_source_{0}_selected'.format(
+                self._configuration['INFERNO_EPG_SOURCE'].lower())] = 'selected="selected" '
+        if 'INFERNO_EPG_URL' in self._configuration:
+            if self._configuration['INFERNO_EPG_URL'] is None:
+                configuration_div_template_fields['configuration_inferno_epg_url'] = ''
+            else:
+                configuration_div_template_fields['configuration_inferno_epg_url'] = self._configuration[
+                    'INFERNO_EPG_URL']
 
         if 'SMOOTHSTREAMS_SERVICE' in self._configuration:
             configuration_div_template_fields['configuration_{0}_selected'.format(
