@@ -61,4 +61,4 @@ RESOURCES_DIRECTORY_PATH = os.path.join(directory_containing_script, 'resources'
 TEMPLATES_BYTECODE_CACHE_DIRECTORY_PATH = os.path.join(directory_containing_script, 'templates', 'byte_code_cache')
 TEMPLATES_DIRECTORY_PATH = os.path.join(directory_containing_script, 'templates')
 TRACE = 5
-VERSION = '7.3.0'
+VERSION = '7.4.0'

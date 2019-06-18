@@ -113,9 +113,9 @@ EPG Source
 EPG URL
     * The URL to a XMLTV file to be used if EPG Source is set to "other"
 
-############
+#########
 CoolAsIce
-############
+#########
 Username
     * The CoolAsIce account username
 Password
@@ -151,13 +151,51 @@ EPG Source
 EPG URL
     * The URL to a XMLTV file to be used if EPG Source is set to "other"
 
-############
+#########
+DarkMedia
+#########
+Username
+    * The DarkMedia account username
+Password
+    * The DarkMedia account password
+Playlist Protocol
+    * By default IPTVProxy will generate playlists for the selected protocol
+    * Can be overridden by the client (See below)
+Playlist Type
+    * By default IPTVProxy will generate playlists for the selected type
+    * Can be overridden by the client (See below)
+    * Recommended value: "Dynamic"
+EPG Source
+    * The source from which to retrieve the EPG
+EPG URL
+    * The URL to a XMLTV file to be used if EPG Source is set to "other"
+
+#######
 Inferno
-############
+#######
 Username
     * The Inferno account username
 Password
     * The Inferno account password
+Playlist Protocol
+    * By default IPTVProxy will generate playlists for the selected protocol
+    * Can be overridden by the client (See below)
+Playlist Type
+    * By default IPTVProxy will generate playlists for the selected type
+    * Can be overridden by the client (See below)
+    * Recommended value: "Dynamic"
+EPG Source
+    * The source from which to retrieve the EPG
+EPG URL
+    * The URL to a XMLTV file to be used if EPG Source is set to "other"
+
+####
+King
+####
+Username
+    * The King account username
+Password
+    * The King account password
 Playlist Protocol
     * By default IPTVProxy will generate playlists for the selected protocol
     * Can be overridden by the client (See below)
@@ -209,6 +247,25 @@ Playlist Type
     * By default IPTVProxy will generate playlists for the selected type
     * Can be overridden by the client (See below)
     * Recommended value: "Dynamic"
+
+########
+Universe
+########
+Username
+    * The Universe account username
+Password
+    * The Universe account password
+Playlist Protocol
+    * By default IPTVProxy will generate playlists for the selected protocol
+    * Can be overridden by the client (See below)
+Playlist Type
+    * By default IPTVProxy will generate playlists for the selected type
+    * Can be overridden by the client (See below)
+    * Recommended value: "Dynamic"
+EPG Source
+    * The source from which to retrieve the EPG
+EPG URL
+    * The URL to a XMLTV file to be used if EPG Source is set to "other"
 
 What Happened to My IPTV provider Password?
 --------------------------------------------------------
@@ -276,17 +333,14 @@ lan_connections_require_credentials
     * Setting this value to true requires clients connecting through the loopback interface or LAN to authenticate themselves using the value specified in the Password option in the configuration file
     * Setting this value fo false does not require clients connecting through the loopback interface or LAN to authenticate themselves
 reduce_provider_delay
-    * Providers supported are beast, crystalclear, and vaderstreams
     * Accepted values are true or false
     * The default value is false
     * Setting this value to true reduces the delay in the HLS stream. This is done by skipping all but the last 2-3 segment files on a new channel request
     * Setting this value fo false maintains the delay
 provider_channel_name_map
-    * Providers supported are beast, coolasice, crystalclear, inferno, smoothstreams, and vaderstreams
     * Accepted value is a JSON object
     * Setting this value to a non empty JSON object will result in IPTVProxy mapping of the providers channel names
 use_provider_icons
-    * Providers supported are beast, coolasice, crystalclear, inferno, smoothstreams, and vaderstreams
     * Accepted values are true or false
     * The default value is true
     * Setting this value to true will result in IPTVProxy directing clients to download the original channel icons provided by the provider

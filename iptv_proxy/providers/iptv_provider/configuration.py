@@ -755,7 +755,7 @@ class ProviderOptionalSettings(object):
 
         # <editor-fold desc="Detect and handle ignored_channels change">
         if provider_map_class.epg_class().is_attribute_supported('_ignored_channels'):
-            ignored_channels_key_name = '{0}_ignored_channels_key_name'.format(cls._provider_name)
+            ignored_channels_key_name = '{0}_ignored_channels'.format(cls._provider_name)
 
             if ignored_channels_key_name not in optional_settings:
                 optional_settings[ignored_channels_key_name] = {'name': {}, 'number': {}}
@@ -774,8 +774,7 @@ class ProviderOptionalSettings(object):
                                                            indent=2),
                                                 json.dumps(optional_settings[ignored_channels_key_name], indent=2)))
 
-                provider_map_class.epg_class().set_ignored_channels_key_name(
-                    optional_settings[ignored_channels_key_name])
+                provider_map_class.epg_class().set_ignored_channels(optional_settings[ignored_channels_key_name])
         # </editor-fold>
 
         # <editor-fold desc="Detect and handle ignored_m3u8_groups change">

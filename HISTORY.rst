@@ -4,7 +4,12 @@ Release History
 ===============
 7.3.0 (03-06-2019)
 ------------------
-* Added CoolAsIce and Inferno Providers
+* Added DarkMedia, King, and Universe providers
+* Various bug fixes
+
+7.3.0 (03-06-2019)
+------------------
+* Added CoolAsIce and Inferno providers
 * Various bug fixes
 
 7.2.1 (25-05-2019)
@@ -56,7 +61,7 @@ Release History
 
 7.1.0 (10-05-2019)
 ------------------
-* Added Crystal Clear and Beast Providers
+* Added Crystal Clear and Beast providers
 * Code cleanup and refactoring
 * Various bug fixes
 
