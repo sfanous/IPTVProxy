@@ -149,7 +149,7 @@ class SmoothStreamsEPG(ProviderEPG):
             logger.debug('Processed Fog JSON channels\n'
                          'File name => {0}'.format(SmoothStreamsConstants.FOG_CHANNELS_JSON_FILE_NAME))
         except Exception:
-            logger.debug('Failed to process Fog JSON channels\n'
+            logger.error('Failed to process Fog JSON channels\n'
                          'File name => {0}'.format(SmoothStreamsConstants.FOG_CHANNELS_JSON_FILE_NAME))
 
             raise
@@ -452,7 +452,7 @@ class SmoothStreamsEPG(ProviderEPG):
                          'Generated on => {1}'.format(SmoothStreamsConstants.FOG_EPG_XML_FILE_NAME,
                                                       tv_date))
         except Exception:
-            logger.debug('Failed to process Fog XML EPG\n'
+            logger.error('Failed to process Fog XML EPG\n'
                          'File name    => {0}'.format(SmoothStreamsConstants.FOG_EPG_XML_FILE_NAME))
 
             raise
@@ -608,7 +608,7 @@ class SmoothStreamsEPG(ProviderEPG):
                          'Generated on => {1}'.format(SmoothStreamsConstants.EPG_FILE_NAME,
                                                       generated_on))
         except Exception:
-            logger.debug('Failed to process SmoothStreams JSON EPG\n'
+            logger.error('Failed to process SmoothStreams JSON EPG\n'
                          'File name    => {0}'.format(SmoothStreamsConstants.EPG_FILE_NAME))
 
             raise

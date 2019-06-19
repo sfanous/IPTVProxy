@@ -252,7 +252,7 @@ class ProvidersController():
 
                 cls._active_providers.append(provider_name)
             except Exception:
-                logger.debug('Failed to initialize {0}'.format(
+                logger.error('Failed to initialize {0}'.format(
                     cls._providers_map_class[provider_name].api_class().__name__))
 
                 (status, value_, traceback_) = sys.exc_info()

@@ -479,8 +479,6 @@ class ProviderConfiguration(object):
             is_valid_section = False
             section_found = False
 
-            error_message_to_log.append('Could not find a [{0}] section\n'.format(section_name))
-
         if is_valid_section:
             providers.append(cls._provider_name)
 

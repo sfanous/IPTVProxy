@@ -1,5 +1,6 @@
 import copy
 import hashlib
+import html
 import json
 import logging
 import os
@@ -15,6 +16,7 @@ from datetime import datetime
 from datetime import timedelta
 from threading import Timer
 
+import ijson
 import pytz
 import requests
 import tzlocal
@@ -692,7 +694,7 @@ class ProviderEPG(ABC):
 
             logger.debug('Processed external XML XMLTV')
         except Exception:
-            logger.debug('Failed to process external XML XMLTV')
+            logger.error('Failed to process external XML XMLTV')
 
             raise
 
@@ -972,7 +974,7 @@ class ProviderEPG(ABC):
                 kwargs['event'].set()
 
 
-class SmartersProviderEPG(ProviderEPG):
+class XStreamCodesProviderEPG(ProviderEPG):
     @classmethod
     def _do_ignore_channel(cls, channel, channel_group_map, ignored_channels, ignored_m3u8_groups):
         for ignored_channels_regular_expression in ignored_channels['name']:
@@ -997,14 +999,187 @@ class SmartersProviderEPG(ProviderEPG):
                 return True
 
     @classmethod
+    def _parse_categories_json(cls):
+        provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
+
+        username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
+
+        categories_json_stream = cls._request_epg_json('categories_{0}.json'.format(username),
+                                                       'get_live_categories')
+
+        categories_map = {}
+
+        logger.debug('Processing {0} categories\n'
+                     'File name => categories_{1}.json'.format(provider_map_class.constants_class().PROVIDER_NAME,
+                                                               username))
+
+        category_id = None
+
+        try:
+            ijson_parser = ijson.parse(categories_json_stream)
+
+            for (prefix, event, value) in ijson_parser:
+                if (prefix, event) == ('item.category_id', 'string'):
+                    category_id = value
+                elif (prefix, event) == ('item.category_name', 'string'):
+                    categories_map[category_id] = value
+                elif (prefix, event) == ('item', 'end_map'):
+                    category_id = None
+
+            logger.debug(
+                'Processed {0} categories\n'
+                'File name => categories_{1}.json'.format(provider_map_class.constants_class().PROVIDER_NAME,
+                                                          username))
+        except Exception:
+            logger.error(
+                'Failed to process {0} categories\n'
+                'File name => categories_{1}.json'.format(provider_map_class.constants_class().PROVIDER_NAME,
+                                                          username))
+
+            raise
+
+        return categories_map
+
+    @classmethod
+    def _parse_channels_json(cls,
+                             db_session,
+                             categories_map,
+                             channel_group_map,
+                             channel_name_map,
+                             do_use_provider_icons,
+                             ignored_channels,
+                             ignored_m3u8_groups,
+                             m3u8_group_map,
+                             parsed_channel_xmltv_id_to_channel):
+        provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
+
+        username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
+
+        live_streams_stream = cls._request_epg_json('channels_{0}.json'.format(username), 'get_live_streams')
+
+        logger.debug('Processing {0} channels\n'
+                     'File name => channels_{1}.json'.format(provider_map_class.constants_class().PROVIDER_NAME,
+                                                             username))
+
+        number_of_objects_added_to_db_session = 0
+
+        channel_name = None
+        channel_number = None
+        channel_icon_source = None
+        channel_xmltv_id = None
+        channel_m3u8_group = None
+
+        try:
+            ijson_parser = ijson.parse(live_streams_stream)
+
+            for (prefix, event, value) in ijson_parser:
+                if (prefix, event) == ('item.name', 'string'):
+                    channel_name = html.unescape(value)
+                elif (prefix, event) == ('item.stream_id', 'number'):
+                    channel_number = value
+                elif (prefix, event) == ('item.stream_icon', 'string'):
+                    channel_icon_source = html.unescape(value)
+                elif (prefix, event) == ('item.epg_channel_id', 'string'):
+                    channel_xmltv_id = html.unescape(value)
+                elif (prefix, event) == ('item.category_id', 'string'):
+                    channel_m3u8_group = '{0} - {1}'.format(ProvidersController.get_provider_map_class(
+                        cls._provider_name).constants_class().PROVIDER_NAME,
+                                                            categories_map.get(value, 'UNKNOWN'))
+                elif (prefix, event) == ('item', 'end_map'):
+                    if channel_m3u8_group is None:
+                        channel_m3u8_group = '{0} - UNKNOWN'.format(ProvidersController.get_provider_map_class(
+                            cls._provider_name).constants_class().PROVIDER_NAME)
+
+                    channel = XMLTVChannel(provider=provider_map_class.constants_class().PROVIDER_NAME,
+                                           m3u8_group=channel_m3u8_group,
+                                           xmltv_id=channel_xmltv_id,
+                                           number=channel_number,
+                                           display_names=[XMLTVDisplayName(language=None,
+                                                                           text=channel_name)],
+                                           icons=[XMLTVIcon(source=channel_icon_source,
+                                                            width=None,
+                                                            height=None)] if channel_icon_source
+                                           else [],
+                                           urls=[])
+                    if not cls._do_ignore_channel(channel,
+                                                  channel_group_map,
+                                                  ignored_channels,
+                                                  ignored_m3u8_groups):
+                        cls._apply_channel_transformations(channel,
+                                                           channel_name_map,
+                                                           not do_use_provider_icons,
+                                                           channel_group_map,
+                                                           m3u8_group_map)
+
+                        if channel_xmltv_id in parsed_channel_xmltv_id_to_channel:
+                            parsed_channel_xmltv_id_to_channel[channel_xmltv_id].append(channel)
+                        else:
+                            parsed_channel_xmltv_id_to_channel[channel_xmltv_id] = [channel]
+
+                        db_session.add(provider_map_class.channel_class()(
+                            id_=channel.xmltv_id,
+                            m3u8_group=channel.m3u8_group,
+                            number=channel.number,
+                            name=channel.display_names[0].text,
+                            pickle=pickle.dumps(channel, protocol=pickle.HIGHEST_PROTOCOL),
+                            complete_xmltv=channel.format(minimal_xmltv=False),
+                            minimal_xmltv=channel.format()))
+                        number_of_objects_added_to_db_session += 1
+
+                        if number_of_objects_added_to_db_session and number_of_objects_added_to_db_session % 1000 == 0:
+                            db_session.flush()
+
+                    channel_name = None
+                    channel_number = None
+                    channel_icon_source = None
+                    channel_xmltv_id = None
+                    channel_m3u8_group = None
+
+            db_session.flush()
+
+            logger.debug('Processed {0} channels\n'
+                         'File name => channels_{1}.json'.format(provider_map_class.constants_class().PROVIDER_NAME,
+                                                                 username))
+        except Exception:
+            logger.error('Failed to process {0} channels\n'
+                         'File name => channels_{1}.json'.format(provider_map_class.constants_class().PROVIDER_NAME,
+                                                                 username))
+
+            raise
+
+    @classmethod
+    def _parse_epg_json(cls,
+                        db_session,
+                        channel_group_map,
+                        channel_name_map,
+                        do_use_provider_icons,
+                        ignored_channels,
+                        ignored_m3u8_groups,
+                        m3u8_group_map,
+                        parsed_channel_xmltv_id_to_channel):
+        categories_map = cls._parse_categories_json()
+
+        cls._parse_channels_json(db_session,
+                                 categories_map,
+                                 channel_group_map,
+                                 channel_name_map,
+                                 do_use_provider_icons,
+                                 ignored_channels,
+                                 ignored_m3u8_groups,
+                                 m3u8_group_map,
+                                 parsed_channel_xmltv_id_to_channel)
+
+    @classmethod
     def _parse_epg_xml(cls, db_session, parsed_channel_xmltv_id_to_channel):
         epg_xml_stream = cls._request_epg_xml()
 
         provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
 
+        username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
+
         logger.debug('Processing {0} XML EPG\n'
-                     'File name => {1}'.format(provider_map_class.constants_class().PROVIDER_NAME,
-                                               provider_map_class.constants_class().XML_EPG_FILE_NAME))
+                     'File name => xmltv_{1}.xml'.format(provider_map_class.constants_class().PROVIDER_NAME,
+                                                         username))
 
         number_of_objects_added_to_db_session = 0
 
@@ -1296,12 +1471,12 @@ class SmartersProviderEPG(ProviderEPG):
             db_session.flush()
 
             logger.debug('Processed {0} XML EPG\n'
-                         'File name => {1}'.format(provider_map_class.constants_class().PROVIDER_NAME,
-                                                   provider_map_class.constants_class().XML_EPG_FILE_NAME))
+                         'File name => xmltv_{1}.xml'.format(provider_map_class.constants_class().PROVIDER_NAME,
+                                                             username))
         except Exception:
-            logger.debug('Failed to process {0} XML EPG\n'
-                         'File name => {1}'.format(provider_map_class.constants_class().PROVIDER_NAME,
-                                                   provider_map_class.constants_class().XML_EPG_FILE_NAME))
+            logger.error('Failed to process {0} XML EPG\n'
+                         'File name => xmltv_{1}.xml'.format(provider_map_class.constants_class().PROVIDER_NAME,
+                                                             username))
 
             raise
 
@@ -1322,9 +1497,8 @@ class SmartersProviderEPG(ProviderEPG):
         username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
 
         logger.debug('Processing {0} m3u8 playlist\n'
-                     'File name => {1}'.format(provider_map_class.constants_class().PROVIDER_NAME,
-                                               provider_map_class.constants_class().M3U8_PLAYLIST_FILE_NAME.format(
-                                                   username)))
+                     'File name => tv_channels_{1}.m3u'.format(provider_map_class.constants_class().PROVIDER_NAME,
+                                                               username))
 
         number_of_objects_added_to_db_session = 0
 
@@ -1418,16 +1592,59 @@ class SmartersProviderEPG(ProviderEPG):
             db_session.flush()
 
             logger.debug('Processed {0} m3u8 playlist\n'
-                         'File name => {1}'.format(provider_map_class.constants_class().PROVIDER_NAME,
-                                                   provider_map_class.constants_class().M3U8_PLAYLIST_FILE_NAME.format(
-                                                       username)))
+                         'File name => tv_channels_{1}.m3u'.format(provider_map_class.constants_class().PROVIDER_NAME,
+                                                                   username))
         except Exception:
-            logger.debug('Failed to process {0} m3u8 playlist\n'
-                         'File name => {1}'.format(provider_map_class.constants_class().PROVIDER_NAME,
-                                                   provider_map_class.constants_class().M3U8_PLAYLIST_FILE_NAME.format(
-                                                       username)))
+            logger.error('Failed to process {0} m3u8 playlist\n'
+                         'File name => tv_channels_{1}.m3u'.format(provider_map_class.constants_class().PROVIDER_NAME,
+                                                                   username))
 
             raise
+
+    @classmethod
+    def _request_epg_json(cls, epg_json_file_name, action):
+        provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
+
+        username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
+        password = SecurityManager.decrypt_password(
+            Configuration.get_configuration_parameter('{0}_PASSWORD'.format(cls._provider_name.upper()))).decode()
+
+        url = '{0}player_api.php'.format(provider_map_class.constants_class().BASE_URL)
+
+        logger.debug('Downloading {0} {1}\n'
+                     'URL => {2}\n'
+                     '  Parameters\n'
+                     '    username => {3}\n'
+                     '    password => {4}\n'
+                     '    action   => {5}'.format(provider_map_class.constants_class().PROVIDER_NAME,
+                                                  epg_json_file_name,
+                                                  url,
+                                                  username,
+                                                  '\u2022' * len(password),
+                                                  action))
+
+        requests_session = requests.Session()
+        response = Utility.make_http_request(requests_session.get,
+                                             url,
+                                             params={
+                                                 'username': username,
+                                                 'password': password,
+                                                 'action': action
+                                             },
+                                             headers=requests_session.headers,
+                                             cookies=requests_session.cookies.get_dict(),
+                                             stream=True)
+
+        if response.status_code == requests.codes.OK:
+            response.raw.decode_content = True
+
+            logger.trace(Utility.assemble_response_from_log_message(response))
+
+            return response.raw
+        else:
+            logger.error(Utility.assemble_response_from_log_message(response))
+
+            response.raise_for_status()
 
     @classmethod
     def _request_epg_xml(cls):
@@ -1437,17 +1654,16 @@ class SmartersProviderEPG(ProviderEPG):
         password = SecurityManager.decrypt_password(
             Configuration.get_configuration_parameter('{0}_PASSWORD'.format(cls._provider_name.upper()))).decode()
 
-        url = '{0}{1}'.format(provider_map_class.constants_class().BASE_URL,
-                              provider_map_class.constants_class().EPG_PATH)
+        url = '{0}xmltv.php'.format(provider_map_class.constants_class().BASE_URL)
 
         logger.debug(
-            'Downloading {0}\n'
+            'Downloading {0} xmltv_{1}.xml\n'
             'URL => {1}\n'
             '  Parameters\n'
-            '    username => {2}\n'
-            '    password => {3}'.format(provider_map_class.constants_class().XML_EPG_FILE_NAME,
-                                         url,
+            '    username => {1}\n'
+            '    password => {2}'.format(provider_map_class.constants_class().PROVIDER_NAME,
                                          username,
+                                         url,
                                          '\u2022' * len(password)))
 
         requests_session = requests.Session()
@@ -1478,20 +1694,18 @@ class SmartersProviderEPG(ProviderEPG):
         password = SecurityManager.decrypt_password(
             Configuration.get_configuration_parameter('{0}_PASSWORD'.format(cls._provider_name.upper()))).decode()
 
-        url = '{0}{1}'.format(provider_map_class.constants_class().BASE_URL,
-                              provider_map_class.constants_class().M3U8_PLAYLIST_PATH)
+        url = '{0}get.php'.format(provider_map_class.constants_class().BASE_URL)
 
-        logger.debug(
-            'Downloading {0}\n'
-            'URL => {1}\n'
-            '  Parameters\n'
-            '    username => {2}\n'
-            '    password => {3}\n'
-            '    type     => m3u_plus\n'
-            '    output   => hls'.format(provider_map_class.constants_class().M3U8_PLAYLIST_FILE_NAME.format(username),
-                                         url,
-                                         username,
-                                         '\u2022' * len(password)))
+        logger.debug('Downloading {0} tv_channels_{1}.m3u\n'
+                     'URL => {2}\n'
+                     '  Parameters\n'
+                     '    username => {1}\n'
+                     '    password => {3}\n'
+                     '    type     => m3u_plus\n'
+                     '    output   => hls'.format(provider_map_class.constants_class().PROVIDER_NAME,
+                                                  username,
+                                                  url,
+                                                  '\u2022' * len(password)))
 
         requests_session = requests.Session()
         response = Utility.make_http_request(requests_session.get,
@@ -1549,14 +1763,14 @@ class SmartersProviderEPG(ProviderEPG):
                         provider_map_class.epg_source_enum().PROVIDER.value:
                     parsed_channel_xmltv_id_to_channel = {}
 
-                    cls._parse_m3u8_playlist(db_session,
-                                             channel_group_map,
-                                             channel_name_map,
-                                             do_use_provider_icons,
-                                             ignored_channels,
-                                             ignored_m3u8_groups,
-                                             m3u8_group_map,
-                                             parsed_channel_xmltv_id_to_channel)
+                    cls._parse_epg_json(db_session,
+                                        channel_group_map,
+                                        channel_name_map,
+                                        do_use_provider_icons,
+                                        ignored_channels,
+                                        ignored_m3u8_groups,
+                                        m3u8_group_map,
+                                        parsed_channel_xmltv_id_to_channel)
                     cls._parse_epg_xml(db_session, parsed_channel_xmltv_id_to_channel)
 
                 db_session.add(provider_map_class.setting_class()('epg_settings_md5',

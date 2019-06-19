@@ -104,7 +104,7 @@ class VaderStreamsEPG(ProviderEPG):
             logger.debug('Processed VaderStreams JSON categories\n'
                          'File name => {0}'.format(VaderStreamsConstants.CATEGORIES_JSON_FILE_NAME))
         except Exception:
-            logger.debug('Failed to process VaderStreams JSON categories\n'
+            logger.error('Failed to process VaderStreams JSON categories\n'
                          'File name => {0}'.format(VaderStreamsConstants.CATEGORIES_JSON_FILE_NAME))
 
             raise
@@ -205,7 +205,7 @@ class VaderStreamsEPG(ProviderEPG):
                              'Category  => {1}'.format(VaderStreamsConstants.CHANNELS_JSON_FILE_NAME,
                                                        categories_map[category_id]))
             except Exception:
-                logger.debug('Failed to process VaderStreams JSON channels\n'
+                logger.error('Failed to process VaderStreams JSON channels\n'
                              'File name => {0}\n'
                              'Category  => {1}'.format(VaderStreamsConstants.CHANNELS_JSON_FILE_NAME,
                                                        categories_map[category_id]))
@@ -531,7 +531,7 @@ class VaderStreamsEPG(ProviderEPG):
                 logger.debug('Processed VaderStreams XML EPG\n'
                              'File name => {0}'.format(VaderStreamsConstants.XML_EPG_FILE_NAME))
             except Exception:
-                logger.debug('Failed to process VaderStreams XML EPG\n'
+                logger.error('Failed to process VaderStreams XML EPG\n'
                              'File name => {0}'.format(VaderStreamsConstants.XML_EPG_FILE_NAME))
 
                 raise
@@ -649,7 +649,7 @@ class VaderStreamsEPG(ProviderEPG):
             logger.debug('Processed VaderStreams JSON matchcenter schedule\n'
                          'File name => {0}'.format(VaderStreamsConstants.MATCHCENTER_SCHEDULE_JSON_FILE_NAME))
         except Exception:
-            logger.debug('Failed to process VaderStreams JSON matchcenter schedule\n'
+            logger.error('Failed to process VaderStreams JSON matchcenter schedule\n'
                          'File name => {0}'.format(VaderStreamsConstants.MATCHCENTER_SCHEDULE_JSON_FILE_NAME))
 
             raise

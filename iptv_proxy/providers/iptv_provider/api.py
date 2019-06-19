@@ -13,6 +13,7 @@ import pytz
 import requests
 
 from iptv_proxy.configuration import Configuration
+from iptv_proxy.configuration import OptionalSettings
 from iptv_proxy.enums import M388PlaylistSortOrder
 from iptv_proxy.providers import ProvidersController
 from iptv_proxy.proxy import IPTVProxy
@@ -298,7 +299,47 @@ class Provider(ABC):
                 kwargs['event'].set()
 
 
-class SmartersProvider(Provider):
+class XtreamCodesProvider(Provider):
+    @classmethod
+    def _generate_playlist_m3u8_static_track_url(cls, track_information, **kwargs):
+        channel_number = kwargs['channel_number']
+        playlist_protocol = kwargs['playlist_protocol']
+
+        username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
+        password = SecurityManager.decrypt_password(
+            Configuration.get_configuration_parameter('{0}_PASSWORD'.format(cls._provider_name.upper()))).decode()
+
+        track_information.append(
+            '{0}{1}{2}/{3}/{4}{5}\n'.format(
+                ProvidersController.get_provider_map_class(cls._provider_name).constants_class().BASE_URL,
+                'live/' if playlist_protocol == 'hls'
+                else '',
+                username,
+                password,
+                channel_number,
+                '.m3u8' if playlist_protocol == 'hls'
+                else '.ts'))
+
+    @classmethod
+    def _initialize(cls, **kwargs):
+        pass
+
+    @classmethod
+    def _initialize_class_variables(cls):
+        try:
+            cls.set_do_reduce_hls_stream_delay(
+                OptionalSettings.get_optional_settings_parameter('reduce_{0}_delay'.format(cls._provider_name)))
+        except KeyError:
+            pass
+
+    @classmethod
+    def _retrieve_fresh_authorization_token(cls):
+        return None
+
+    @classmethod
+    def _terminate(cls, **kwargs):
+        pass
+
     @classmethod
     def download_chunks_m3u8(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
         channel_number = requested_query_string_parameters.get('channel_number')
@@ -386,9 +427,9 @@ class SmartersProvider(Provider):
 
             return '#EXTM3U\n' \
                    '#EXTINF:-1 ,{0}\n' \
-                   '{1}{2}/{3}/{4}' \
-                   ''.format(provider_map_class.constants_class().BASE_URL,
-                             provider_map_class.epg_class().get_channel_name(int(channel_number)),
+                   '{1}live/{2}/{3}/{4}.ts' \
+                   ''.format(provider_map_class.epg_class().get_channel_name(int(channel_number)),
+                             provider_map_class.constants_class().BASE_URL,
                              username,
                              password,
                              channel_number)

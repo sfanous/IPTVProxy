@@ -5,12 +5,12 @@ from threading import RLock
 from rwlock import RWLock
 
 from iptv_proxy.providers.darkmedia.constants import DarkMediaConstants
-from iptv_proxy.providers.iptv_provider.epg import SmartersProviderEPG
+from iptv_proxy.providers.iptv_provider.epg import XStreamCodesProviderEPG
 
 logger = logging.getLogger(__name__)
 
 
-class DarkMediaEPG(SmartersProviderEPG):
+class DarkMediaEPG(XStreamCodesProviderEPG):
     __slots__ = []
 
     _channel_group_map = OrderedDict([('name', OrderedDict()), ('number', OrderedDict())])

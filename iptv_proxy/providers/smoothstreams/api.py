@@ -62,7 +62,7 @@ class SmoothStreams(Provider):
 
                 return True
         except KeyError:
-            logger.debug('SmoothStreams session\n'
+            logger.error('SmoothStreams session\n'
                          'Status => Never retrieved\n'
                          'Action => Retrieve it')
 

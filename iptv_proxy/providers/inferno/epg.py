@@ -5,12 +5,12 @@ from threading import RLock
 from rwlock import RWLock
 
 from iptv_proxy.providers.inferno.constants import InfernoConstants
-from iptv_proxy.providers.iptv_provider.epg import SmartersProviderEPG
+from iptv_proxy.providers.iptv_provider.epg import XStreamCodesProviderEPG
 
 logger = logging.getLogger(__name__)
 
 
-class InfernoEPG(SmartersProviderEPG):
+class InfernoEPG(XStreamCodesProviderEPG):
     __slots__ = []
 
     _channel_group_map = OrderedDict([('name', OrderedDict()), ('number', OrderedDict())])

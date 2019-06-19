@@ -2,7 +2,13 @@
 
 Release History
 ===============
-7.3.0 (03-06-2019)
+7.5.0 (19-06-2019)
+------------------
+* Support Xtream-Codes panel providers
+* Code cleanup and refactoring
+* Various bug fixes
+
+7.4.0 (18-06-2019)
 ------------------
 * Added DarkMedia, King, and Universe providers
 * Various bug fixes
