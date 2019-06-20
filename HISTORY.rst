@@ -2,6 +2,10 @@
 
 Release History
 ===============
+7.5.1 (120-06-2019)
+------------------
+* Added Helix
+
 7.5.0 (19-06-2019)
 ------------------
 * Support Xtream-Codes panel providers

@@ -4,8 +4,8 @@ from threading import RLock
 
 from rwlock import RWLock
 
-from iptv_proxy.providers.king.constants import KingConstants
 from iptv_proxy.providers.iptv_provider.epg import XStreamCodesProviderEPG
+from iptv_proxy.providers.king.constants import KingConstants
 
 logger = logging.getLogger(__name__)
 

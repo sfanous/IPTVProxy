@@ -1,8 +1,8 @@
 import logging
 
-from iptv_proxy.providers.king.constants import KingConstants
 from iptv_proxy.providers.iptv_provider.configuration import ProviderConfiguration
 from iptv_proxy.providers.iptv_provider.configuration import ProviderOptionalSettings
+from iptv_proxy.providers.king.constants import KingConstants
 
 logger = logging.getLogger(__name__)
 

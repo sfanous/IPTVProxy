@@ -91,6 +91,26 @@
   ],
   "darkmedia_m3u8_group_map": {
   },
+  "helix_channel_group_map": {
+    "name": {},
+    "number": {}
+  },
+  "helix_channel_name_map": {
+  },
+  "helix_epg_update_times": [
+    "00:00:00",
+    "06:00:00",
+    "12:00:00",
+    "18:00:00"
+  ],
+  "helix_ignored_channels": {
+    "name": [],
+    "number": []
+  },
+  "helix_ignored_m3u8_groups": [
+  ],
+  "helix_m3u8_group_map": {
+  },
   "inferno_channel_group_map": {
     "name": {},
     "number": {}
@@ -140,6 +160,7 @@
   "reduce_coolasice_delay": true,
   "reduce_crystalclear_delay": true,
   "reduce_darkmedia_delay": true,
+  "reduce_helix_delay": true,
   "reduce_inferno_delay": true,
   "reduce_king_delay": true,
   "reduce_universe_delay": true,
@@ -180,6 +201,7 @@
   "use_coolasice_icons": false,
   "use_crystalclear_icons": false,
   "use_darkmedia_icons": false,
+  "use_helix_icons": false,
   "use_inferno_icons": false,
   "use_king_icons": false,
   "use_smoothstreams_icons": false,

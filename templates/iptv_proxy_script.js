@@ -1544,7 +1544,29 @@ const ConfigurationModule = (function () {
     let _crystalClearPlaylistTypeSelect = null;
     let _crystalClearTogglePasswordSpan = null;
     let _crystalClearUsernameInput = null;
+    let _darkMediaConfigurationButton = null;
+    let _darkMediaConfigurationDiv = null;
+    let _darkMediaEnabledCheckbox = null;
+    let _darkMediaEpgSourceSelect = null;
+    let _darkMediaEpgUrlLabel = null;
+    let _darkMediaEpgUrlInput = null;
+    let _darkMediaPasswordInput = null;
+    let _darkMediaPlaylistProtocolSelect = null;
+    let _darkMediaPlaylistTypeSelect = null;
+    let _darkMediaTogglePasswordSpan = null;
+    let _darkMediaUsernameInput = null;
     let _errorSpans = null;
+    let _helixConfigurationButton = null;
+    let _helixConfigurationDiv = null;
+    let _helixEnabledCheckbox = null;
+    let _helixEpgSourceSelect = null;
+    let _helixEpgUrlLabel = null;
+    let _helixEpgUrlInput = null;
+    let _helixPasswordInput = null;
+    let _helixPlaylistProtocolSelect = null;
+    let _helixPlaylistTypeSelect = null;
+    let _helixTogglePasswordSpan = null;
+    let _helixUsernameInput = null;
     let _infernoConfigurationButton = null;
     let _infernoConfigurationDiv = null;
     let _infernoEnabledCheckbox = null;
@@ -1556,6 +1578,17 @@ const ConfigurationModule = (function () {
     let _infernoPlaylistTypeSelect = null;
     let _infernoTogglePasswordSpan = null;
     let _infernoUsernameInput = null;
+    let _kingConfigurationButton = null;
+    let _kingConfigurationDiv = null;
+    let _kingEnabledCheckbox = null;
+    let _kingEpgSourceSelect = null;
+    let _kingEpgUrlLabel = null;
+    let _kingEpgUrlInput = null;
+    let _kingPasswordInput = null;
+    let _kingPlaylistProtocolSelect = null;
+    let _kingPlaylistTypeSelect = null;
+    let _kingTogglePasswordSpan = null;
+    let _kingUsernameInput = null;
     let _lastAppliedConfigurationSerialization = null;
     let _serverConfigurationButton = null;
     let _serverConfigurationDiv = null;
@@ -1578,6 +1611,17 @@ const ConfigurationModule = (function () {
     let _smoothStreamsServiceSelect = null;
     let _smoothStreamsTogglePasswordSpan = null;
     let _smoothStreamsUsernameInput = null;
+    let _universeConfigurationButton = null;
+    let _universeConfigurationDiv = null;
+    let _universeEnabledCheckbox = null;
+    let _universeEpgSourceSelect = null;
+    let _universeEpgUrlLabel = null;
+    let _universeEpgUrlInput = null;
+    let _universePasswordInput = null;
+    let _universePlaylistProtocolSelect = null;
+    let _universePlaylistTypeSelect = null;
+    let _universeTogglePasswordSpan = null;
+    let _universeUsernameInput = null;
     let _updateConfigurationButton = null;
     let _vaderStreamsConfigurationButton = null;
     let _vaderStreamsConfigurationDiv = null;
@@ -1617,12 +1661,30 @@ const ConfigurationModule = (function () {
         _crystalClearPlaylistTypeSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _crystalClearEpgSourceSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _crystalClearEpgUrlInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _darkMediaUsernameInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _darkMediaPasswordInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _darkMediaPlaylistProtocolSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _darkMediaPlaylistTypeSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _darkMediaEpgSourceSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _darkMediaEpgUrlInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _helixUsernameInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _helixPasswordInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _helixPlaylistProtocolSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _helixPlaylistTypeSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _helixEpgSourceSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _helixEpgUrlInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _infernoUsernameInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _infernoPasswordInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _infernoPlaylistProtocolSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _infernoPlaylistTypeSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _infernoEpgSourceSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _infernoEpgUrlInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _kingUsernameInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _kingPasswordInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _kingPlaylistProtocolSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _kingPlaylistTypeSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _kingEpgSourceSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _kingEpgUrlInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _smoothStreamsServiceSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _smoothStreamsServerSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _smoothStreamsUsernameInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
@@ -1631,6 +1693,12 @@ const ConfigurationModule = (function () {
         _smoothStreamsPlaylistTypeSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _smoothStreamsEpgSourceSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _smoothStreamsEpgUrlInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _universeUsernameInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _universePasswordInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _universePlaylistProtocolSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _universePlaylistTypeSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _universeEpgSourceSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
+        _universeEpgUrlInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _vaderStreamsServerSelect.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _vaderStreamsUsernameInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
         _vaderStreamsPasswordInput.removeClass('w3-border-red w3-bottombar w3-leftbar w3-rightbar w3-topbar');
@@ -1827,7 +1895,29 @@ const ConfigurationModule = (function () {
         _crystalClearPlaylistTypeSelect = $('#crystalClearPlaylistTypeSelect');
         _crystalClearTogglePasswordSpan = $('#crystalClearTogglePasswordSpan');
         _crystalClearUsernameInput = $('#crystalClearUsernameInput');
+        _darkMediaConfigurationButton = $('#darkMediaConfigurationButton');
+        _darkMediaConfigurationDiv = $('#darkMediaConfigurationDiv');
+        _darkMediaEnabledCheckbox = $('#darkMediaEnabledCheckbox');
+        _darkMediaEpgSourceSelect = $('#darkMediaEpgSourceSelect');
+        _darkMediaEpgUrlLabel = $('#darkMediaEpgUrlLabel');
+        _darkMediaEpgUrlInput = $('#darkMediaEpgUrlInput');
+        _darkMediaPasswordInput = $('#darkMediaPasswordInput');
+        _darkMediaPlaylistProtocolSelect = $('#darkMediaPlaylistProtocolSelect');
+        _darkMediaPlaylistTypeSelect = $('#darkMediaPlaylistTypeSelect');
+        _darkMediaTogglePasswordSpan = $('#darkMediaTogglePasswordSpan');
+        _darkMediaUsernameInput = $('#darkMediaUsernameInput');
         _errorSpans = $('[id$=ErrorSpan]');
+        _helixConfigurationButton = $('#helixConfigurationButton');
+        _helixConfigurationDiv = $('#helixConfigurationDiv');
+        _helixEnabledCheckbox = $('#helixEnabledCheckbox');
+        _helixEpgSourceSelect = $('#helixEpgSourceSelect');
+        _helixEpgUrlLabel = $('#helixEpgUrlLabel');
+        _helixEpgUrlInput = $('#helixEpgUrlInput');
+        _helixPasswordInput = $('#helixPasswordInput');
+        _helixPlaylistProtocolSelect = $('#helixPlaylistProtocolSelect');
+        _helixPlaylistTypeSelect = $('#helixPlaylistTypeSelect');
+        _helixTogglePasswordSpan = $('#helixTogglePasswordSpan');
+        _helixUsernameInput = $('#helixUsernameInput');
         _infernoConfigurationButton = $('#infernoConfigurationButton');
         _infernoConfigurationDiv = $('#infernoConfigurationDiv');
         _infernoEnabledCheckbox = $('#infernoEnabledCheckbox');
@@ -1839,6 +1929,17 @@ const ConfigurationModule = (function () {
         _infernoPlaylistTypeSelect = $('#infernoPlaylistTypeSelect');
         _infernoTogglePasswordSpan = $('#infernoTogglePasswordSpan');
         _infernoUsernameInput = $('#infernoUsernameInput');
+        _kingConfigurationButton = $('#kingConfigurationButton');
+        _kingConfigurationDiv = $('#kingConfigurationDiv');
+        _kingEnabledCheckbox = $('#kingEnabledCheckbox');
+        _kingEpgSourceSelect = $('#kingEpgSourceSelect');
+        _kingEpgUrlLabel = $('#kingEpgUrlLabel');
+        _kingEpgUrlInput = $('#kingEpgUrlInput');
+        _kingPasswordInput = $('#kingPasswordInput');
+        _kingPlaylistProtocolSelect = $('#kingPlaylistProtocolSelect');
+        _kingPlaylistTypeSelect = $('#kingPlaylistTypeSelect');
+        _kingTogglePasswordSpan = $('#kingTogglePasswordSpan');
+        _kingUsernameInput = $('#kingUsernameInput');
         _serverConfigurationButton = $('#serverConfigurationButton');
         _serverConfigurationDiv = $('#serverConfigurationDiv');
         _serverHostnameLoopbackInput = $('#serverHostnameLoopbackInput');
@@ -1860,6 +1961,17 @@ const ConfigurationModule = (function () {
         _smoothStreamsServiceSelect = $('#smoothStreamsServiceSelect');
         _smoothStreamsTogglePasswordSpan = $('#smoothStreamsTogglePasswordSpan');
         _smoothStreamsUsernameInput = $('#smoothStreamsUsernameInput');
+        _universeConfigurationButton = $('#universeConfigurationButton');
+        _universeConfigurationDiv = $('#universeConfigurationDiv');
+        _universeEnabledCheckbox = $('#universeEnabledCheckbox');
+        _universeEpgSourceSelect = $('#universeEpgSourceSelect');
+        _universeEpgUrlLabel = $('#universeEpgUrlLabel');
+        _universeEpgUrlInput = $('#universeEpgUrlInput');
+        _universePasswordInput = $('#universePasswordInput');
+        _universePlaylistProtocolSelect = $('#universePlaylistProtocolSelect');
+        _universePlaylistTypeSelect = $('#universePlaylistTypeSelect');
+        _universeTogglePasswordSpan = $('#universeTogglePasswordSpan');
+        _universeUsernameInput = $('#universeUsernameInput');
         _updateConfigurationButton = $('#updateConfigurationButton');
         _vaderStreamsConfigurationButton = $('#vaderStreamsConfigurationButton');
         _vaderStreamsConfigurationDiv = $('#vaderStreamsConfigurationDiv');
@@ -1921,12 +2033,30 @@ const ConfigurationModule = (function () {
             _crystalClearPlaylistTypeSelect.val(data['data']['attributes']['crystalclear_playlist_type'].toLowerCase());
             _crystalClearEpgSourceSelect.val(data['data']['attributes']['crystalclear_epg_source'].toLowerCase());
             _crystalClearEpgUrlInput.val(data['data']['attributes']['crystalclear_epg_url']);
+            _darkMediaUsernameInput.val(data['data']['attributes']['darkMedia_username']);
+            _darkMediaPasswordInput.val(data['data']['attributes']['darkMedia_password']);
+            _darkMediaPlaylistProtocolSelect.val(data['data']['attributes']['darkMedia_playlist_protocol'].toLowerCase());
+            _darkMediaPlaylistTypeSelect.val(data['data']['attributes']['darkMedia_playlist_type'].toLowerCase());
+            _darkMediaEpgSourceSelect.val(data['data']['attributes']['darkMedia_epg_source'].toLowerCase());
+            _darkMediaEpgUrlInput.val(data['data']['attributes']['darkMedia_epg_url']);
+            _helixUsernameInput.val(data['data']['attributes']['helix_username']);
+            _helixPasswordInput.val(data['data']['attributes']['helix_password']);
+            _helixPlaylistProtocolSelect.val(data['data']['attributes']['helix_playlist_protocol'].toLowerCase());
+            _helixPlaylistTypeSelect.val(data['data']['attributes']['helix_playlist_type'].toLowerCase());
+            _helixEpgSourceSelect.val(data['data']['attributes']['helix_epg_source'].toLowerCase());
+            _helixEpgUrlInput.val(data['data']['attributes']['helix_epg_url']);
             _infernoUsernameInput.val(data['data']['attributes']['inferno_username']);
             _infernoPasswordInput.val(data['data']['attributes']['inferno_password']);
             _infernoPlaylistProtocolSelect.val(data['data']['attributes']['inferno_playlist_protocol'].toLowerCase());
             _infernoPlaylistTypeSelect.val(data['data']['attributes']['inferno_playlist_type'].toLowerCase());
             _infernoEpgSourceSelect.val(data['data']['attributes']['inferno_epg_source'].toLowerCase());
             _infernoEpgUrlInput.val(data['data']['attributes']['inferno_epg_url']);
+            _kingUsernameInput.val(data['data']['attributes']['king_username']);
+            _kingPasswordInput.val(data['data']['attributes']['king_password']);
+            _kingPlaylistProtocolSelect.val(data['data']['attributes']['king_playlist_protocol'].toLowerCase());
+            _kingPlaylistTypeSelect.val(data['data']['attributes']['king_playlist_type'].toLowerCase());
+            _kingEpgSourceSelect.val(data['data']['attributes']['king_epg_source'].toLowerCase());
+            _kingEpgUrlInput.val(data['data']['attributes']['king_epg_url']);
             _smoothStreamsServiceSelect.val(data['data']['attributes']['smoothstreams_service'].toLowerCase());
             _smoothStreamsServerSelect.val(data['data']['attributes']['smoothstreams_server'].toLowerCase());
             _smoothStreamsUsernameInput.val(data['data']['attributes']['smoothstreams_username']);
@@ -1935,6 +2065,12 @@ const ConfigurationModule = (function () {
             _smoothStreamsPlaylistTypeSelect.val(data['data']['attributes']['smoothstreams_playlist_type'].toLowerCase());
             _smoothStreamsEpgSourceSelect.val(data['data']['attributes']['smoothstreams_epg_source'].toLowerCase());
             _smoothStreamsEpgUrlInput.val(data['data']['attributes']['smoothstreams_epg_url']);
+            _universeUsernameInput.val(data['data']['attributes']['universe_username']);
+            _universePasswordInput.val(data['data']['attributes']['universe_password']);
+            _universePlaylistProtocolSelect.val(data['data']['attributes']['universe_playlist_protocol'].toLowerCase());
+            _universePlaylistTypeSelect.val(data['data']['attributes']['universe_playlist_type'].toLowerCase());
+            _universeEpgSourceSelect.val(data['data']['attributes']['universe_epg_source'].toLowerCase());
+            _universeEpgUrlInput.val(data['data']['attributes']['universe_epg_url']);
             _vaderStreamsServerSelect.val(data['data']['attributes']['vaderstreams_server'].toLowerCase());
             _vaderStreamsUsernameInput.val(data['data']['attributes']['vaderstreams_username']);
             _vaderStreamsPasswordInput.val(data['data']['attributes']['vaderstreams_password']);
@@ -1992,10 +2128,18 @@ const ConfigurationModule = (function () {
             passwordInput = _coolAsIcePasswordInput;
         } else if (eventTarget.prop('id') === 'crystalClearTogglePasswordSpan') {
             passwordInput = _crystalClearPasswordInput;
+        } else if (eventTarget.prop('id') === 'darkMediaTogglePasswordSpan') {
+            passwordInput = _beastPasswordInput;
+        } else if (eventTarget.prop('id') === 'helixTogglePasswordSpan') {
+            passwordInput = _beastPasswordInput;
         } else if (eventTarget.prop('id') === 'infernoTogglePasswordSpan') {
             passwordInput = _infernoPasswordInput;
+        } else if (eventTarget.prop('id') === 'kingTogglePasswordSpan') {
+            passwordInput = _beastPasswordInput;
         } else if (eventTarget.prop('id') === 'smoothStreamsTogglePasswordSpan') {
             passwordInput = _smoothStreamsPasswordInput;
+        } else if (eventTarget.prop('id') === 'universeTogglePasswordSpan') {
+            passwordInput = _beastPasswordInput;
         } else if (eventTarget.prop('id') === 'vaderStreamsTogglePasswordSpan') {
             passwordInput = _vaderStreamsPasswordInput;
         }
@@ -2043,6 +2187,20 @@ const ConfigurationModule = (function () {
         const crystalClearPlaylistTypeSelectValue = _crystalClearPlaylistTypeSelect.val();
         const crystalClearEpgSourceSelectValue = _crystalClearEpgSourceSelect.val();
         const crystalClearEpgUrlInputValue = _crystalClearEpgUrlInput.val();
+        const darkMediaEnabledCheckboxChecked = _darkMediaEnabledCheckbox.is(':checked');
+        const darkMediaUsernameInputValue = _darkMediaUsernameInput.val();
+        const darkMediaPasswordInputValue = _darkMediaPasswordInput.val();
+        const darkMediaPlaylistProtocolSelectValue = _darkMediaPlaylistProtocolSelect.val();
+        const darkMediaPlaylistTypeSelectValue = _darkMediaPlaylistTypeSelect.val();
+        const darkMediaEpgSourceSelectValue = _darkMediaEpgSourceSelect.val();
+        const darkMediaEpgUrlInputValue = _darkMediaEpgUrlInput.val();
+        const helixEnabledCheckboxChecked = _helixEnabledCheckbox.is(':checked');
+        const helixUsernameInputValue = _helixUsernameInput.val();
+        const helixPasswordInputValue = _helixPasswordInput.val();
+        const helixPlaylistProtocolSelectValue = _helixPlaylistProtocolSelect.val();
+        const helixPlaylistTypeSelectValue = _helixPlaylistTypeSelect.val();
+        const helixEpgSourceSelectValue = _helixEpgSourceSelect.val();
+        const helixEpgUrlInputValue = _helixEpgUrlInput.val();
         const infernoEnabledCheckboxChecked = _infernoEnabledCheckbox.is(':checked');
         const infernoUsernameInputValue = _infernoUsernameInput.val();
         const infernoPasswordInputValue = _infernoPasswordInput.val();
@@ -2050,6 +2208,13 @@ const ConfigurationModule = (function () {
         const infernoPlaylistTypeSelectValue = _infernoPlaylistTypeSelect.val();
         const infernoEpgSourceSelectValue = _infernoEpgSourceSelect.val();
         const infernoEpgUrlInputValue = _infernoEpgUrlInput.val();
+        const kingEnabledCheckboxChecked = _kingEnabledCheckbox.is(':checked');
+        const kingUsernameInputValue = _kingUsernameInput.val();
+        const kingPasswordInputValue = _kingPasswordInput.val();
+        const kingPlaylistProtocolSelectValue = _kingPlaylistProtocolSelect.val();
+        const kingPlaylistTypeSelectValue = _kingPlaylistTypeSelect.val();
+        const kingEpgSourceSelectValue = _kingEpgSourceSelect.val();
+        const kingEpgUrlInputValue = _kingEpgUrlInput.val();
         const smoothStreamsEnabledCheckboxChecked = _smoothStreamsEnabledCheckbox.is(':checked');
         const smoothStreamsServiceSelectValue = _smoothStreamsServiceSelect.val();
         const smoothStreamsServerSelectValue = _smoothStreamsServerSelect.val();
@@ -2059,6 +2224,13 @@ const ConfigurationModule = (function () {
         const smoothStreamsPlaylistTypeSelectValue = _smoothStreamsPlaylistTypeSelect.val();
         const smoothStreamsEpgSourceSelectValue = _smoothStreamsEpgSourceSelect.val();
         const smoothStreamsEpgUrlInputValue = _smoothStreamsEpgUrlInput.val();
+        const universeEnabledCheckboxChecked = _universeEnabledCheckbox.is(':checked');
+        const universeUsernameInputValue = _universeUsernameInput.val();
+        const universePasswordInputValue = _universePasswordInput.val();
+        const universePlaylistProtocolSelectValue = _universePlaylistProtocolSelect.val();
+        const universePlaylistTypeSelectValue = _universePlaylistTypeSelect.val();
+        const universeEpgSourceSelectValue = _universeEpgSourceSelect.val();
+        const universeEpgUrlInputValue = _universeEpgUrlInput.val();
         const vaderStreamsEnabledCheckboxChecked = _vaderStreamsEnabledCheckbox.is(':checked');
         const vaderStreamsServerSelectValue = _vaderStreamsServerSelect.val();
         const vaderStreamsUsernameInputValue = _vaderStreamsUsernameInput.val();
@@ -2071,64 +2243,92 @@ const ConfigurationModule = (function () {
         const jqXHR = $.ajax({
                                  contentType: 'application/json',
                                  data: JSON.stringify({
-                                     'data':
-                                         {
-                                             'type': 'configuration',
-                                             'attributes': {
-                                                 'server_password': serverPasswordInputValue,
-                                                 'server_http_port': serverHttpPortInputValue,
-                                                 'server_https_port': serverHttpsPortInputValue,
-                                                 'server_hostname_loopback': serverHostnameLoopbackInputValue,
-                                                 'server_hostname_private': serverHostnamePrivateInputValue,
-                                                 'server_hostname_public': serverHostnamePublicInputValue,
-                                                 'beast_enabled': beastEnabledCheckboxChecked,
-                                                 'beast_username': beastUsernameInputValue,
-                                                 'beast_password': beastPasswordInputValue,
-                                                 'beast_playlist_protocol': beastPlaylistProtocolSelectValue,
-                                                 'beast_playlist_type': beastPlaylistTypeSelectValue,
-                                                 'beast_epg_source': beastEpgSourceSelectValue,
-                                                 'beast_epg_url': beastEpgUrlInputValue,
-                                                 'coolasice_enabled': coolAsIceEnabledCheckboxChecked,
-                                                 'coolasice_username': coolAsIceUsernameInputValue,
-                                                 'coolasice_password': coolAsIcePasswordInputValue,
-                                                 'coolasice_playlist_protocol': coolAsIcePlaylistProtocolSelectValue,
-                                                 'coolasice_playlist_type': coolAsIcePlaylistTypeSelectValue,
-                                                 'coolasice_epg_source': coolAsIceEpgSourceSelectValue,
-                                                 'coolasice_epg_url': coolAsIceEpgUrlInputValue,
-                                                 'crystalclear_enabled': crystalClearEnabledCheckboxChecked,
-                                                 'crystalclear_username': crystalClearUsernameInputValue,
-                                                 'crystalclear_password': crystalClearPasswordInputValue,
-                                                 'crystalclear_playlist_protocol': crystalClearPlaylistProtocolSelectValue,
-                                                 'crystalclear_playlist_type': crystalClearPlaylistTypeSelectValue,
-                                                 'crystalclear_epg_source': crystalClearEpgSourceSelectValue,
-                                                 'crystalclear_epg_url': crystalClearEpgUrlInputValue,
-                                                 'inferno_enabled': infernoEnabledCheckboxChecked,
-                                                 'inferno_username': infernoUsernameInputValue,
-                                                 'inferno_password': infernoPasswordInputValue,
-                                                 'inferno_playlist_protocol': infernoPlaylistProtocolSelectValue,
-                                                 'inferno_playlist_type': infernoPlaylistTypeSelectValue,
-                                                 'inferno_epg_source': infernoEpgSourceSelectValue,
-                                                 'inferno_epg_url': infernoEpgUrlInputValue,
-                                                 'smoothstreams_enabled': smoothStreamsEnabledCheckboxChecked,
-                                                 'smoothstreams_service': smoothStreamsServiceSelectValue,
-                                                 'smoothstreams_server': smoothStreamsServerSelectValue,
-                                                 'smoothstreams_username': smoothStreamsUsernameInputValue,
-                                                 'smoothstreams_password': smoothStreamsPasswordInputValue,
-                                                 'smoothstreams_playlist_protocol': smoothStreamsPlaylistProtocolSelectValue,
-                                                 'smoothstreams_playlist_type': smoothStreamsPlaylistTypeSelectValue,
-                                                 'smoothstreams_epg_source': smoothStreamsEpgSourceSelectValue,
-                                                 'smoothstreams_epg_url': smoothStreamsEpgUrlInputValue,
-                                                 'vaderstreams_enabled': vaderStreamsEnabledCheckboxChecked,
-                                                 'vaderstreams_server': vaderStreamsServerSelectValue,
-                                                 'vaderstreams_username': vaderStreamsUsernameInputValue,
-                                                 'vaderstreams_password': vaderStreamsPasswordInputValue,
-                                                 'vaderstreams_playlist_protocol': vaderStreamsPlaylistProtocolSelectValue,
-                                                 'vaderstreams_playlist_type': vaderStreamsPlaylistTypeSelectValue,
-                                                 'vaderstreams_epg_source': vaderStreamsEpgSourceSelectValue,
-                                                 'vaderstreams_epg_url': vaderStreamsEpgUrlInputValue
-                                             },
-                                         }
-                                 }, function (key, value) {
+                                                          'data':
+                                                              {
+                                                                  'type': 'configuration',
+                                                                  'attributes': {
+                                                                      'server_password': serverPasswordInputValue,
+                                                                      'server_http_port': serverHttpPortInputValue,
+                                                                      'server_https_port': serverHttpsPortInputValue,
+                                                                      'server_hostname_loopback': serverHostnameLoopbackInputValue,
+                                                                      'server_hostname_private': serverHostnamePrivateInputValue,
+                                                                      'server_hostname_public': serverHostnamePublicInputValue,
+                                                                      'beast_enabled': beastEnabledCheckboxChecked,
+                                                                      'beast_username': beastUsernameInputValue,
+                                                                      'beast_password': beastPasswordInputValue,
+                                                                      'beast_playlist_protocol': beastPlaylistProtocolSelectValue,
+                                                                      'beast_playlist_type': beastPlaylistTypeSelectValue,
+                                                                      'beast_epg_source': beastEpgSourceSelectValue,
+                                                                      'beast_epg_url': beastEpgUrlInputValue,
+                                                                      'coolasice_enabled': coolAsIceEnabledCheckboxChecked,
+                                                                      'coolasice_username': coolAsIceUsernameInputValue,
+                                                                      'coolasice_password': coolAsIcePasswordInputValue,
+                                                                      'coolasice_playlist_protocol': coolAsIcePlaylistProtocolSelectValue,
+                                                                      'coolasice_playlist_type': coolAsIcePlaylistTypeSelectValue,
+                                                                      'coolasice_epg_source': coolAsIceEpgSourceSelectValue,
+                                                                      'coolasice_epg_url': coolAsIceEpgUrlInputValue,
+                                                                      'crystalclear_enabled': crystalClearEnabledCheckboxChecked,
+                                                                      'crystalclear_username': crystalClearUsernameInputValue,
+                                                                      'crystalclear_password': crystalClearPasswordInputValue,
+                                                                      'crystalclear_playlist_protocol': crystalClearPlaylistProtocolSelectValue,
+                                                                      'crystalclear_playlist_type': crystalClearPlaylistTypeSelectValue,
+                                                                      'crystalclear_epg_source': crystalClearEpgSourceSelectValue,
+                                                                      'crystalclear_epg_url': crystalClearEpgUrlInputValue,
+                                                                      'darkmedia_enabled': darkMediaEnabledCheckboxChecked,
+                                                                      'darkmedia_username': darkMediaUsernameInputValue,
+                                                                      'darkmedia_password': darkMediaPasswordInputValue,
+                                                                      'darkmedia_playlist_protocol': darkMediaPlaylistProtocolSelectValue,
+                                                                      'darkmedia_playlist_type': darkMediaPlaylistTypeSelectValue,
+                                                                      'darkmedia_epg_source': darkMediaEpgSourceSelectValue,
+                                                                      'darkmedia_epg_url': darkMediaEpgUrlInputValue,
+                                                                      'helix_enabled': helixEnabledCheckboxChecked,
+                                                                      'helix_username': helixUsernameInputValue,
+                                                                      'helix_password': helixPasswordInputValue,
+                                                                      'helix_playlist_protocol': helixPlaylistProtocolSelectValue,
+                                                                      'helix_playlist_type': helixPlaylistTypeSelectValue,
+                                                                      'helix_epg_source': helixEpgSourceSelectValue,
+                                                                      'helix_epg_url': helixEpgUrlInputValue,
+                                                                      'inferno_enabled': infernoEnabledCheckboxChecked,
+                                                                      'inferno_username': infernoUsernameInputValue,
+                                                                      'inferno_password': infernoPasswordInputValue,
+                                                                      'inferno_playlist_protocol': infernoPlaylistProtocolSelectValue,
+                                                                      'inferno_playlist_type': infernoPlaylistTypeSelectValue,
+                                                                      'inferno_epg_source': infernoEpgSourceSelectValue,
+                                                                      'inferno_epg_url': infernoEpgUrlInputValue,
+                                                                      'king_enabled': kingEnabledCheckboxChecked,
+                                                                      'king_username': kingUsernameInputValue,
+                                                                      'king_password': kingPasswordInputValue,
+                                                                      'king_playlist_protocol': kingPlaylistProtocolSelectValue,
+                                                                      'king_playlist_type': kingPlaylistTypeSelectValue,
+                                                                      'king_epg_source': kingEpgSourceSelectValue,
+                                                                      'king_epg_url': kingEpgUrlInputValue,
+                                                                      'smoothstreams_enabled': smoothStreamsEnabledCheckboxChecked,
+                                                                      'smoothstreams_service': smoothStreamsServiceSelectValue,
+                                                                      'smoothstreams_server': smoothStreamsServerSelectValue,
+                                                                      'smoothstreams_username': smoothStreamsUsernameInputValue,
+                                                                      'smoothstreams_password': smoothStreamsPasswordInputValue,
+                                                                      'smoothstreams_playlist_protocol': smoothStreamsPlaylistProtocolSelectValue,
+                                                                      'smoothstreams_playlist_type': smoothStreamsPlaylistTypeSelectValue,
+                                                                      'smoothstreams_epg_source': smoothStreamsEpgSourceSelectValue,
+                                                                      'smoothstreams_epg_url': smoothStreamsEpgUrlInputValue,
+                                                                      'universe_enabled': universeEnabledCheckboxChecked,
+                                                                      'universe_username': universeUsernameInputValue,
+                                                                      'universe_password': universePasswordInputValue,
+                                                                      'universe_playlist_protocol': universePlaylistProtocolSelectValue,
+                                                                      'universe_playlist_type': universePlaylistTypeSelectValue,
+                                                                      'universe_epg_source': universeEpgSourceSelectValue,
+                                                                      'universe_epg_url': universeEpgUrlInputValue,
+                                                                      'vaderstreams_enabled': vaderStreamsEnabledCheckboxChecked,
+                                                                      'vaderstreams_server': vaderStreamsServerSelectValue,
+                                                                      'vaderstreams_username': vaderStreamsUsernameInputValue,
+                                                                      'vaderstreams_password': vaderStreamsPasswordInputValue,
+                                                                      'vaderstreams_playlist_protocol': vaderStreamsPlaylistProtocolSelectValue,
+                                                                      'vaderstreams_playlist_type': vaderStreamsPlaylistTypeSelectValue,
+                                                                      'vaderstreams_epg_source': vaderStreamsEpgSourceSelectValue,
+                                                                      'vaderstreams_epg_url': vaderStreamsEpgUrlInputValue
+                                                                  },
+                                                              }
+                                                      }, function (key, value) {
                                      return (value == null) ? '' : value
                                  }),
                                  dataType: 'json',

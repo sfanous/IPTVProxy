@@ -6,20 +6,20 @@ from rwlock import RWLock
 from sqlalchemy.ext.declarative import declarative_base
 
 from iptv_proxy.db import Database
+from iptv_proxy.providers.helix.constants import HelixConstants
 from iptv_proxy.providers.iptv_provider.db import ProviderDatabase
-from iptv_proxy.providers.universe.constants import UniverseConstants
 
 logger = logging.getLogger(__name__)
 Base = declarative_base()
 
 
-class UniverseDatabase(ProviderDatabase):
+class HelixDatabase(ProviderDatabase):
     __slots__ = []
 
     _access_lock = RWLock()
     _database_file_path = None
     _engine = None
-    _provider_name = UniverseConstants.PROVIDER_NAME.lower()
+    _provider_name = HelixConstants.PROVIDER_NAME.lower()
     _session_factory = None
     _temporary_database_file_path = None
     _temporary_engine = None
@@ -37,7 +37,7 @@ class UniverseDatabase(ProviderDatabase):
     @classmethod
     def initialize(cls):
         cls._database_file_path = os.path.join(os.path.dirname(Database.get_database_file_path()),
-                                               UniverseConstants.DB_FILE_NAME)
+                                               HelixConstants.DB_FILE_NAME)
 
         super().initialize()
 
@@ -46,7 +46,7 @@ class UniverseDatabase(ProviderDatabase):
     @classmethod
     def initialize_temporary(cls):
         cls._temporary_database_file_path = os.path.join(os.path.dirname(Database.get_database_file_path()),
-                                                         UniverseConstants.TEMPORARY_DB_FILE_NAME)
+                                                         HelixConstants.TEMPORARY_DB_FILE_NAME)
 
         super().initialize_temporary()
 

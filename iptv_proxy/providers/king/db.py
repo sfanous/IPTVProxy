@@ -6,8 +6,8 @@ from rwlock import RWLock
 from sqlalchemy.ext.declarative import declarative_base
 
 from iptv_proxy.db import Database
-from iptv_proxy.providers.king.constants import KingConstants
 from iptv_proxy.providers.iptv_provider.db import ProviderDatabase
+from iptv_proxy.providers.king.constants import KingConstants
 
 logger = logging.getLogger(__name__)
 Base = declarative_base()

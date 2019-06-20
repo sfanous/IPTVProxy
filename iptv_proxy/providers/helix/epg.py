@@ -4,13 +4,13 @@ from threading import RLock
 
 from rwlock import RWLock
 
+from iptv_proxy.providers.helix.constants import HelixConstants
 from iptv_proxy.providers.iptv_provider.epg import XStreamCodesProviderEPG
-from iptv_proxy.providers.universe.constants import UniverseConstants
 
 logger = logging.getLogger(__name__)
 
 
-class UniverseEPG(XStreamCodesProviderEPG):
+class HelixEPG(XStreamCodesProviderEPG):
     __slots__ = []
 
     _channel_group_map = OrderedDict([('name', OrderedDict()), ('number', OrderedDict())])
@@ -26,7 +26,7 @@ class UniverseEPG(XStreamCodesProviderEPG):
     _lock = RLock()
     _m3u8_group_map = OrderedDict()
     _m3u8_group_map_lock = RWLock()
-    _provider_name = UniverseConstants.PROVIDER_NAME.lower()
+    _provider_name = HelixConstants.PROVIDER_NAME.lower()
     _refresh_epg_timer = None
     _update_times = ['06:00:00']
     _update_times_lock = RWLock()

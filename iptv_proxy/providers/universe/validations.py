@@ -1,7 +1,7 @@
 import logging
 
-from iptv_proxy.providers.universe.constants import UniverseConstants
 from iptv_proxy.providers.iptv_provider.validations import ProviderValidations
+from iptv_proxy.providers.universe.constants import UniverseConstants
 
 logger = logging.getLogger(__name__)
 

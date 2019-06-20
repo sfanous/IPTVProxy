@@ -208,6 +208,30 @@ class HTMLTemplateEngine(object):
             'configuration_crystalclear_epg_source_crystalclear_selected': '',
             'configuration_crystalclear_epg_source_other_selected': '',
             'configuration_crystalclear_epg_url': '',
+            'configuration_darkmedia_active':
+                'checked="checked"' if 'darkmedia' in active_providers_map_class
+                else '',
+            'configuration_darkmedia_username': '',
+            'configuration_darkmedia_password': '',
+            'configuration_darkmedia_playlist_protocol_hls_selected': '',
+            'configuration_darkmedia_playlist_protocol_mpegts_selected': '',
+            'configuration_darkmedia_playlist_type_dynamic_selected': '',
+            'configuration_darkmedia_playlist_type_static_selected': '',
+            'configuration_darkmedia_epg_source_darkmedia_selected': '',
+            'configuration_darkmedia_epg_source_other_selected': '',
+            'configuration_darkmedia_epg_url': '',
+            'configuration_helix_active':
+                'checked="checked"' if 'helix' in active_providers_map_class
+                else '',
+            'configuration_helix_username': '',
+            'configuration_helix_password': '',
+            'configuration_helix_playlist_protocol_hls_selected': '',
+            'configuration_helix_playlist_protocol_mpegts_selected': '',
+            'configuration_helix_playlist_type_dynamic_selected': '',
+            'configuration_helix_playlist_type_static_selected': '',
+            'configuration_helix_epg_source_helix_selected': '',
+            'configuration_helix_epg_source_other_selected': '',
+            'configuration_helix_epg_url': '',
             'configuration_inferno_active':
                 'checked="checked"' if 'inferno' in active_providers_map_class
                 else '',
@@ -220,6 +244,18 @@ class HTMLTemplateEngine(object):
             'configuration_inferno_epg_source_inferno_selected': '',
             'configuration_inferno_epg_source_other_selected': '',
             'configuration_inferno_epg_url': '',
+            'configuration_king_active':
+                'checked="checked"' if 'king' in active_providers_map_class
+                else '',
+            'configuration_king_username': '',
+            'configuration_king_password': '',
+            'configuration_king_playlist_protocol_hls_selected': '',
+            'configuration_king_playlist_protocol_mpegts_selected': '',
+            'configuration_king_playlist_type_dynamic_selected': '',
+            'configuration_king_playlist_type_static_selected': '',
+            'configuration_king_epg_source_king_selected': '',
+            'configuration_king_epg_source_other_selected': '',
+            'configuration_king_epg_url': '',
             'configuration_smoothstreams_active':
                 'checked="checked"' if 'smoothstreams' in active_providers_map_class
                 else '',
@@ -261,6 +297,18 @@ class HTMLTemplateEngine(object):
             'configuration_smoothstreams_epg_source_fog_selected': '',
             'configuration_smoothstreams_epg_source_other_selected': '',
             'configuration_smoothstreams_epg_url': '',
+            'configuration_universe_active':
+                'checked="checked"' if 'universe' in active_providers_map_class
+                else '',
+            'configuration_universe_username': '',
+            'configuration_universe_password': '',
+            'configuration_universe_playlist_protocol_hls_selected': '',
+            'configuration_universe_playlist_protocol_mpegts_selected': '',
+            'configuration_universe_playlist_type_dynamic_selected': '',
+            'configuration_universe_playlist_type_static_selected': '',
+            'configuration_universe_epg_source_universe_selected': '',
+            'configuration_universe_epg_source_other_selected': '',
+            'configuration_universe_epg_url': '',
             'configuration_vaderstreams_active':
                 'checked="checked"' if 'vaderstreams' in active_providers_map_class
                 else '',
@@ -338,6 +386,47 @@ class HTMLTemplateEngine(object):
                 configuration_div_template_fields['configuration_crystalclear_epg_url'] = self._configuration[
                     'CRYSTALCLEAR_EPG_URL']
 
+        if 'DARKMEDIA_USERNAME' in self._configuration:
+            configuration_div_template_fields['configuration_darkmedia_username'] = self._configuration[
+                'DARKMEDIA_USERNAME']
+        if 'DARKMEDIA_PASSWORD' in self._configuration:
+            configuration_div_template_fields['configuration_darkmedia_password'] = self._configuration[
+                'DARKMEDIA_PASSWORD']
+        if 'DARKMEDIA_PLAYLIST_PROTOCOL' in self._configuration:
+            configuration_div_template_fields['configuration_darkmedia_playlist_protocol_{0}_selected'.format(
+                self._configuration['DARKMEDIA_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
+        if 'DARKMEDIA_PLAYLIST_TYPE' in self._configuration:
+            configuration_div_template_fields['configuration_darkmedia_playlist_type_{0}_selected'.format(
+                self._configuration['DARKMEDIA_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
+        if 'DARKMEDIA_EPG_SOURCE' in self._configuration:
+            configuration_div_template_fields['configuration_darkmedia_epg_source_{0}_selected'.format(
+                self._configuration['DARKMEDIA_EPG_SOURCE'].lower())] = 'selected="selected" '
+        if 'DARKMEDIA_EPG_URL' in self._configuration:
+            if self._configuration['DARKMEDIA_EPG_URL'] is None:
+                configuration_div_template_fields['configuration_darkmedia_epg_url'] = ''
+            else:
+                configuration_div_template_fields['configuration_darkmedia_epg_url'] = self._configuration[
+                    'DARKMEDIA_EPG_URL']
+
+        if 'HELIX_USERNAME' in self._configuration:
+            configuration_div_template_fields['configuration_helix_username'] = self._configuration['HELIX_USERNAME']
+        if 'HELIX_PASSWORD' in self._configuration:
+            configuration_div_template_fields['configuration_helix_password'] = self._configuration['HELIX_PASSWORD']
+        if 'HELIX_PLAYLIST_PROTOCOL' in self._configuration:
+            configuration_div_template_fields['configuration_helix_playlist_protocol_{0}_selected'.format(
+                self._configuration['HELIX_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
+        if 'HELIX_PLAYLIST_TYPE' in self._configuration:
+            configuration_div_template_fields['configuration_helix_playlist_type_{0}_selected'.format(
+                self._configuration['HELIX_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
+        if 'HELIX_EPG_SOURCE' in self._configuration:
+            configuration_div_template_fields['configuration_helix_epg_source_{0}_selected'.format(
+                self._configuration['HELIX_EPG_SOURCE'].lower())] = 'selected="selected" '
+        if 'HELIX_EPG_URL' in self._configuration:
+            if self._configuration['HELIX_EPG_URL'] is None:
+                configuration_div_template_fields['configuration_helix_epg_url'] = ''
+            else:
+                configuration_div_template_fields['configuration_helix_epg_url'] = self._configuration['HELIX_EPG_URL']
+
         if 'INFERNO_USERNAME' in self._configuration:
             configuration_div_template_fields['configuration_inferno_username'] = self._configuration[
                 'INFERNO_USERNAME']
@@ -359,6 +448,25 @@ class HTMLTemplateEngine(object):
             else:
                 configuration_div_template_fields['configuration_inferno_epg_url'] = self._configuration[
                     'INFERNO_EPG_URL']
+
+        if 'KING_USERNAME' in self._configuration:
+            configuration_div_template_fields['configuration_king_username'] = self._configuration['KING_USERNAME']
+        if 'KING_PASSWORD' in self._configuration:
+            configuration_div_template_fields['configuration_king_password'] = self._configuration['KING_PASSWORD']
+        if 'KING_PLAYLIST_PROTOCOL' in self._configuration:
+            configuration_div_template_fields['configuration_king_playlist_protocol_{0}_selected'.format(
+                self._configuration['KING_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
+        if 'KING_PLAYLIST_TYPE' in self._configuration:
+            configuration_div_template_fields['configuration_king_playlist_type_{0}_selected'.format(
+                self._configuration['KING_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
+        if 'KING_EPG_SOURCE' in self._configuration:
+            configuration_div_template_fields['configuration_king_epg_source_{0}_selected'.format(
+                self._configuration['KING_EPG_SOURCE'].lower())] = 'selected="selected" '
+        if 'KING_EPG_URL' in self._configuration:
+            if self._configuration['KING_EPG_URL'] is None:
+                configuration_div_template_fields['configuration_king_epg_url'] = ''
+            else:
+                configuration_div_template_fields['configuration_king_epg_url'] = self._configuration['KING_EPG_URL']
 
         if 'SMOOTHSTREAMS_SERVICE' in self._configuration:
             configuration_div_template_fields['configuration_{0}_selected'.format(
@@ -387,6 +495,28 @@ class HTMLTemplateEngine(object):
             else:
                 configuration_div_template_fields['configuration_smoothstreams_epg_url'] = self._configuration[
                     'SMOOTHSTREAMS_EPG_URL']
+
+        if 'UNIVERSE_USERNAME' in self._configuration:
+            configuration_div_template_fields['configuration_universe_username'] = self._configuration[
+                'UNIVERSE_USERNAME']
+        if 'UNIVERSE_PASSWORD' in self._configuration:
+            configuration_div_template_fields['configuration_universe_password'] = self._configuration[
+                'UNIVERSE_PASSWORD']
+        if 'UNIVERSE_PLAYLIST_PROTOCOL' in self._configuration:
+            configuration_div_template_fields['configuration_universe_playlist_protocol_{0}_selected'.format(
+                self._configuration['UNIVERSE_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
+        if 'UNIVERSE_PLAYLIST_TYPE' in self._configuration:
+            configuration_div_template_fields['configuration_universe_playlist_type_{0}_selected'.format(
+                self._configuration['UNIVERSE_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
+        if 'UNIVERSE_EPG_SOURCE' in self._configuration:
+            configuration_div_template_fields['configuration_universe_epg_source_{0}_selected'.format(
+                self._configuration['UNIVERSE_EPG_SOURCE'].lower())] = 'selected="selected" '
+        if 'UNIVERSE_EPG_URL' in self._configuration:
+            if self._configuration['UNIVERSE_EPG_URL'] is None:
+                configuration_div_template_fields['configuration_universe_epg_url'] = ''
+            else:
+                configuration_div_template_fields['configuration_universe_epg_url'] = self._configuration[
+                    'UNIVERSE_EPG_URL']
 
         if 'VADERSTREAMS_SERVER' in self._configuration:
             configuration_div_template_fields['configuration_{0}_selected'.format(
