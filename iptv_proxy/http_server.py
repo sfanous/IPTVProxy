@@ -884,6 +884,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                             self._do_gzip_response_content = False
 
                             self._response_content = CacheManager.query_cache(
+                                self._requested_path_tokens[1].lower(),
                                 channel_number_parameter_value,
                                 self._requested_path_tokens[2].lower())
 
@@ -895,16 +896,18 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
                                         self._requested_url_components.path,
                                         self._requested_query_string_parameters)
 
-                                    CacheManager.update_cache(channel_number_parameter_value,
+                                    CacheManager.update_cache(self._requested_path_tokens[1].lower(),
+                                                              channel_number_parameter_value,
                                                               self._requested_path_tokens[2].lower(),
                                                               self._response_content)
-
-                                    self._response_status_code = requests.codes.OK
-                                    self._response_content_type = 'video/m2ts'
-                                    self._do_log_response_content = False
-                                    self._send_http_response()
                                 except requests.exceptions.HTTPError as e:
                                     self._send_http_error(e.response.status_code, '')
+
+                            if self._response_content is not None:
+                                self._response_status_code = requests.codes.OK
+                                self._response_content_type = 'video/m2ts'
+                                self._do_log_response_content = False
+                                self._send_http_response()
                     elif self._requested_path_tokens[2].lower() == 'chunks.m3u8':
                         if self._screen_request(http_token_parameter_value):
                             try:

@@ -65,38 +65,45 @@ class CacheManager():
                      'Cutoff date & time => {0}'.format(current_date_time_in_utc))
 
         with cls._lock.writer_lock:
-            for channel_number in list(cls._cache.keys()):
-                cache_bucket = cls._cache[channel_number]
+            for provider in cls._cache:
+                for channel_number in list(cls._cache[provider].keys()):
+                    cache_bucket = cls._cache[provider][channel_number]
 
-                for segment_file_name in list(cache_bucket.keys()):
-                    cache_entry = cache_bucket[segment_file_name]
+                    for segment_file_name in list(cache_bucket.keys()):
+                        cache_entry = cache_bucket[segment_file_name]
 
-                    if (cache_entry.expiry_date_time_in_utc and
-                        current_date_time_in_utc > cache_entry.expiry_date_time_in_utc) or \
-                            (cache_entry.segment_file_content is None and
-                             current_date_time_in_utc > cache_entry.creation_date_time_in_utc + timedelta(
-                                        seconds=CACHE_TIME_TO_LIVE)):
-                        del cache_bucket[segment_file_name]
+                        if (cache_entry.expiry_date_time_in_utc and
+                            current_date_time_in_utc > cache_entry.expiry_date_time_in_utc) or \
+                                (cache_entry.segment_file_content is None and
+                                 current_date_time_in_utc > cache_entry.creation_date_time_in_utc + timedelta(
+                                            seconds=CACHE_TIME_TO_LIVE)):
+                            del cache_bucket[segment_file_name]
 
-                        logger.trace('Deleted expired cache entry\n'
-                                     'Channel number       => {0}\n'
-                                     'Segment file name    => {1}\n'
-                                     'Creation date & time => {2}\n'
-                                     'Expiry date & time   => {3}'.format(channel_number,
-                                                                          segment_file_name,
-                                                                          cache_entry.expiry_date_time_in_utc,
-                                                                          cache_entry.creation_date_time_in_utc))
+                            logger.trace('Deleted expired cache entry\n'
+                                         'Provider             => {0}\n'
+                                         'Channel number       => {1}\n'
+                                         'Segment file name    => {2}\n'
+                                         'Creation date & time => {3}\n'
+                                         'Expiry date & time   => {4}'.format(provider,
+                                                                              channel_number,
+                                                                              segment_file_name,
+                                                                              cache_entry.expiry_date_time_in_utc,
+                                                                              cache_entry.creation_date_time_in_utc))
 
-                if not cache_bucket:
-                    del cls._cache[channel_number]
+                    if not cache_bucket:
+                        del cls._cache[provider][channel_number]
 
-                    logger.trace('Deleted expired cache bucket\n'
-                                 'Channel number => {0}'.format(channel_number))
+                        logger.trace('Deleted expired cache bucket\n'
+                                     'Provider       => {0}\n'
+                                     'Channel number => {1}'.format(provider, channel_number))
 
-            if len(cls._cache):
-                cls._cleanup_cache_timer = Timer(CACHE_TIME_TO_LIVE, cls._cleanup_cache)
-                cls._cleanup_cache_timer.daemon = True
-                cls._cleanup_cache_timer.start()
+            for provider in cls._cache:
+                if cls._cache[provider]:
+                    cls._cleanup_cache_timer = Timer(CACHE_TIME_TO_LIVE, cls._cleanup_cache)
+                    cls._cleanup_cache_timer.daemon = True
+                    cls._cleanup_cache_timer.start()
+
+                    break
             else:
                 cls._cleanup_cache_timer = None
 
@@ -111,9 +118,9 @@ class CacheManager():
             pass
 
     @classmethod
-    def _query_cache(cls, channel_number, segment_file_name):
-        if channel_number in cls._cache:
-            cache_bucket = cls._cache[channel_number]
+    def _query_cache(cls, provider, channel_number, segment_file_name):
+        if provider in cls._cache and channel_number in cls._cache[provider]:
+            cache_bucket = cls._cache[provider][channel_number]
 
             if segment_file_name in cache_bucket:
                 cache_entry = cache_bucket[segment_file_name]
@@ -125,41 +132,49 @@ class CacheManager():
                 if cache_entry.segment_file_content:
                     cache_response_type = CacheResponseType.HARD_HIT
 
-                    logger.trace('Hard hit cache entry\n'
-                                 'Channel number    => {0}\n'
-                                 'Segment file name => {1}'.format(channel_number, segment_file_name))
+                    logger.trace('Cache response\n'
+                                 'Type              => Hard hit\n'
+                                 'Provider          => {0}\n'
+                                 'Channel number    => {1}\n'
+                                 'Segment file name => {2}'.format(provider, channel_number, segment_file_name))
                 else:
                     cache_response_type = CacheResponseType.SOFT_HIT
 
-                    logger.trace('Soft hit cache entry\n'
-                                 'Channel number    => {0}\n'
-                                 'Segment file name => {1}'.format(channel_number, segment_file_name))
+                    logger.trace('Cache response\n'
+                                 'Type              => Soft hit\n'
+                                 'Provider          => {0}\n'
+                                 'Channel number    => {1}\n'
+                                 'Segment file name => {2}'.format(provider, channel_number, segment_file_name))
             else:
                 cache_entry = None
                 cache_response_type = CacheResponseType.MISS
 
                 cache_bucket[segment_file_name] = CacheEntry()
 
+                logger.trace('Cache response\n'
+                             'Type              => Miss\n'
+                             'Provider          => {0}\n'
+                             'Channel number    => {1}\n'
+                             'Segment file name => {2}'.format(provider, channel_number, segment_file_name))
+
                 logger.trace('Created cache entry\n'
-                             'Channel number    => {0}\n'
-                             'Segment file name => {1}'.format(channel_number, segment_file_name))
+                             'Provider          => {0}\n'
+                             'Channel number    => {1}\n'
+                             'Segment file name => {2}'.format(provider, channel_number, segment_file_name))
         else:
             cache_entry = None
             cache_response_type = CacheResponseType.MISS
 
-            cls._cache[channel_number] = {}
-            cls._cache[channel_number][segment_file_name] = CacheEntry()
+            if provider not in cls._cache:
+                cls._cache[provider] = {}
+
+            cls._cache[provider][channel_number] = {}
+            cls._cache[provider][channel_number][segment_file_name] = CacheEntry()
 
             logger.trace('Created cache bucket & entry\n'
-                         'Channel number    => {0}\n'
-                         'Segment file name => {1}'.format(channel_number, segment_file_name))
-
-        logger.trace('Query cache\n'
-                     'Channel number    => {0}\n'
-                     'Segment file name => {1}\n'
-                     'Result            => {2}'.format(channel_number,
-                                                       segment_file_name,
-                                                       cache_response_type.value))
+                         'Provider          => {0}\n'
+                         'Channel number    => {1}\n'
+                         'Segment file name => {2}'.format(provider, channel_number, segment_file_name))
 
         if cache_response_type == CacheResponseType.MISS:
             if cls._cleanup_cache_timer is None:
@@ -179,19 +194,24 @@ class CacheManager():
         cls._initialize_class_variables()
 
     @classmethod
-    def query_cache(cls, channel_number, segment_file_name):
+    def query_cache(cls, provider, channel_number, segment_file_name):
         segment_file_content = None
 
         with cls._lock.reader_lock:
             if cls._do_cache_downloaded_segments:
-                cache_response = cls._query_cache(channel_number, segment_file_name)
+                logger.trace('Querying cache\n'
+                             'Provider          => {0}\n'
+                             'Channel number    => {1}\n'
+                             'Segment file name => {2}'.format(provider, channel_number, segment_file_name))
+
+                cache_response = cls._query_cache(provider, channel_number, segment_file_name)
 
                 if cache_response.response_type == CacheResponseType.HARD_HIT:
                     segment_file_content = cache_response.entry.segment_file_content
                 elif cache_response.response_type == CacheResponseType.SOFT_HIT:
                     cache_response.entry.primed_event.wait(CACHE_WAIT_TIME)
 
-                    cache_response = cls._query_cache(channel_number, segment_file_name)
+                    cache_response = cls._query_cache(provider, channel_number, segment_file_name)
 
                     if cache_response.response_type == CacheResponseType.HARD_HIT:
                         segment_file_content = cache_response.entry.segment_file_content
@@ -204,11 +224,11 @@ class CacheManager():
             cls._do_cache_downloaded_segments = do_cache_downloaded_segments
 
     @classmethod
-    def update_cache(cls, channel_number, segment_file_name, segment_file_content):
+    def update_cache(cls, provider, channel_number, segment_file_name, segment_file_content):
         with cls._lock.writer_lock:
             if cls._do_cache_downloaded_segments:
                 try:
-                    cache_bucket = cls._cache[channel_number]
+                    cache_bucket = cls._cache[provider][channel_number]
 
                     try:
                         cache_entry = cache_bucket[segment_file_name]
@@ -219,8 +239,8 @@ class CacheManager():
                 except KeyError:
                     cache_entry = CacheEntry()
 
-                    cls._cache[channel_number] = {}
-                    cls._cache[channel_number][segment_file_name] = cache_entry
+                    cls._cache[provider][channel_number] = {}
+                    cls._cache[provider][channel_number][segment_file_name] = cache_entry
 
                 cache_entry.segment_file_content = segment_file_content
 
@@ -233,9 +253,11 @@ class CacheManager():
                     cls._cleanup_cache_timer.start()
 
                 logger.trace('Updated cache entry\n'
-                             'Channel number     => {0}\n'
-                             'Segment file name  => {1}\n'
-                             'Expiry date & time => {2}'.format(channel_number,
+                             'Provider           => {0}\n'
+                             'Channel number     => {1}\n'
+                             'Segment file name  => {2}\n'
+                             'Expiry date & time => {3}'.format(provider,
+                                                                channel_number,
                                                                 segment_file_name,
                                                                 cache_entry.expiry_date_time_in_utc))
 

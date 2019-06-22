@@ -39,6 +39,11 @@ class Provider(ABC):
         pass
 
     @classmethod
+    @abstractmethod
+    def _initialize_class_variables(cls):
+        pass
+
+    @classmethod
     def _reduce_hls_stream_delay(cls, chunks_m3u8, client_uuid, channel_number, number_of_segments_to_keep=3):
         do_reduce_hls_stream_delay = False
 
@@ -273,6 +278,8 @@ class Provider(ABC):
     @classmethod
     def initialize(cls, **kwargs):
         try:
+            cls._initialize_class_variables()
+
             cls._initialize(**kwargs)
         finally:
             if 'event' in kwargs:

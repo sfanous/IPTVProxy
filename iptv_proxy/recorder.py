@@ -541,12 +541,14 @@ class RecordingThread(Thread):
 
                     if segment_file_name not in downloaded_segment_file_names:
                         try:
-                            ts_file_content = CacheManager.query_cache(self._recording.channel_number,
+                            ts_file_content = CacheManager.query_cache(self._recording.provider.lower(),
+                                                                       self._recording.channel_number,
                                                                        segment_file_name.lower())
                             if ts_file_content is None:
                                 ts_file_content = hls_client.download_ts_file(segment_url)
 
-                                CacheManager.update_cache(self._recording.channel_number,
+                                CacheManager.update_cache(self._recording.provider.lower(),
+                                                          self._recording.channel_number,
                                                           segment_file_name.lower(),
                                                           ts_file_content)
 

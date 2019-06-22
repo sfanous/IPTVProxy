@@ -222,8 +222,15 @@ class ProvidersController():
     def initialize(cls):
         cls._initialize_providers_map_class()
 
-        for provider_name in cls._providers_map_class:
+        message_to_log = ['Supported IPTV providers']
+
+        for (i, provider_name) in enumerate(sorted(cls._providers_map_class)):
+            message_to_log.append('{0:02} - {1}'.format(
+                i + 1,
+                cls._providers_map_class[provider_name].constants_class().PROVIDER_NAME))
             cls._providers_map_class[provider_name].database_class().initialize()
+
+        logger.info('\n'.join(message_to_log))
 
         providers_controller_thread = Thread(target=cls._run)
         providers_controller_thread.daemon = True
