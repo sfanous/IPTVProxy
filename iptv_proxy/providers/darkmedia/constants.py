@@ -1,4 +1,6 @@
 class DarkMediaConstants(object):
+    __slots__ = []
+
     BASE_URL = 'http://watch.gotdark.com/'
     DB_FILE_NAME = 'darkmedia.db'
     DEFAULT_EPG_SOURCE = 'darkmedia'

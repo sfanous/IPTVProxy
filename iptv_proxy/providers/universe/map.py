@@ -17,6 +17,7 @@ class UniverseMap(ProviderMap):
     _database_class = None
     _epg_class = None
     _epg_source_enum = None
+    _html_template_engine_class = None
     _optional_settings_class = None
     _program_class = None
     _setting_class = None
@@ -35,18 +36,20 @@ class UniverseMap(ProviderMap):
         from iptv_proxy.providers.universe.db import UniverseDatabase
         from iptv_proxy.providers.universe.enums import UniverseEPGSource
         from iptv_proxy.providers.universe.epg import UniverseEPG
+        from iptv_proxy.providers.universe.html_template_engine import UniverseHTMLTemplateEngine
         from iptv_proxy.providers.universe.json_api import UniverseConfigurationJSONAPI
         from iptv_proxy.providers.universe.validations import UniverseValidations
 
         cls._api_class = Universe
         cls._channel_class = UniverseChannel
         cls._configuration_class = UniverseConfiguration
+        cls._configuration_json_api_class = UniverseConfigurationJSONAPI
         cls._constants_class = UniverseConstants
         cls._database_access_class = UniverseDatabaseAccess
         cls._database_class = UniverseDatabase
         cls._epg_class = UniverseEPG
         cls._epg_source_enum = UniverseEPGSource
-        cls._configuration_json_api_class = UniverseConfigurationJSONAPI
+        cls._html_template_engine_class = UniverseHTMLTemplateEngine
         cls._optional_settings_class = UniverseOptionalSettings
         cls._program_class = UniverseProgram
         cls._setting_class = UniverseSetting

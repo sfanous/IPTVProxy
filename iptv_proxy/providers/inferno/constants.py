@@ -1,4 +1,6 @@
 class InfernoConstants(object):
+    __slots__ = []
+
     BASE_URL = 'http://tvplanb.xyz:25461/'
     DB_FILE_NAME = 'inferno.db'
     DEFAULT_EPG_SOURCE = 'inferno'

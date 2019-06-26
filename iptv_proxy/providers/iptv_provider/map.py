@@ -14,6 +14,7 @@ class ProviderMap(ABC):
     _database_class = None
     _epg_class = None
     _epg_source_enum = None
+    _html_template_engine_class = None
     _optional_settings_class = None
     _program_class = None
     _setting_class = None
@@ -59,6 +60,10 @@ class ProviderMap(ABC):
     @classmethod
     def epg_source_enum(cls):
         return cls._epg_source_enum
+
+    @classmethod
+    def html_template_engine_class(cls):
+        return cls._html_template_engine_class
 
     @classmethod
     def optional_settings_class(cls):

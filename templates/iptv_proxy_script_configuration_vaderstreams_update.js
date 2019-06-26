@@ -1,0 +1,8 @@
+                                                                      'vaderstreams_enabled': _vaderStreamsEnabledCheckbox.is(':checked'),
+                                                                      'vaderstreams_server': _vaderStreamsServerSelect.val(),
+                                                                      'vaderstreams_username': _vaderStreamsUsernameInput.val(),
+                                                                      'vaderstreams_password': _vaderStreamsPasswordInput.val(),
+                                                                      'vaderstreams_playlist_protocol': _vaderStreamsPlaylistProtocolSelect.val(),
+                                                                      'vaderstreams_playlist_type': _vaderStreamsPlaylistTypeSelect.val(),
+                                                                      'vaderstreams_epg_source': _vaderStreamsEpgSourceSelect.val(),
+                                                                      'vaderstreams_epg_url': _vaderStreamsEpgUrlInput.val(),

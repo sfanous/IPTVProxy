@@ -975,6 +975,8 @@ class ProviderEPG(ABC):
 
 
 class XStreamCodesProviderEPG(ProviderEPG):
+    __slots__ = []
+
     @classmethod
     def _do_ignore_channel(cls, channel, channel_group_map, ignored_channels, ignored_m3u8_groups):
         for ignored_channels_regular_expression in ignored_channels['name']:
@@ -1456,7 +1458,7 @@ class XStreamCodesProviderEPG(ProviderEPG):
                                     complete_xmltv=program.format(minimal_xmltv=False),
                                     minimal_xmltv=program.format()))
                                 number_of_objects_added_to_db_session += 1
-                        except KeyError:
+                        except Exception:
                             pass
 
                         element.clear()

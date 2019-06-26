@@ -1,0 +1,11 @@
+        _{{ provider_name_camel_case }}ConfigurationButton = $('#{{ provider_name_camel_case }}ConfigurationButton');
+        _{{ provider_name_camel_case }}ConfigurationDiv = $('#{{ provider_name_camel_case }}ConfigurationDiv');
+        _{{ provider_name_camel_case }}EnabledCheckbox = $('#{{ provider_name_camel_case }}EnabledCheckbox');
+        _{{ provider_name_camel_case }}EpgSourceSelect = $('#{{ provider_name_camel_case }}EpgSourceSelect');
+        _{{ provider_name_camel_case }}EpgUrlLabel = $('#{{ provider_name_camel_case }}EpgUrlLabel');
+        _{{ provider_name_camel_case }}EpgUrlInput = $('#{{ provider_name_camel_case }}EpgUrlInput');
+        _{{ provider_name_camel_case }}PasswordInput = $('#{{ provider_name_camel_case }}PasswordInput');
+        _{{ provider_name_camel_case }}PlaylistProtocolSelect = $('#{{ provider_name_camel_case }}PlaylistProtocolSelect');
+        _{{ provider_name_camel_case }}PlaylistTypeSelect = $('#{{ provider_name_camel_case }}PlaylistTypeSelect');
+        _{{ provider_name_camel_case }}TogglePasswordSpan = $('#{{ provider_name_camel_case }}TogglePasswordSpan');
+        _{{ provider_name_camel_case }}UsernameInput = $('#{{ provider_name_camel_case }}UsernameInput');

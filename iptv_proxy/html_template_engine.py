@@ -20,6 +20,7 @@ from iptv_proxy.constants import TEMPLATES_BYTECODE_CACHE_DIRECTORY_PATH
 from iptv_proxy.constants import TEMPLATES_DIRECTORY_PATH
 from iptv_proxy.constants import VERSION
 from iptv_proxy.enums import RecordingStatus
+from iptv_proxy.providers import ProvidersController
 from iptv_proxy.recorder import PVR
 from iptv_proxy.utilities import Utility
 
@@ -172,378 +173,19 @@ class HTMLTemplateEngine(object):
             'configuration_server_hostname_loopback': self._configuration['SERVER_HOSTNAME_LOOPBACK'],
             'configuration_server_hostname_private': self._configuration['SERVER_HOSTNAME_PRIVATE'],
             'configuration_server_hostname_public': self._configuration['SERVER_HOSTNAME_PUBLIC'],
-            'configuration_beast_active':
-                'checked="checked"' if 'beast' in active_providers_map_class
-                else '',
-            'configuration_beast_username': '',
-            'configuration_beast_password': '',
-            'configuration_beast_playlist_protocol_hls_selected': '',
-            'configuration_beast_playlist_protocol_mpegts_selected': '',
-            'configuration_beast_playlist_type_dynamic_selected': '',
-            'configuration_beast_playlist_type_static_selected': '',
-            'configuration_beast_epg_source_beast_selected': '',
-            'configuration_beast_epg_source_other_selected': '',
-            'configuration_beast_epg_url': '',
-            'configuration_coolasice_active':
-                'checked="checked"' if 'coolasice' in active_providers_map_class
-                else '',
-            'configuration_coolasice_username': '',
-            'configuration_coolasice_password': '',
-            'configuration_coolasice_playlist_protocol_hls_selected': '',
-            'configuration_coolasice_playlist_protocol_mpegts_selected': '',
-            'configuration_coolasice_playlist_type_dynamic_selected': '',
-            'configuration_coolasice_playlist_type_static_selected': '',
-            'configuration_coolasice_epg_source_coolasice_selected': '',
-            'configuration_coolasice_epg_source_other_selected': '',
-            'configuration_coolasice_epg_url': '',
-            'configuration_crystalclear_active':
-                'checked="checked"' if 'crystalclear' in active_providers_map_class
-                else '',
-            'configuration_crystalclear_username': '',
-            'configuration_crystalclear_password': '',
-            'configuration_crystalclear_playlist_protocol_hls_selected': '',
-            'configuration_crystalclear_playlist_protocol_mpegts_selected': '',
-            'configuration_crystalclear_playlist_type_dynamic_selected': '',
-            'configuration_crystalclear_playlist_type_static_selected': '',
-            'configuration_crystalclear_epg_source_crystalclear_selected': '',
-            'configuration_crystalclear_epg_source_other_selected': '',
-            'configuration_crystalclear_epg_url': '',
-            'configuration_darkmedia_active':
-                'checked="checked"' if 'darkmedia' in active_providers_map_class
-                else '',
-            'configuration_darkmedia_username': '',
-            'configuration_darkmedia_password': '',
-            'configuration_darkmedia_playlist_protocol_hls_selected': '',
-            'configuration_darkmedia_playlist_protocol_mpegts_selected': '',
-            'configuration_darkmedia_playlist_type_dynamic_selected': '',
-            'configuration_darkmedia_playlist_type_static_selected': '',
-            'configuration_darkmedia_epg_source_darkmedia_selected': '',
-            'configuration_darkmedia_epg_source_other_selected': '',
-            'configuration_darkmedia_epg_url': '',
-            'configuration_helix_active':
-                'checked="checked"' if 'helix' in active_providers_map_class
-                else '',
-            'configuration_helix_username': '',
-            'configuration_helix_password': '',
-            'configuration_helix_playlist_protocol_hls_selected': '',
-            'configuration_helix_playlist_protocol_mpegts_selected': '',
-            'configuration_helix_playlist_type_dynamic_selected': '',
-            'configuration_helix_playlist_type_static_selected': '',
-            'configuration_helix_epg_source_helix_selected': '',
-            'configuration_helix_epg_source_other_selected': '',
-            'configuration_helix_epg_url': '',
-            'configuration_inferno_active':
-                'checked="checked"' if 'inferno' in active_providers_map_class
-                else '',
-            'configuration_inferno_username': '',
-            'configuration_inferno_password': '',
-            'configuration_inferno_playlist_protocol_hls_selected': '',
-            'configuration_inferno_playlist_protocol_mpegts_selected': '',
-            'configuration_inferno_playlist_type_dynamic_selected': '',
-            'configuration_inferno_playlist_type_static_selected': '',
-            'configuration_inferno_epg_source_inferno_selected': '',
-            'configuration_inferno_epg_source_other_selected': '',
-            'configuration_inferno_epg_url': '',
-            'configuration_king_active':
-                'checked="checked"' if 'king' in active_providers_map_class
-                else '',
-            'configuration_king_username': '',
-            'configuration_king_password': '',
-            'configuration_king_playlist_protocol_hls_selected': '',
-            'configuration_king_playlist_protocol_mpegts_selected': '',
-            'configuration_king_playlist_type_dynamic_selected': '',
-            'configuration_king_playlist_type_static_selected': '',
-            'configuration_king_epg_source_king_selected': '',
-            'configuration_king_epg_source_other_selected': '',
-            'configuration_king_epg_url': '',
-            'configuration_smoothstreams_active':
-                'checked="checked"' if 'smoothstreams' in active_providers_map_class
-                else '',
-            'configuration_view247_selected': '',
-            'configuration_viewmmasr_selected': '',
-            'configuration_viewss_selected': '',
-            'configuration_viewstvn_selected': '',
-            'configuration_dap_selected': '',
-            'configuration_deu_selected': '',
-            'configuration_dna_selected': '',
-            'configuration_deu_de_selected': '',
-            'configuration_deu_nl_selected': '',
-            'configuration_deu_uk_selected': '',
-            'configuration_dnae_selected': '',
-            'configuration_dnaw_selected': '',
-            'configuration_deu_nl1_selected': '',
-            'configuration_deu_nl2_selected': '',
-            'configuration_deu_nl3_selected': '',
-            'configuration_deu_nl4_selected': '',
-            'configuration_deu_nl5_selected': '',
-            'configuration_deu_uk1_selected': '',
-            'configuration_deu_uk2_selected': '',
-            'configuration_dnae1_selected': '',
-            'configuration_dnae2_selected': '',
-            'configuration_dnae3_selected': '',
-            'configuration_dnae4_selected': '',
-            'configuration_dnae6_selected': '',
-            'configuration_dnaw1_selected': '',
-            'configuration_dnaw2_selected': '',
-            'configuration_dnaw3_selected': '',
-            'configuration_dnaw4_selected': '',
-            'configuration_smoothstreams_username': '',
-            'configuration_smoothstreams_password': '',
-            'configuration_smoothstreams_playlist_protocol_hls_selected': '',
-            'configuration_smoothstreams_playlist_protocol_rtmp_selected': '',
-            'configuration_smoothstreams_playlist_type_dynamic_selected': '',
-            'configuration_smoothstreams_playlist_type_static_selected': '',
-            'configuration_smoothstreams_epg_source_smoothstreams_selected': '',
-            'configuration_smoothstreams_epg_source_fog_selected': '',
-            'configuration_smoothstreams_epg_source_other_selected': '',
-            'configuration_smoothstreams_epg_url': '',
-            'configuration_universe_active':
-                'checked="checked"' if 'universe' in active_providers_map_class
-                else '',
-            'configuration_universe_username': '',
-            'configuration_universe_password': '',
-            'configuration_universe_playlist_protocol_hls_selected': '',
-            'configuration_universe_playlist_protocol_mpegts_selected': '',
-            'configuration_universe_playlist_type_dynamic_selected': '',
-            'configuration_universe_playlist_type_static_selected': '',
-            'configuration_universe_epg_source_universe_selected': '',
-            'configuration_universe_epg_source_other_selected': '',
-            'configuration_universe_epg_url': '',
-            'configuration_vaderstreams_active':
-                'checked="checked"' if 'vaderstreams' in active_providers_map_class
-                else '',
-            'configuration_vaderstreams_username': '',
-            'configuration_vaderstreams_password': '',
-            'configuration_vaderstreams_playlist_protocol_hls_selected': '',
-            'configuration_vaderstreams_playlist_protocol_mpegts_selected': '',
-            'configuration_vaderstreams_playlist_type_dynamic_selected': '',
-            'configuration_vaderstreams_playlist_type_static_selected': '',
-            'configuration_vaderstreams_epg_source_vaderstreams_selected': '',
-            'configuration_vaderstreams_epg_source_other_selected': '',
-            'configuration_vaderstreams_epg_url': ''
+            'configuration_providers': self._render_configuration_providers_templates(active_providers_map_class)
         }
 
-        if 'BEAST_USERNAME' in self._configuration:
-            configuration_div_template_fields['configuration_beast_username'] = self._configuration['BEAST_USERNAME']
-        if 'BEAST_PASSWORD' in self._configuration:
-            configuration_div_template_fields['configuration_beast_password'] = self._configuration['BEAST_PASSWORD']
-        if 'BEAST_PLAYLIST_PROTOCOL' in self._configuration:
-            configuration_div_template_fields['configuration_beast_playlist_protocol_{0}_selected'.format(
-                self._configuration['BEAST_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
-        if 'BEAST_PLAYLIST_TYPE' in self._configuration:
-            configuration_div_template_fields['configuration_beast_playlist_type_{0}_selected'.format(
-                self._configuration['BEAST_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
-        if 'BEAST_EPG_SOURCE' in self._configuration:
-            configuration_div_template_fields['configuration_beast_epg_source_{0}_selected'.format(
-                self._configuration['BEAST_EPG_SOURCE'].lower())] = 'selected="selected" '
-        if 'BEAST_EPG_URL' in self._configuration:
-            if self._configuration['BEAST_EPG_URL'] is None:
-                configuration_div_template_fields['configuration_beast_epg_url'] = ''
-            else:
-                configuration_div_template_fields['configuration_beast_epg_url'] = self._configuration['BEAST_EPG_URL']
-
-        if 'COOLASICE_USERNAME' in self._configuration:
-            configuration_div_template_fields['configuration_coolasice_username'] = self._configuration[
-                'COOLASICE_USERNAME']
-        if 'COOLASICE_PASSWORD' in self._configuration:
-            configuration_div_template_fields['configuration_coolasice_password'] = self._configuration[
-                'COOLASICE_PASSWORD']
-        if 'COOLASICE_PLAYLIST_PROTOCOL' in self._configuration:
-            configuration_div_template_fields['configuration_coolasice_playlist_protocol_{0}_selected'.format(
-                self._configuration['COOLASICE_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
-        if 'COOLASICE_PLAYLIST_TYPE' in self._configuration:
-            configuration_div_template_fields['configuration_coolasice_playlist_type_{0}_selected'.format(
-                self._configuration['COOLASICE_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
-        if 'COOLASICE_EPG_SOURCE' in self._configuration:
-            configuration_div_template_fields['configuration_coolasice_epg_source_{0}_selected'.format(
-                self._configuration['COOLASICE_EPG_SOURCE'].lower())] = 'selected="selected" '
-        if 'COOLASICE_EPG_URL' in self._configuration:
-            if self._configuration['COOLASICE_EPG_URL'] is None:
-                configuration_div_template_fields['configuration_coolasice_epg_url'] = ''
-            else:
-                configuration_div_template_fields['configuration_coolasice_epg_url'] = self._configuration[
-                    'COOLASICE_EPG_URL']
-
-        if 'CRYSTALCLEAR_USERNAME' in self._configuration:
-            configuration_div_template_fields['configuration_crystalclear_username'] = self._configuration[
-                'CRYSTALCLEAR_USERNAME']
-        if 'CRYSTALCLEAR_PASSWORD' in self._configuration:
-            configuration_div_template_fields['configuration_crystalclear_password'] = self._configuration[
-                'CRYSTALCLEAR_PASSWORD']
-        if 'CRYSTALCLEAR_PLAYLIST_PROTOCOL' in self._configuration:
-            configuration_div_template_fields['configuration_crystalclear_playlist_protocol_{0}_selected'.format(
-                self._configuration['CRYSTALCLEAR_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
-        if 'CRYSTALCLEAR_PLAYLIST_TYPE' in self._configuration:
-            configuration_div_template_fields['configuration_crystalclear_playlist_type_{0}_selected'.format(
-                self._configuration['CRYSTALCLEAR_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
-        if 'CRYSTALCLEAR_EPG_SOURCE' in self._configuration:
-            configuration_div_template_fields['configuration_crystalclear_epg_source_{0}_selected'.format(
-                self._configuration['CRYSTALCLEAR_EPG_SOURCE'].lower())] = 'selected="selected" '
-        if 'CRYSTALCLEAR_EPG_URL' in self._configuration:
-            if self._configuration['CRYSTALCLEAR_EPG_URL'] is None:
-                configuration_div_template_fields['configuration_crystalclear_epg_url'] = ''
-            else:
-                configuration_div_template_fields['configuration_crystalclear_epg_url'] = self._configuration[
-                    'CRYSTALCLEAR_EPG_URL']
-
-        if 'DARKMEDIA_USERNAME' in self._configuration:
-            configuration_div_template_fields['configuration_darkmedia_username'] = self._configuration[
-                'DARKMEDIA_USERNAME']
-        if 'DARKMEDIA_PASSWORD' in self._configuration:
-            configuration_div_template_fields['configuration_darkmedia_password'] = self._configuration[
-                'DARKMEDIA_PASSWORD']
-        if 'DARKMEDIA_PLAYLIST_PROTOCOL' in self._configuration:
-            configuration_div_template_fields['configuration_darkmedia_playlist_protocol_{0}_selected'.format(
-                self._configuration['DARKMEDIA_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
-        if 'DARKMEDIA_PLAYLIST_TYPE' in self._configuration:
-            configuration_div_template_fields['configuration_darkmedia_playlist_type_{0}_selected'.format(
-                self._configuration['DARKMEDIA_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
-        if 'DARKMEDIA_EPG_SOURCE' in self._configuration:
-            configuration_div_template_fields['configuration_darkmedia_epg_source_{0}_selected'.format(
-                self._configuration['DARKMEDIA_EPG_SOURCE'].lower())] = 'selected="selected" '
-        if 'DARKMEDIA_EPG_URL' in self._configuration:
-            if self._configuration['DARKMEDIA_EPG_URL'] is None:
-                configuration_div_template_fields['configuration_darkmedia_epg_url'] = ''
-            else:
-                configuration_div_template_fields['configuration_darkmedia_epg_url'] = self._configuration[
-                    'DARKMEDIA_EPG_URL']
-
-        if 'HELIX_USERNAME' in self._configuration:
-            configuration_div_template_fields['configuration_helix_username'] = self._configuration['HELIX_USERNAME']
-        if 'HELIX_PASSWORD' in self._configuration:
-            configuration_div_template_fields['configuration_helix_password'] = self._configuration['HELIX_PASSWORD']
-        if 'HELIX_PLAYLIST_PROTOCOL' in self._configuration:
-            configuration_div_template_fields['configuration_helix_playlist_protocol_{0}_selected'.format(
-                self._configuration['HELIX_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
-        if 'HELIX_PLAYLIST_TYPE' in self._configuration:
-            configuration_div_template_fields['configuration_helix_playlist_type_{0}_selected'.format(
-                self._configuration['HELIX_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
-        if 'HELIX_EPG_SOURCE' in self._configuration:
-            configuration_div_template_fields['configuration_helix_epg_source_{0}_selected'.format(
-                self._configuration['HELIX_EPG_SOURCE'].lower())] = 'selected="selected" '
-        if 'HELIX_EPG_URL' in self._configuration:
-            if self._configuration['HELIX_EPG_URL'] is None:
-                configuration_div_template_fields['configuration_helix_epg_url'] = ''
-            else:
-                configuration_div_template_fields['configuration_helix_epg_url'] = self._configuration['HELIX_EPG_URL']
-
-        if 'INFERNO_USERNAME' in self._configuration:
-            configuration_div_template_fields['configuration_inferno_username'] = self._configuration[
-                'INFERNO_USERNAME']
-        if 'INFERNO_PASSWORD' in self._configuration:
-            configuration_div_template_fields['configuration_inferno_password'] = self._configuration[
-                'INFERNO_PASSWORD']
-        if 'INFERNO_PLAYLIST_PROTOCOL' in self._configuration:
-            configuration_div_template_fields['configuration_inferno_playlist_protocol_{0}_selected'.format(
-                self._configuration['INFERNO_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
-        if 'INFERNO_PLAYLIST_TYPE' in self._configuration:
-            configuration_div_template_fields['configuration_inferno_playlist_type_{0}_selected'.format(
-                self._configuration['INFERNO_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
-        if 'INFERNO_EPG_SOURCE' in self._configuration:
-            configuration_div_template_fields['configuration_inferno_epg_source_{0}_selected'.format(
-                self._configuration['INFERNO_EPG_SOURCE'].lower())] = 'selected="selected" '
-        if 'INFERNO_EPG_URL' in self._configuration:
-            if self._configuration['INFERNO_EPG_URL'] is None:
-                configuration_div_template_fields['configuration_inferno_epg_url'] = ''
-            else:
-                configuration_div_template_fields['configuration_inferno_epg_url'] = self._configuration[
-                    'INFERNO_EPG_URL']
-
-        if 'KING_USERNAME' in self._configuration:
-            configuration_div_template_fields['configuration_king_username'] = self._configuration['KING_USERNAME']
-        if 'KING_PASSWORD' in self._configuration:
-            configuration_div_template_fields['configuration_king_password'] = self._configuration['KING_PASSWORD']
-        if 'KING_PLAYLIST_PROTOCOL' in self._configuration:
-            configuration_div_template_fields['configuration_king_playlist_protocol_{0}_selected'.format(
-                self._configuration['KING_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
-        if 'KING_PLAYLIST_TYPE' in self._configuration:
-            configuration_div_template_fields['configuration_king_playlist_type_{0}_selected'.format(
-                self._configuration['KING_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
-        if 'KING_EPG_SOURCE' in self._configuration:
-            configuration_div_template_fields['configuration_king_epg_source_{0}_selected'.format(
-                self._configuration['KING_EPG_SOURCE'].lower())] = 'selected="selected" '
-        if 'KING_EPG_URL' in self._configuration:
-            if self._configuration['KING_EPG_URL'] is None:
-                configuration_div_template_fields['configuration_king_epg_url'] = ''
-            else:
-                configuration_div_template_fields['configuration_king_epg_url'] = self._configuration['KING_EPG_URL']
-
-        if 'SMOOTHSTREAMS_SERVICE' in self._configuration:
-            configuration_div_template_fields['configuration_{0}_selected'.format(
-                self._configuration['SMOOTHSTREAMS_SERVICE'].lower())] = 'selected="selected" '
-        if 'SMOOTHSTREAMS_SERVER' in self._configuration:
-            configuration_div_template_fields['configuration_{0}_selected'.format(
-                self._configuration['SMOOTHSTREAMS_SERVER'].lower().replace('-', '_'))] = 'selected="selected" '
-        if 'SMOOTHSTREAMS_USERNAME' in self._configuration:
-            configuration_div_template_fields['configuration_smoothstreams_username'] = self._configuration[
-                'SMOOTHSTREAMS_USERNAME']
-        if 'SMOOTHSTREAMS_PASSWORD' in self._configuration:
-            configuration_div_template_fields['configuration_smoothstreams_password'] = self._configuration[
-                'SMOOTHSTREAMS_PASSWORD']
-        if 'SMOOTHSTREAMS_PLAYLIST_PROTOCOL' in self._configuration:
-            configuration_div_template_fields['configuration_smoothstreams_playlist_protocol_{0}_selected'.format(
-                self._configuration['SMOOTHSTREAMS_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
-        if 'SMOOTHSTREAMS_PLAYLIST_TYPE' in self._configuration:
-            configuration_div_template_fields['configuration_smoothstreams_playlist_type_{0}_selected'.format(
-                self._configuration['SMOOTHSTREAMS_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
-        if 'SMOOTHSTREAMS_EPG_SOURCE' in self._configuration:
-            configuration_div_template_fields['configuration_smoothstreams_epg_source_{0}_selected'.format(
-                self._configuration['SMOOTHSTREAMS_EPG_SOURCE'].lower())] = 'selected="selected" '
-        if 'SMOOTHSTREAMS_EPG_URL' in self._configuration:
-            if self._configuration['SMOOTHSTREAMS_EPG_URL'] is None:
-                configuration_div_template_fields['configuration_smoothstreams_epg_url'] = ''
-            else:
-                configuration_div_template_fields['configuration_smoothstreams_epg_url'] = self._configuration[
-                    'SMOOTHSTREAMS_EPG_URL']
-
-        if 'UNIVERSE_USERNAME' in self._configuration:
-            configuration_div_template_fields['configuration_universe_username'] = self._configuration[
-                'UNIVERSE_USERNAME']
-        if 'UNIVERSE_PASSWORD' in self._configuration:
-            configuration_div_template_fields['configuration_universe_password'] = self._configuration[
-                'UNIVERSE_PASSWORD']
-        if 'UNIVERSE_PLAYLIST_PROTOCOL' in self._configuration:
-            configuration_div_template_fields['configuration_universe_playlist_protocol_{0}_selected'.format(
-                self._configuration['UNIVERSE_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
-        if 'UNIVERSE_PLAYLIST_TYPE' in self._configuration:
-            configuration_div_template_fields['configuration_universe_playlist_type_{0}_selected'.format(
-                self._configuration['UNIVERSE_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
-        if 'UNIVERSE_EPG_SOURCE' in self._configuration:
-            configuration_div_template_fields['configuration_universe_epg_source_{0}_selected'.format(
-                self._configuration['UNIVERSE_EPG_SOURCE'].lower())] = 'selected="selected" '
-        if 'UNIVERSE_EPG_URL' in self._configuration:
-            if self._configuration['UNIVERSE_EPG_URL'] is None:
-                configuration_div_template_fields['configuration_universe_epg_url'] = ''
-            else:
-                configuration_div_template_fields['configuration_universe_epg_url'] = self._configuration[
-                    'UNIVERSE_EPG_URL']
-
-        if 'VADERSTREAMS_SERVER' in self._configuration:
-            configuration_div_template_fields['configuration_{0}_selected'.format(
-                self._configuration['VADERSTREAMS_SERVER'].lower().replace('-', '_'))] = 'selected="selected" '
-        if 'VADERSTREAMS_USERNAME' in self._configuration:
-            configuration_div_template_fields['configuration_vaderstreams_username'] = self._configuration[
-                'VADERSTREAMS_USERNAME']
-        if 'VADERSTREAMS_PASSWORD' in self._configuration:
-            configuration_div_template_fields['configuration_vaderstreams_password'] = self._configuration[
-                'VADERSTREAMS_PASSWORD']
-        if 'VADERSTREAMS_PLAYLIST_PROTOCOL' in self._configuration:
-            configuration_div_template_fields['configuration_vaderstreams_playlist_protocol_{0}_selected'.format(
-                self._configuration['VADERSTREAMS_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
-        if 'VADERSTREAMS_PLAYLIST_TYPE' in self._configuration:
-            configuration_div_template_fields['configuration_vaderstreams_playlist_type_{0}_selected'.format(
-                self._configuration['VADERSTREAMS_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
-        if 'VADERSTREAMS_EPG_SOURCE' in self._configuration:
-            configuration_div_template_fields['configuration_vaderstreams_epg_source_{0}_selected'.format(
-                self._configuration['VADERSTREAMS_EPG_SOURCE'].lower())] = 'selected="selected" '
-        if 'VADERSTREAMS_EPG_URL' in self._configuration:
-            if self._configuration['VADERSTREAMS_EPG_URL'] is None:
-                configuration_div_template_fields['configuration_vaderstreams_epg_url'] = ''
-            else:
-                configuration_div_template_fields['configuration_vaderstreams_epg_url'] = self._configuration[
-                    'VADERSTREAMS_EPG_URL']
-
         return configuration_div_template.render(configuration_div_template_fields)
+
+    def _render_configuration_providers_templates(self, active_providers_map_class):
+        providers_html = {}
+
+        for (provider_name, provider_map_class) in ProvidersController.get_providers_map_class().items():
+            providers_html.update(provider_map_class.html_template_engine_class().render_configuration_template(
+                self._environment, self._configuration, active_providers_map_class))
+
+        return '\n'.join([providers_html[provider_name] for provider_name in sorted(providers_html)])
 
     def _render_date_li_template(self, date_li_id_prefix, date_li_id_suffix, date_li_h2_text):
         date_li_template = self._environment.get_template('date_li.html')
@@ -774,15 +416,103 @@ class HTMLTemplateEngine(object):
         iptv_proxy_script_template = self._environment.get_template('iptv_proxy_script.js')
 
         iptv_proxy_script_template_fields = {
+            'providers': sorted(ProvidersController.get_providers_map_class()),
             'authorization_basic_password': '{0}'.format(
                 base64.b64encode(':{0}'.format(
                     self._configuration['SERVER_PASSWORD']).encode()).decode()) if authorization_required
             else '',
+            'configuration_declarations': self._render_iptv_proxy_script_configuration_declarations_template(),
+            'configuration_clear': self._render_iptv_proxy_script_configuration_clear_template(),
+            'configuration_init_declarations': self._render_iptv_proxy_script_configuration_init_template(),
+            'configuration_reset': self._render_iptv_proxy_script_configuration_reset_template(),
+            'configuration_toggle_password': self._render_iptv_proxy_script_configuration_toggle_password_template(),
+            'configuration_update': self._render_iptv_proxy_script_configuration_update_template(),
             'last_selected_guide_number_of_days': guide_number_of_days,
             'last_selected_streaming_protocol': streaming_protocol
         }
 
         return iptv_proxy_script_template.render(iptv_proxy_script_template_fields)
+
+    def _render_iptv_proxy_script_configuration_clear_template(self):
+        iptv_proxy_script_configuration_clear_template = self._environment.get_template(
+            'iptv_proxy_script_configuration_clear.js')
+
+        iptv_proxy_script_configuration_clear = iptv_proxy_script_configuration_clear_template.render().split('\n')
+
+        for provider_map_class in ProvidersController.get_providers_map_class().values():
+            iptv_proxy_script_configuration_clear.extend(
+                provider_map_class.html_template_engine_class().render_iptv_proxy_script_configuration_clear_template(
+                    self._environment))
+
+        return '\n'.join(sorted(iptv_proxy_script_configuration_clear))
+
+    def _render_iptv_proxy_script_configuration_declarations_template(self):
+        iptv_proxy_script_configuration_declarations_template = self._environment.get_template(
+            'iptv_proxy_script_configuration_declarations.js')
+
+        iptv_proxy_script_configuration_declarations = \
+            iptv_proxy_script_configuration_declarations_template.render().split('\n')
+
+        for provider_map_class in ProvidersController.get_providers_map_class().values():
+            iptv_proxy_script_configuration_declarations.extend(
+                provider_map_class.html_template_engine_class().render_iptv_proxy_script_configuration_declarations_template(
+                    self._environment))
+
+        return '\n'.join(sorted(iptv_proxy_script_configuration_declarations))
+
+    def _render_iptv_proxy_script_configuration_init_template(self):
+        iptv_proxy_script_configuration_init_template = self._environment.get_template(
+            'iptv_proxy_script_configuration_init.js')
+
+        iptv_proxy_script_configuration_init = iptv_proxy_script_configuration_init_template.render().split('\n')
+
+        for provider_map_class in ProvidersController.get_providers_map_class().values():
+            iptv_proxy_script_configuration_init.extend(
+                provider_map_class.html_template_engine_class().render_iptv_proxy_script_configuration_init_template(
+                    self._environment))
+
+        return '\n'.join(sorted(iptv_proxy_script_configuration_init))
+
+    def _render_iptv_proxy_script_configuration_reset_template(self):
+        iptv_proxy_script_configuration_reset_template = self._environment.get_template(
+            'iptv_proxy_script_configuration_reset.js')
+
+        iptv_proxy_script_configuration_reset = iptv_proxy_script_configuration_reset_template.render().split('\n')
+
+        for provider_map_class in ProvidersController.get_providers_map_class().values():
+            iptv_proxy_script_configuration_reset.extend(
+                provider_map_class.html_template_engine_class().render_iptv_proxy_script_configuration_reset_template(
+                    self._environment))
+
+        return '\n'.join(sorted(iptv_proxy_script_configuration_reset))
+        return '\n'.join(sorted(iptv_proxy_script_configuration_reset))
+
+    def _render_iptv_proxy_script_configuration_toggle_password_template(self):
+        iptv_proxy_script_configuration_toggle_password_template = self._environment.get_template(
+            'iptv_proxy_script_configuration_toggle_password.js')
+
+        iptv_proxy_script_configuration_toggle_password = [
+            iptv_proxy_script_configuration_toggle_password_template.render()]
+
+        for provider_map_class in ProvidersController.get_providers_map_class().values():
+            iptv_proxy_script_configuration_toggle_password.append(
+                provider_map_class.html_template_engine_class().render_iptv_proxy_script_configuration_toggle_password_template(
+                    self._environment))
+
+        return ' else '.join(sorted(iptv_proxy_script_configuration_toggle_password))
+
+    def _render_iptv_proxy_script_configuration_update_template(self):
+        iptv_proxy_script_configuration_update_template = self._environment.get_template(
+            'iptv_proxy_script_configuration_update.js')
+
+        iptv_proxy_script_configuration_update = iptv_proxy_script_configuration_update_template.render().split('\n')
+
+        for provider_map_class in ProvidersController.get_providers_map_class().values():
+            iptv_proxy_script_configuration_update.extend(
+                provider_map_class.html_template_engine_class().render_iptv_proxy_script_configuration_update_template(
+                    self._environment))
+
+        return '\n'.join(sorted(iptv_proxy_script_configuration_update))[:-1]
 
     def _render_navigation_bar_div_template(self, guide_provider, guide_group, active_providers_map_class):
         navigation_bar_div_template = self._environment.get_template('navigation_bar_div.html')

@@ -1,0 +1,6 @@
+                                                                      'server_password': _serverPasswordInput.val(),
+                                                                      'server_http_port': _serverHttpPortInput.val(),
+                                                                      'server_https_port': _serverHttpsPortInput.val(),
+                                                                      'server_hostname_loopback': _serverHostnameLoopbackInput.val(),
+                                                                      'server_hostname_private': _serverHostnamePrivateInput.val(),
+                                                                      'server_hostname_public': _serverHostnamePublicInput.val(),

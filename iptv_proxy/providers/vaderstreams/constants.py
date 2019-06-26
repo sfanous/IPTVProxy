@@ -1,4 +1,6 @@
 class VaderStreamsConstants(object):
+    __slots__ = []
+
     BASE_URL = 'http://vapi.vaders.tv/'
     CATEGORIES_JSON_FILE_NAME = 'categories.json'
     CATEGORIES_PATH = 'epg/categories'

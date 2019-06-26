@@ -17,6 +17,7 @@ class BeastMap(ProviderMap):
     _database_class = None
     _epg_class = None
     _epg_source_enum = None
+    _html_template_engine_class = None
     _optional_settings_class = None
     _program_class = None
     _setting_class = None
@@ -35,18 +36,20 @@ class BeastMap(ProviderMap):
         from iptv_proxy.providers.beast.db import BeastDatabase
         from iptv_proxy.providers.beast.enums import BeastEPGSource
         from iptv_proxy.providers.beast.epg import BeastEPG
+        from iptv_proxy.providers.beast.html_template_engine import BeastHTMLTemplateEngine
         from iptv_proxy.providers.beast.json_api import BeastConfigurationJSONAPI
         from iptv_proxy.providers.beast.validations import BeastValidations
 
         cls._api_class = Beast
         cls._channel_class = BeastChannel
         cls._configuration_class = BeastConfiguration
+        cls._configuration_json_api_class = BeastConfigurationJSONAPI
         cls._constants_class = BeastConstants
         cls._database_access_class = BeastDatabaseAccess
         cls._database_class = BeastDatabase
         cls._epg_class = BeastEPG
         cls._epg_source_enum = BeastEPGSource
-        cls._configuration_json_api_class = BeastConfigurationJSONAPI
+        cls._html_template_engine_class = BeastHTMLTemplateEngine
         cls._optional_settings_class = BeastOptionalSettings
         cls._program_class = BeastProgram
         cls._setting_class = BeastSetting

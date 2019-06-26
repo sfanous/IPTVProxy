@@ -21,37 +21,59 @@ class ProviderConfigurationJSONAPI(object):
         provider_configuration = {}
 
         if 'service' in provider_configuration_schema['Provider']:
-            provider_configuration['{0}_service'.format(cls._provider_name)] = configuration['{0}_SERVICE'.format(
-                configuration_parameter_name_prefix)]
+            if '{0}_SERVICE'.format(configuration_parameter_name_prefix) in configuration:
+                provider_configuration['{0}_service'.format(cls._provider_name)] = configuration['{0}_SERVICE'.format(
+                    configuration_parameter_name_prefix)]
+            else:
+                provider_configuration['{0}_service'.format(cls._provider_name)] = ''
 
         if 'server' in provider_configuration_schema['Provider']:
-            provider_configuration['{0}_server'.format(cls._provider_name)] = configuration['{0}_SERVER'.format(
-                configuration_parameter_name_prefix)]
+            if '{0}_SERVER'.format(configuration_parameter_name_prefix) in configuration:
+                provider_configuration['{0}_server'.format(cls._provider_name)] = configuration['{0}_SERVER'.format(
+                    configuration_parameter_name_prefix)]
+            else:
+                provider_configuration['{0}_server'.format(cls._provider_name)] = ''
 
         if 'username' in provider_configuration_schema['Provider']:
-            provider_configuration['{0}_username'.format(cls._provider_name)] = configuration['{0}_USERNAME'.format(
-                configuration_parameter_name_prefix)]
+            if '{0}_USERNAME'.format(configuration_parameter_name_prefix) in configuration:
+                provider_configuration['{0}_username'.format(cls._provider_name)] = configuration['{0}_USERNAME'.format(
+                    configuration_parameter_name_prefix)]
+            else:
+                provider_configuration['{0}_username'.format(cls._provider_name)] = ''
 
         if 'password' in provider_configuration_schema['Provider']:
-            provider_configuration['{0}_password'.format(cls._provider_name)] = configuration['{0}_PASSWORD'.format(
-                configuration_parameter_name_prefix)]
+            if '{0}_PASSWORD'.format(configuration_parameter_name_prefix) in configuration:
+                provider_configuration['{0}_password'.format(cls._provider_name)] = configuration['{0}_PASSWORD'.format(
+                    configuration_parameter_name_prefix)]
+            else:
+                provider_configuration['{0}_password'.format(cls._provider_name)] = ''
 
         if 'Playlist' in provider_configuration_schema:
             if 'protocol' in provider_configuration_schema['Playlist']:
-                provider_configuration['{0}_playlist_protocol'.format(cls._provider_name)] = \
-                    configuration['{0}_PLAYLIST_PROTOCOL'.format(configuration_parameter_name_prefix)]
+                if '{0}_PLAYLIST_PROTOCOL'.format(configuration_parameter_name_prefix) in configuration:
+                    provider_configuration['{0}_playlist_protocol'.format(cls._provider_name)] = \
+                        configuration['{0}_PLAYLIST_PROTOCOL'.format(configuration_parameter_name_prefix)]
+                else:
+                    provider_configuration['{0}_playlist_protocol'.format(cls._provider_name)] = ''
 
             if 'type' in provider_configuration_schema['Playlist']:
-                provider_configuration['{0}_playlist_type'.format(cls._provider_name)] = \
-                    configuration['{0}_PLAYLIST_TYPE'.format(configuration_parameter_name_prefix)]
+                if '{0}_PLAYLIST_TYPE'.format(configuration_parameter_name_prefix) in configuration:
+                    provider_configuration['{0}_playlist_type'.format(cls._provider_name)] = \
+                        configuration['{0}_PLAYLIST_TYPE'.format(configuration_parameter_name_prefix)]
+                else:
+                    provider_configuration['{0}_playlist_type'.format(cls._provider_name)] = ''
 
         if 'EPG' in provider_configuration_schema:
             if 'source' in provider_configuration_schema['EPG']:
-                provider_configuration['{0}_epg_source'.format(cls._provider_name)] = \
-                    configuration['{0}_EPG_SOURCE'.format(configuration_parameter_name_prefix)]
+                if '{0}_EPG_SOURCE'.format(configuration_parameter_name_prefix) in configuration:
+                    provider_configuration['{0}_epg_source'.format(cls._provider_name)] = \
+                        configuration['{0}_EPG_SOURCE'.format(configuration_parameter_name_prefix)]
+                else:
+                    provider_configuration['{0}_epg_source'.format(cls._provider_name)] = ''
 
             if 'url' in provider_configuration_schema['EPG']:
-                if configuration['{0}_EPG_URL'.format(configuration_parameter_name_prefix)] is not None:
+                if '{0}_EPG_URL'.format(configuration_parameter_name_prefix) in configuration and \
+                        configuration['{0}_EPG_URL'.format(configuration_parameter_name_prefix)] is not None:
                     provider_configuration['{0}_epg_url'.format(cls._provider_name)] = \
                         configuration['{0}_EPG_URL'.format(configuration_parameter_name_prefix)]
                 else:

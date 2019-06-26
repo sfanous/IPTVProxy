@@ -17,6 +17,7 @@ class DarkMediaMap(ProviderMap):
     _database_class = None
     _epg_class = None
     _epg_source_enum = None
+    _html_template_engine_class = None
     _optional_settings_class = None
     _program_class = None
     _setting_class = None
@@ -35,18 +36,20 @@ class DarkMediaMap(ProviderMap):
         from iptv_proxy.providers.darkmedia.db import DarkMediaDatabase
         from iptv_proxy.providers.darkmedia.enums import DarkMediaEPGSource
         from iptv_proxy.providers.darkmedia.epg import DarkMediaEPG
+        from iptv_proxy.providers.darkmedia.html_template_engine import DarkMediaHTMLTemplateEngine
         from iptv_proxy.providers.darkmedia.json_api import DarkMediaConfigurationJSONAPI
         from iptv_proxy.providers.darkmedia.validations import DarkMediaValidations
 
         cls._api_class = DarkMedia
         cls._channel_class = DarkMediaChannel
         cls._configuration_class = DarkMediaConfiguration
+        cls._configuration_json_api_class = DarkMediaConfigurationJSONAPI
         cls._constants_class = DarkMediaConstants
         cls._database_access_class = DarkMediaDatabaseAccess
         cls._database_class = DarkMediaDatabase
         cls._epg_class = DarkMediaEPG
         cls._epg_source_enum = DarkMediaEPGSource
-        cls._configuration_json_api_class = DarkMediaConfigurationJSONAPI
+        cls._html_template_engine_class = DarkMediaHTMLTemplateEngine
         cls._optional_settings_class = DarkMediaOptionalSettings
         cls._program_class = DarkMediaProgram
         cls._setting_class = DarkMediaSetting

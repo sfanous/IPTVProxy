@@ -1,4 +1,6 @@
 class SmoothStreamsConstants(object):
+    __slots__ = []
+
     DB_FILE_NAME = 'smoothstreams.db'
     DEFAULT_EPG_SOURCE = 'fog'
     DEFAULT_PLAYLIST_PROTOCOL = 'hls'

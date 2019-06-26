@@ -1,4 +1,6 @@
 class BeastConstants(object):
+    __slots__ = []
+
     BASE_URL = 'http://beastiptv.tv:8080/'
     DB_FILE_NAME = 'beast.db'
     DEFAULT_EPG_SOURCE = 'beast'

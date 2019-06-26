@@ -1,0 +1,152 @@
+                    <button class="w3-black w3-block w3-button"
+                            id="vaderStreamsConfigurationButton"
+                            onclick="ConfigurationModule.toggleConfigurationDiv('vaderStreamsConfiguration')"
+                            type="button">VaderStreams</button>
+                    <div class="w3-container w3-hide"
+                         id="vaderStreamsConfigurationDiv"
+                         style="padding: 8px;">
+                        <div class="w3-display-container w3-padding">
+                            <div class="w3-display-middle">
+                                <input {{ configuration_vaderstreams_active }}
+                                       class="w3-check"
+                                       id="vaderStreamsEnabledCheckbox"
+                                       name="vaderStreamsEnabledCheckbox"
+                                       onclick="ConfigurationModule.determineProviderConfigurationInputsState();ConfigurationModule.determineResetAndUpdateButtonsState();"
+                                       type="checkbox">
+                                <label for="vaderStreamsEnabledCheckbox">Enabled</label>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container">
+                                <label for="vaderStreamsServerSelect">Server</label>
+                                <select class="w3-border w3-select"
+                                        id="vaderStreamsServerSelect"
+                                        name="vaderStreamsServerSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option selected="selected"
+                                            value="auto">Auto
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="vaderStreamsServerSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="vaderStreamsUsernameInput">Username</label>
+                                <input class="w3-border w3-input"
+                                       id="vaderStreamsUsernameInput"
+                                       name="vaderStreamsUsernameInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_vaderstreams_username }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="vaderStreamsUsernameInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="vaderStreamsPasswordInput">Password</label>
+                                <span class="fas fa-eye w3-right"
+                                      id="vaderStreamsTogglePasswordSpan"
+                                      onclick="ConfigurationModule.togglePasswordVisibility(event)"
+                                      style="cursor: pointer;"></span>
+                                <input class="w3-border w3-input"
+                                       id="vaderStreamsPasswordInput"
+                                       name="vaderStreamsPasswordInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="password"
+                                       value="{{ configuration_vaderstreams_password }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="vaderStreamsPasswordInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="vaderStreamsPlaylistProtocolSelect">Playlist Protocol</label>
+                                <select class="w3-border w3-select"
+                                        id="vaderStreamsPlaylistProtocolSelect"
+                                        name="vaderStreamsPlaylistProtocolSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_vaderstreams_playlist_protocol_hls_selected }}value="hls">HTTP Live
+                                        Streaming (HLS)
+                                    </option>
+                                    <option {{ configuration_vaderstreams_playlist_protocol_mpegts_selected }}value="mpegts">MPEG
+                                        Transport Stream (MPEG-TS)
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="vaderStreamsPlaylistProtocolSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="vaderStreamsPlaylistTypeSelect">Playlist Type</label>
+                                <select class="w3-border w3-select"
+                                        id="vaderStreamsPlaylistTypeSelect"
+                                        name="vaderStreamsPlaylistTypeSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_vaderstreams_playlist_type_dynamic_selected }}value="dynamic">
+                                        Dynamic
+                                    </option>
+                                    <option {{ configuration_vaderstreams_playlist_type_static_selected }}value="static">Static
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="vaderStreamsPlaylistTypeSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="vaderStreamsEpgSourceSelect">EPG Source</label>
+                                <select class="w3-border w3-select"
+                                        id="vaderStreamsEpgSourceSelect"
+                                        name="vaderStreamsEpgSourceSelect"
+                                        oninput="ConfigurationModule.determineEpgUrlLabelInputVisibility();ConfigurationModule.determineResetAndUpdateButtonsState();"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_vaderstreams_epg_source_vaderstreams_selected }}value="vaderstreams">
+                                        VaderStreams (Main)
+                                    </option>
+                                    <option {{ configuration_vaderstreams_epg_source_other_selected }}value="other">Other
+                                        (External)
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="vaderStreamsEpgSourceSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="vaderStreamsEpgUrlInput"
+                                       id="vaderStreamsEpgUrlLabel">EPG URL</label>
+                                <input class="w3-border w3-input"
+                                       id="vaderStreamsEpgUrlInput"
+                                       name="vaderStreamsEpgUrlInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_vaderstreams_epg_url }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="vaderStreamsEpgUrlInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                    </div>

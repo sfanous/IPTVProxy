@@ -2,6 +2,11 @@
 
 Release History
 ===============
+7.6.5 (26-06-2019)
+------------------
+* Code cleanup and refactoring
+* Various bug fixes
+
 7.6.0 (22-06-2019)
 ------------------
 * Fix & enhance cache functionality

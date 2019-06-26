@@ -1,4 +1,6 @@
 class UniverseConstants(object):
+    __slots__ = []
+
     BASE_URL = 'http://univrse-ip.world:8000/'
     DB_FILE_NAME = 'universe.db'
     DEFAULT_EPG_SOURCE = 'universe'

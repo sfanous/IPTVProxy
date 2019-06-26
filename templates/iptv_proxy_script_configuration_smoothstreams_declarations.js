@@ -1,0 +1,13 @@
+    let _smoothStreamsConfigurationButton = null;
+    let _smoothStreamsConfigurationDiv = null;
+    let _smoothStreamsEnabledCheckbox = null;
+    let _smoothStreamsEpgSourceSelect = null;
+    let _smoothStreamsEpgUrlLabel = null;
+    let _smoothStreamsEpgUrlInput = null;
+    let _smoothStreamsPasswordInput = null;
+    let _smoothStreamsPlaylistProtocolSelect = null;
+    let _smoothStreamsPlaylistTypeSelect = null;
+    let _smoothStreamsServerSelect = null;
+    let _smoothStreamsServiceSelect = null;
+    let _smoothStreamsTogglePasswordSpan = null;
+    let _smoothStreamsUsernameInput = null;

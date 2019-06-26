@@ -1,0 +1,131 @@
+                    <button class="w3-black w3-block w3-button"
+                            id="{{ provider_name_camel_case }}ConfigurationButton"
+                            onclick="ConfigurationModule.toggleConfigurationDiv('{{ provider_name_camel_case }}Configuration')"
+                            type="button">{{ provider_name_pascal_case }}</button>
+                    <div class="w3-container w3-hide"
+                         id="{{ provider_name_camel_case }}ConfigurationDiv"
+                         style="padding: 8px;">
+                        <div class="w3-display-container w3-padding">
+                            <div class="w3-display-middle">
+                                <input {{ configuration_provider_active }}
+                                       class="w3-check"
+                                       id="{{ provider_name_camel_case }}EnabledCheckbox"
+                                       name="{{ provider_name_camel_case }}EnabledCheckbox"
+                                       onclick="ConfigurationModule.determineProviderConfigurationInputsState();ConfigurationModule.determineResetAndUpdateButtonsState();"
+                                       type="checkbox">
+                                <label for="{{ provider_name_camel_case }}EnabledCheckbox">Enabled</label>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="{{ provider_name_camel_case }}UsernameInput">Username</label>
+                                <input class="w3-border w3-input"
+                                       id="{{ provider_name_camel_case }}UsernameInput"
+                                       name="{{ provider_name_camel_case }}UsernameInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_provider_username }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="{{ provider_name_camel_case }}UsernameInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="{{ provider_name_camel_case }}PasswordInput">Password</label>
+                                <span class="fas fa-eye w3-right"
+                                      id="{{ provider_name_camel_case }}TogglePasswordSpan"
+                                      onclick="ConfigurationModule.togglePasswordVisibility(event)"
+                                      style="cursor: pointer;"></span>
+                                <input class="w3-border w3-input"
+                                       id="{{ provider_name_camel_case }}PasswordInput"
+                                       name="{{ provider_name_camel_case }}PasswordInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="password"
+                                       value="{{ configuration_provider_password }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="{{ provider_name_camel_case }}PasswordInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="{{ provider_name_camel_case }}PlaylistProtocolSelect">Playlist Protocol</label>
+                                <select class="w3-border w3-select"
+                                        id="{{ provider_name_camel_case }}PlaylistProtocolSelect"
+                                        name="{{ provider_name_camel_case }}PlaylistProtocolSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_provider_playlist_protocol_hls_selected }}value="hls">HTTP Live
+                                        Streaming (HLS)
+                                    </option>
+                                    <option {{ configuration_provider_playlist_protocol_mpegts_selected }}value="mpegts">MPEG
+                                        Transport Stream (MPEG-TS)
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="{{ provider_name_camel_case }}PlaylistProtocolSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="{{ provider_name_camel_case }}PlaylistTypeSelect">Playlist Type</label>
+                                <select class="w3-border w3-select"
+                                        id="{{ provider_name_camel_case }}PlaylistTypeSelect"
+                                        name="{{ provider_name_camel_case }}PlaylistTypeSelect"
+                                        oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_provider_playlist_type_dynamic_selected }}value="dynamic">
+                                        Dynamic
+                                    </option>
+                                    <option {{ configuration_provider_playlist_type_static_selected }}value="static">Static
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="{{ provider_name_camel_case }}PlaylistTypeSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="{{ provider_name_camel_case }}EpgSourceSelect">EPG Source</label>
+                                <select class="w3-border w3-select"
+                                        id="{{ provider_name_camel_case }}EpgSourceSelect"
+                                        name="{{ provider_name_camel_case }}EpgSourceSelect"
+                                        oninput="ConfigurationModule.determineEpgUrlLabelInputVisibility();ConfigurationModule.determineResetAndUpdateButtonsState();"
+                                        style="padding: 8px;">
+                                    <option disabled="disabled"
+                                            selected="selected"
+                                            value="">Choose your option
+                                    </option>
+                                    <option {{ configuration_provider_epg_source_provider_selected }}value="{{ provider_name_camel_case }}">
+                                        {{ provider_name_pascal_case }} (Main)
+                                    </option>
+                                    <option {{ configuration_provider_epg_source_other_selected }}value="other">Other
+                                        (External)
+                                    </option>
+                                </select>
+                                <span class="w3-font-red w3-tiny"
+                                      id="{{ provider_name_camel_case }}EpgSourceSelectErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                                <label for="{{ provider_name_camel_case }}EpgUrlInput"
+                                       id="{{ provider_name_camel_case }}EpgUrlLabel">EPG URL</label>
+                                <input class="w3-border w3-input"
+                                       id="{{ provider_name_camel_case }}EpgUrlInput"
+                                       name="{{ provider_name_camel_case }}EpgUrlInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_provider_epg_url }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="{{ provider_name_camel_case }}EpgUrlInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                        </div>
+                    </div>

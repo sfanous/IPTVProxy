@@ -1,4 +1,6 @@
 class HelixConstants(object):
+    __slots__ = []
+
     BASE_URL = 'http://jammy.today:83/'
     DB_FILE_NAME = 'helix.db'
     DEFAULT_EPG_SOURCE = 'helix'

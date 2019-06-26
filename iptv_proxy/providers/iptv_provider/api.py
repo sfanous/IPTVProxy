@@ -24,6 +24,8 @@ logger = logging.getLogger(__name__)
 
 
 class Provider(ABC):
+    __slots__ = []
+
     _do_reduce_hls_stream_delay = None
     _do_reduce_hls_stream_delay_lock = None
     _provider_name = None
@@ -307,6 +309,8 @@ class Provider(ABC):
 
 
 class XtreamCodesProvider(Provider):
+    __slots__ = []
+
     @classmethod
     def _generate_playlist_m3u8_static_track_url(cls, track_information, **kwargs):
         channel_number = kwargs['channel_number']

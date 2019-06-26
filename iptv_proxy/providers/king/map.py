@@ -17,6 +17,7 @@ class KingMap(ProviderMap):
     _database_class = None
     _epg_class = None
     _epg_source_enum = None
+    _html_template_engine_class = None
     _optional_settings_class = None
     _program_class = None
     _setting_class = None
@@ -35,18 +36,20 @@ class KingMap(ProviderMap):
         from iptv_proxy.providers.king.db import KingDatabase
         from iptv_proxy.providers.king.enums import KingEPGSource
         from iptv_proxy.providers.king.epg import KingEPG
+        from iptv_proxy.providers.king.html_template_engine import KingHTMLTemplateEngine
         from iptv_proxy.providers.king.json_api import KingConfigurationJSONAPI
         from iptv_proxy.providers.king.validations import KingValidations
 
         cls._api_class = King
         cls._channel_class = KingChannel
         cls._configuration_class = KingConfiguration
+        cls._configuration_json_api_class = KingConfigurationJSONAPI
         cls._constants_class = KingConstants
         cls._database_access_class = KingDatabaseAccess
         cls._database_class = KingDatabase
         cls._epg_class = KingEPG
         cls._epg_source_enum = KingEPGSource
-        cls._configuration_json_api_class = KingConfigurationJSONAPI
+        cls._html_template_engine_class = KingHTMLTemplateEngine
         cls._optional_settings_class = KingOptionalSettings
         cls._program_class = KingProgram
         cls._setting_class = KingSetting

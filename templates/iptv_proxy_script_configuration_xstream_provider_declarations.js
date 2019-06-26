@@ -1,0 +1,11 @@
+    let _{{ provider_name_camel_case }}ConfigurationButton = null;
+    let _{{ provider_name_camel_case }}ConfigurationDiv = null;
+    let _{{ provider_name_camel_case }}EnabledCheckbox = null;
+    let _{{ provider_name_camel_case }}EpgSourceSelect = null;
+    let _{{ provider_name_camel_case }}EpgUrlLabel = null;
+    let _{{ provider_name_camel_case }}EpgUrlInput = null;
+    let _{{ provider_name_camel_case }}PasswordInput = null;
+    let _{{ provider_name_camel_case }}PlaylistProtocolSelect = null;
+    let _{{ provider_name_camel_case }}PlaylistTypeSelect = null;
+    let _{{ provider_name_camel_case }}TogglePasswordSpan = null;
+    let _{{ provider_name_camel_case }}UsernameInput = null;
