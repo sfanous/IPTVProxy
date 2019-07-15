@@ -148,6 +148,8 @@ class HTMLTemplateEngine(object):
             'channel_li_channel_name': channel_li_channel_name,
             'channel_li_channel_img_src': channel_li_channel_img_src,
             'channel_li_channel_number': channel_row_index + 1,
+            'channel_source_data_m3u8': channel_sources[provider.api_class().get_supported_protocols()[0]][
+                'videoSource'],
             'channel_sources_data_json': json.dumps(channel_sources)
         }
 
@@ -484,7 +486,6 @@ class HTMLTemplateEngine(object):
                 provider_map_class.html_template_engine_class().render_iptv_proxy_script_configuration_reset_template(
                     self._environment))
 
-        return '\n'.join(sorted(iptv_proxy_script_configuration_reset))
         return '\n'.join(sorted(iptv_proxy_script_configuration_reset))
 
     def _render_iptv_proxy_script_configuration_toggle_password_template(self):

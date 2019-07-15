@@ -10,6 +10,15 @@
                         <br />
                     </div>
                     <div class="w3-bar-item w3-right">
+                        <span aria-label="Copied">
+                            <span aria-label="Copied"
+                                  class="fas fa-copy"
+                                  data-m3u8="{{ channel_source_data_m3u8 }}"
+                                  onclick="CopyModule.copy(event)"
+                                  style="cursor: pointer;">
+                            </span>
+                        </span>
+                        <span style="display: inline-block; width: 10px;"></span>
                         <span class="fas fa-play"
                               data-json='{{ channel_sources_data_json }}'
                               onclick="VideoPlayerModule.controlVideo(event)"

@@ -36,6 +36,18 @@ $(document).ready(function () {
                              SettingsModule.getSelectedGuideSortOrder());
 });
 
+$(document).ready(function () {
+    $('.fa-copy').on('click', function () {
+        const m3u8 = $(this).data('m3u8');
+        const input = $('<input>');
+
+        $('body').append(input);
+        input.val(m3u8).select();
+        document.execCommand('copy');
+        input.remove();
+    })
+});
+
 const ResizeModule = (function () {
     let _configurationDivs = null;
     let _contentDiv = null;
@@ -273,6 +285,31 @@ const CommonModule = (function () {
 
     return {
         resetAlertDiv: resetAlertDiv
+    };
+})();
+
+const CopyModule = (function () {
+    const copy = function (event) {
+        const eventTarget = $(event.target);
+        const parentSpan = $(eventTarget).parent();
+
+        const m3u8 = eventTarget.data('m3u8');
+        const input = $('<input>');
+
+        $('body').append(input);
+        input.val(m3u8).select();
+        document.execCommand('copy');
+        input.remove();
+
+        parentSpan.addClass('tooltipped tooltipped-s');
+
+        setTimeout(function () {
+            parentSpan.removeClass('tooltipped tooltipped-s');
+            }, 3000);
+    };
+
+    return {
+        copy: copy
     };
 })();
 

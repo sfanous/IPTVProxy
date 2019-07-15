@@ -2,6 +2,11 @@
 
 Release History
 ===============
+7.6.6 (15-07-2019)
+------------------
+* Added Atom
+* Added copy stream URL in web UI
+
 7.6.5 (26-06-2019)
 ------------------
 * Code cleanup and refactoring

@@ -1,6 +1,26 @@
 {
   "allow_insecure_lan_connections": true,
   "allow_insecure_wan_connections": false,
+  "atom_channel_group_map": {
+    "name": {},
+    "number": {}
+  },
+  "atom_channel_name_map": {
+  },
+  "atom_epg_update_times": [
+    "00:00:00",
+    "06:00:00",
+    "12:00:00",
+    "18:00:00"
+  ],
+  "atom_ignored_channels": {
+    "name": [],
+    "number": []
+  },
+  "atom_ignored_m3u8_groups": [
+  ],
+  "atom_m3u8_group_map": {
+  },
   "auto_generate_self_signed_certificate": true,
   "beast_channel_group_map": {
     "name": {},
@@ -156,6 +176,7 @@
   "king_m3u8_group_map": {
   },
   "lan_connections_require_credentials": false,
+  "reduce_atom_delay": true,
   "reduce_beast_delay": true,
   "reduce_coolasice_delay": true,
   "reduce_crystalclear_delay": true,
@@ -197,6 +218,7 @@
   ],
   "universe_m3u8_group_map": {
   },
+  "use_atom_icons": false,
   "use_beast_icons": false,
   "use_coolasice_icons": false,
   "use_crystalclear_icons": false,
