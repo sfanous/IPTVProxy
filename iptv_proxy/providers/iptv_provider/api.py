@@ -408,26 +408,28 @@ class XtreamCodesProvider(Provider):
 
                 IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
 
-                match = re.search(r'http://(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)?',
-                                  response.request.url)
+                parsed_url = urllib.parse.urlparse(response.request.url)
 
-                server = match.group(1)
-                port = match.group(2) if len(match.groups()) == 2 else ':80'
+                scheme = parsed_url.scheme
+                hostname = parsed_url.hostname
+                port = ':{0}'.format(parsed_url.port) if parsed_url.port is not None else ''
 
                 return re.sub(r'/hlsr/(.*)/(.*)/(.*)/(.*)/(.*)/(.*).ts',
                               r'\6.ts?'
                               r'authorization_token=\1&'
                               'channel_number={0}&'
                               'client_uuid={1}&'
-                              'http_token={2}&'
+                              'hostname={2}&'
+                              'http_token={3}&'
                               r'leaf_directory=\5&'
-                              'port={3}&'
-                              'server={4}'.format(channel_number,
+                              'port={4}&'
+                              'scheme={5}'.format(channel_number,
                                                   client_uuid,
+                                                  urllib.parse.quote(hostname),
                                                   urllib.parse.quote(http_token) if http_token
                                                   else '',
                                                   urllib.parse.quote(port),
-                                                  urllib.parse.quote(server)),
+                                                  scheme),
                               chunks_m3u8)
             else:
                 logger.error(Utility.assemble_response_from_log_message(response))
@@ -456,9 +458,10 @@ class XtreamCodesProvider(Provider):
     def download_ts_file(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
         authorization_token = requested_query_string_parameters.get('authorization_token')
         channel_number = requested_query_string_parameters.get('channel_number')
+        hostname = requested_query_string_parameters.get('hostname')
         leaf_directory = requested_query_string_parameters.get('leaf_directory')
         port = requested_query_string_parameters.get('port')
-        server = requested_query_string_parameters.get('server')
+        scheme = requested_query_string_parameters.get('scheme')
 
         IPTVProxy.refresh_serviceable_clients(client_uuid, client_ip_address)
         IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc))
@@ -469,17 +472,17 @@ class XtreamCodesProvider(Provider):
 
         requests_session = requests.Session()
 
-        target_url = 'http://{0}{1}/hlsr/{2}/{3}/{4}/{5}/{6}/{7}'.format(server,
-                                                                         port if port != ':80'
-                                                                         else '',
-                                                                         authorization_token,
-                                                                         username,
-                                                                         password,
-                                                                         channel_number,
-                                                                         leaf_directory,
-                                                                         re.sub(r'(/.*)?(/.*\.ts)',
-                                                                                r'\2',
-                                                                                requested_path))
+        target_url = '{0}://{1}{2}/hlsr/{3}/{4}/{5}/{6}/{7}/{8}'.format(scheme,
+                                                                        hostname,
+                                                                        port,
+                                                                        authorization_token,
+                                                                        username,
+                                                                        password,
+                                                                        channel_number,
+                                                                        leaf_directory,
+                                                                        re.sub(r'(/.*)?(/.*\.ts)',
+                                                                               r'\2',
+                                                                               requested_path))
 
         logger.debug('Proxying request\n'
                      'Source IP      => {0}\n'
@@ -487,14 +490,16 @@ class XtreamCodesProvider(Provider):
                      '  Parameters\n'
                      '    channel_number => {2}\n'
                      '    client_uuid    => {3}\n'
-                     '    port           => {4}\n'
-                     '    server         => {5}\n'
-                     'Target path    => {6}'.format(client_ip_address,
+                     '    hostname       => {4}\n'
+                     '    port           => {5}\n'
+                     '    scheme         => {6}\n'
+                     'Target path    => {7}'.format(client_ip_address,
                                                     requested_path,
                                                     channel_number,
                                                     client_uuid,
+                                                    hostname,
                                                     port,
-                                                    server,
+                                                    scheme,
                                                     target_url))
 
         response = Utility.make_http_request(requests_session.get,
