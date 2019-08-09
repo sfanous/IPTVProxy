@@ -131,6 +131,26 @@
   ],
   "helix_m3u8_group_map": {
   },
+  "hydrogen_channel_group_map": {
+    "name": {},
+    "number": {}
+  },
+  "hydrogen_channel_name_map": {
+  },
+  "hydrogen_epg_update_times": [
+    "00:00:00",
+    "06:00:00",
+    "12:00:00",
+    "18:00:00"
+  ],
+  "hydrogen_ignored_channels": {
+    "name": [],
+    "number": []
+  },
+  "hydrogen_ignored_m3u8_groups": [
+  ],
+  "hydrogen_m3u8_group_map": {
+  },
   "inferno_channel_group_map": {
     "name": {},
     "number": {}
@@ -182,6 +202,7 @@
   "reduce_crystalclear_delay": true,
   "reduce_darkmedia_delay": true,
   "reduce_helix_delay": true,
+  "reduce_hydrogen_delay": true,
   "reduce_inferno_delay": true,
   "reduce_king_delay": true,
   "reduce_streams4us_delay": true,
@@ -245,6 +266,7 @@
   "use_crystalclear_icons": false,
   "use_darkmedia_icons": false,
   "use_helix_icons": false,
+  "use_hydrogen_icons": false,
   "use_inferno_icons": false,
   "use_king_icons": false,
   "use_smoothstreams_icons": false,
