@@ -414,14 +414,14 @@ class XtreamCodesProvider(Provider):
                 hostname = parsed_url.hostname
                 port = ':{0}'.format(parsed_url.port) if parsed_url.port is not None else ''
 
-                return re.sub(r'/hlsr/(.*)/(.*)/(.*)/(.*)/(.*)/(.*).ts',
-                              r'\6.ts?'
-                              r'authorization_token=\1&'
+                return re.sub(r'/hls/(.*)/(.*)/(.*)/(.*)/(.*).ts',
+                              r'\5.ts?'
+                              'authorization_token=&'
                               'channel_number={0}&'
                               'client_uuid={1}&'
                               'hostname={2}&'
                               'http_token={3}&'
-                              r'leaf_directory=\5&'
+                              r'leaf_directory=\4&'
                               'port={4}&'
                               'scheme={5}'.format(channel_number,
                                                   client_uuid,
@@ -431,6 +431,63 @@ class XtreamCodesProvider(Provider):
                                                   urllib.parse.quote(port),
                                                   scheme),
                               chunks_m3u8)
+            elif response.status_code == requests.codes.FOUND:
+                logger.trace(Utility.assemble_response_from_log_message(response,
+                                                                        is_content_text=False,
+                                                                        do_print_content=False))
+
+                parsed_url = urllib.parse.urlparse(response.headers['Location'])
+
+                response = Utility.make_http_request(requests_session.get,
+                                                     '{0}://{1}{2}'.format(parsed_url.scheme,
+                                                                           parsed_url.netloc,
+                                                                           parsed_url.path),
+                                                     params=dict(urllib.parse.parse_qsl(parsed_url.query)),
+                                                     headers=requests_session.headers,
+                                                     cookies=requests_session.cookies.get_dict())
+
+                if response.status_code == requests.codes.OK:
+                    logger.trace(Utility.assemble_response_from_log_message(response,
+                                                                            is_content_text=True,
+                                                                            do_print_content=True))
+
+                    with cls._do_reduce_hls_stream_delay_lock.reader_lock:
+                        if cls._do_reduce_hls_stream_delay:
+                            chunks_m3u8 = cls._reduce_hls_stream_delay(response.text,
+                                                                       client_uuid,
+                                                                       channel_number,
+                                                                       number_of_segments_to_keep=2)
+                        else:
+                            chunks_m3u8 = response.text
+
+                    IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number',
+                                                               channel_number)
+
+                    scheme = parsed_url.scheme
+                    hostname = parsed_url.hostname
+                    port = ':{0}'.format(parsed_url.port) if parsed_url.port is not None else ''
+
+                    return re.sub(r'/hlsr/(.*)/(.*)/(.*)/(.*)/(.*)/(.*).ts',
+                                  r'\6.ts?'
+                                  r'authorization_token=\1&'
+                                  'channel_number={0}&'
+                                  'client_uuid={1}&'
+                                  'hostname={2}&'
+                                  'http_token={3}&'
+                                  r'leaf_directory=\5&'
+                                  'port={4}&'
+                                  'scheme={5}'.format(channel_number,
+                                                      client_uuid,
+                                                      urllib.parse.quote(hostname),
+                                                      urllib.parse.quote(http_token) if http_token
+                                                      else '',
+                                                      urllib.parse.quote(port),
+                                                      scheme),
+                                  chunks_m3u8)
+                else:
+                    logger.error(Utility.assemble_response_from_log_message(response))
+
+                    response.raise_for_status()
             else:
                 logger.error(Utility.assemble_response_from_log_message(response))
 
@@ -472,10 +529,14 @@ class XtreamCodesProvider(Provider):
 
         requests_session = requests.Session()
 
-        target_url = '{0}://{1}{2}/hlsr/{3}/{4}/{5}/{6}/{7}/{8}'.format(scheme,
+        target_url = '{0}://{1}{2}/hls{3}{4}/{5}/{6}/{7}/{8}{9}'.format(scheme,
                                                                         hostname,
                                                                         port,
-                                                                        authorization_token,
+                                                                        'r' if authorization_token
+                                                                        else '',
+                                                                        '/{0}'.format(
+                                                                            authorization_token) if authorization_token
+                                                                        else '',
                                                                         username,
                                                                         password,
                                                                         channel_number,

@@ -40,7 +40,7 @@ class Utility(object):
                                            do_print_content=False):
         response_status_code = response.status_code
 
-        if response_status_code == requests.codes.OK:
+        if response_status_code == requests.codes.OK or response_status_code == requests.codes.FOUND:
             response_headers = response.headers
 
             if is_content_binary:
@@ -284,6 +284,7 @@ class Utility(object):
                                         headers=headers,
                                         cookies=cookies,
                                         stream=stream,
+                                        allow_redirects=False,
                                         timeout=timeout)
         except requests.exceptions.RequestException as e:
             (type_, value_, traceback_) = sys.exc_info()
