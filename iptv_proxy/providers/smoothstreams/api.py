@@ -289,6 +289,8 @@ class SmoothStreams(Provider):
                                                        authorization_token)
 
         IPTVProxy.refresh_serviceable_clients(client_uuid, client_ip_address)
+        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc))
+        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
 
         authorization_token = cls._get_session_parameter('authorization_token')
         requests_session = cls._get_session_parameter('requests_session')
@@ -347,6 +349,9 @@ class SmoothStreams(Provider):
         protocol = requested_query_string_parameters.get('protocol')
 
         IPTVProxy.refresh_serviceable_clients(client_uuid, client_ip_address)
+        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc))
+        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
+
         cls.refresh_session()
 
         if protocol == 'hls':
@@ -433,6 +438,8 @@ class SmoothStreams(Provider):
         nimble_session_id = requested_query_string_parameters.get('nimblesessionid')
 
         IPTVProxy.refresh_serviceable_clients(client_uuid, client_ip_address)
+        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc))
+        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
 
         requests_session = cls._get_session_parameter('requests_session')
 

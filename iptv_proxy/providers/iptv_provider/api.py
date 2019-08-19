@@ -353,12 +353,106 @@ class XtreamCodesProvider(Provider):
 
     @classmethod
     def download_chunks_m3u8(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
+        authorization_token = requested_query_string_parameters.get('authorization_token')
+        channel_number = requested_query_string_parameters.get('channel_number')
+        client_uuid = requested_query_string_parameters.get('client_uuid')
+        hostname = requested_query_string_parameters.get('hostname')
+        http_token = requested_query_string_parameters.get('http_token')
+        port = requested_query_string_parameters.get('port')
+        scheme = requested_query_string_parameters.get('scheme')
+
+        IPTVProxy.refresh_serviceable_clients(client_uuid, client_ip_address)
+        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc))
+        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
+
+        username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
+        password = SecurityManager.decrypt_password(
+            Configuration.get_configuration_parameter('{0}_PASSWORD'.format(cls._provider_name.upper()))).decode()
+
+        requests_session = requests.Session()
+
+        target_url = '{0}://{1}{2}/live/{3}/{4}/{5}.m3u8'.format(scheme,
+                                                                 hostname,
+                                                                 port,
+                                                                 username,
+                                                                 password,
+                                                                 channel_number)
+
+        logger.debug('Proxying request\n'
+                     'Source IP      => {0}\n'
+                     'Requested path => {1}\n'
+                     '  Parameters\n'
+                     '    authorization_token => {2}\n'
+                     '    channel_number  => {3}\n'
+                     '    client_uuid     => {4}\n'
+                     '    hostname        => {5}\n'
+                     '    port            => {6}\n'
+                     '    scheme          => {7}\n'
+                     'Target path    => {8}\n'
+                     '  Parameters\n'
+                     '    token => {2}'.format(client_ip_address,
+                                               requested_path,
+                                               authorization_token,
+                                               channel_number,
+                                               client_uuid,
+                                               hostname,
+                                               port,
+                                               scheme,
+                                               target_url))
+
+        response = Utility.make_http_request(requests_session.get,
+                                             target_url,
+                                             params={
+                                                 'token': authorization_token
+                                             },
+                                             headers=requests_session.headers,
+                                             cookies=requests_session.cookies.get_dict())
+
+        if response.status_code == requests.codes.OK:
+            logger.trace(Utility.assemble_response_from_log_message(response,
+                                                                    is_content_text=True,
+                                                                    do_print_content=True))
+
+            with cls._do_reduce_hls_stream_delay_lock.reader_lock:
+                if cls._do_reduce_hls_stream_delay:
+                    chunks_m3u8 = cls._reduce_hls_stream_delay(response.text,
+                                                               client_uuid,
+                                                               channel_number,
+                                                               number_of_segments_to_keep=2)
+                else:
+                    chunks_m3u8 = response.text
+
+                return re.sub(r'/hlsr/(.*)/(.*)/(.*)/(.*)/(.*)/(.*).ts',
+                              r'\6.ts?'
+                              r'authorization_token=\1&'
+                              'channel_number={0}&'
+                              'client_uuid={1}&'
+                              'hostname={2}&'
+                              'http_token={3}&'
+                              r'leaf_directory=\5&'
+                              'port={4}&'
+                              'scheme={5}'.format(channel_number,
+                                                  client_uuid,
+                                                  urllib.parse.quote(hostname),
+                                                  urllib.parse.quote(http_token) if http_token
+                                                  else '',
+                                                  urllib.parse.quote(port),
+                                                  scheme),
+                              chunks_m3u8)
+        else:
+            logger.error(Utility.assemble_response_from_log_message(response))
+
+            response.raise_for_status()
+
+    @classmethod
+    def download_playlist_m3u8(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
         channel_number = requested_query_string_parameters.get('channel_number')
         http_token = requested_query_string_parameters.get('http_token')
         protocol = requested_query_string_parameters.get('protocol')
 
         IPTVProxy.refresh_serviceable_clients(client_uuid, client_ip_address)
         IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc))
+        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
 
         username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
         password = SecurityManager.decrypt_password(
@@ -406,10 +500,7 @@ class XtreamCodesProvider(Provider):
                     else:
                         chunks_m3u8 = response.text
 
-                IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
-
                 parsed_url = urllib.parse.urlparse(response.request.url)
-
                 scheme = parsed_url.scheme
                 hostname = parsed_url.hostname
                 port = ':{0}'.format(parsed_url.port) if parsed_url.port is not None else ''
@@ -437,57 +528,27 @@ class XtreamCodesProvider(Provider):
                                                                         do_print_content=False))
 
                 parsed_url = urllib.parse.urlparse(response.headers['Location'])
+                scheme = parsed_url.scheme
+                hostname = parsed_url.hostname
+                port = ':{0}'.format(parsed_url.port) if parsed_url.port is not None else ''
 
-                response = Utility.make_http_request(requests_session.get,
-                                                     '{0}://{1}{2}'.format(parsed_url.scheme,
-                                                                           parsed_url.netloc,
-                                                                           parsed_url.path),
-                                                     params=dict(urllib.parse.parse_qsl(parsed_url.query)),
-                                                     headers=requests_session.headers,
-                                                     cookies=requests_session.cookies.get_dict())
-
-                if response.status_code == requests.codes.OK:
-                    logger.trace(Utility.assemble_response_from_log_message(response,
-                                                                            is_content_text=True,
-                                                                            do_print_content=True))
-
-                    with cls._do_reduce_hls_stream_delay_lock.reader_lock:
-                        if cls._do_reduce_hls_stream_delay:
-                            chunks_m3u8 = cls._reduce_hls_stream_delay(response.text,
-                                                                       client_uuid,
-                                                                       channel_number,
-                                                                       number_of_segments_to_keep=2)
-                        else:
-                            chunks_m3u8 = response.text
-
-                    IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number',
-                                                               channel_number)
-
-                    scheme = parsed_url.scheme
-                    hostname = parsed_url.hostname
-                    port = ':{0}'.format(parsed_url.port) if parsed_url.port is not None else ''
-
-                    return re.sub(r'/hlsr/(.*)/(.*)/(.*)/(.*)/(.*)/(.*).ts',
-                                  r'\6.ts?'
-                                  r'authorization_token=\1&'
-                                  'channel_number={0}&'
-                                  'client_uuid={1}&'
-                                  'hostname={2}&'
-                                  'http_token={3}&'
-                                  r'leaf_directory=\5&'
-                                  'port={4}&'
-                                  'scheme={5}'.format(channel_number,
-                                                      client_uuid,
-                                                      urllib.parse.quote(hostname),
-                                                      urllib.parse.quote(http_token) if http_token
-                                                      else '',
-                                                      urllib.parse.quote(port),
-                                                      scheme),
-                                  chunks_m3u8)
-                else:
-                    logger.error(Utility.assemble_response_from_log_message(response))
-
-                    response.raise_for_status()
+                return '#EXTM3U\n' \
+                       '#EXT-X-VERSION:3\n' \
+                       '#EXT-X-STREAM-INF:BANDWIDTH=8388608\n' \
+                       'chunks.m3u8?authorization_token={0}&' \
+                       'channel_number={1}&' \
+                       'client_uuid={2}&' \
+                       'hostname={3}&' \
+                       'http_token={4}&' \
+                       'port={5}&' \
+                       'scheme={6}'.format(dict(urllib.parse.parse_qsl(parsed_url.query))['token'],
+                                           channel_number,
+                                           client_uuid,
+                                           urllib.parse.quote(hostname),
+                                           urllib.parse.quote(http_token) if http_token
+                                           else '',
+                                           urllib.parse.quote(port),
+                                           scheme)
             else:
                 logger.error(Utility.assemble_response_from_log_message(response))
 
@@ -503,13 +564,6 @@ class XtreamCodesProvider(Provider):
                              username,
                              password,
                              channel_number)
-
-    @classmethod
-    def download_playlist_m3u8(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
-        return cls.download_chunks_m3u8(client_ip_address,
-                                        client_uuid,
-                                        requested_path,
-                                        requested_query_string_parameters)
 
     @classmethod
     def download_ts_file(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
