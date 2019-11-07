@@ -34,6 +34,13 @@ class ProviderConfigurationJSONAPI(object):
             else:
                 provider_configuration['{0}_server'.format(cls._provider_name)] = ''
 
+        if 'url' in provider_configuration_schema['Provider']:
+            if '{0}_URL'.format(configuration_parameter_name_prefix) in configuration:
+                provider_configuration['{0}_url'.format(cls._provider_name)] = configuration['{0}_URL'.format(
+                    configuration_parameter_name_prefix)]
+            else:
+                provider_configuration['{0}_url'.format(cls._provider_name)] = ''
+
         if 'username' in provider_configuration_schema['Provider']:
             if '{0}_USERNAME'.format(configuration_parameter_name_prefix) in configuration:
                 provider_configuration['{0}_username'.format(cls._provider_name)] = configuration['{0}_USERNAME'.format(
@@ -102,13 +109,17 @@ class ProviderConfigurationJSONAPI(object):
                 update_configuration_request['{0}_SERVER'.format(configuration_parameter_name_prefix)] = \
                     attributes['{0}_server'.format(cls._provider_name)].lower()
 
+            if 'url' in provider_configuration_schema['Provider']:
+                update_configuration_request['{0}_URL'.format(configuration_parameter_name_prefix)] = \
+                    attributes['{0}_url'.format(cls._provider_name)].lower()
+
             if 'username' in provider_configuration_schema['Provider']:
                 update_configuration_request['{0}_USERNAME'.format(configuration_parameter_name_prefix)] = \
-                    attributes['{0}_username'.format(cls._provider_name)].lower()
+                    attributes['{0}_username'.format(cls._provider_name)]
 
             if 'password' in provider_configuration_schema['Provider']:
                 update_configuration_request['{0}_PASSWORD'.format(configuration_parameter_name_prefix)] = \
-                    attributes['{0}_password'.format(cls._provider_name)].lower()
+                    attributes['{0}_password'.format(cls._provider_name)]
 
             if 'Playlist' in provider_configuration_schema:
                 if 'protocol' in provider_configuration_schema['Playlist']:
@@ -147,6 +158,9 @@ class ProviderConfigurationJSONAPI(object):
 
         if 'server' in provider_configuration_schema['Provider']:
             validate_patch_request_body_schema['{0}_server'.format(cls._provider_name)] = required
+
+        if 'url' in provider_configuration_schema['Provider']:
+            validate_patch_request_body_schema['{0}_url'.format(cls._provider_name)] = required
 
         if 'username' in provider_configuration_schema['Provider']:
             validate_patch_request_body_schema['{0}_username'.format(cls._provider_name)] = required

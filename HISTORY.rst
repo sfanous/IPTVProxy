@@ -2,6 +2,11 @@
 
 Release History
 ===============
+7.7.0 (11-07-2019)
+------------------
+* Added provider URL to configuration file
+* Various bug fixes
+
 7.6.11 (09-19-2019)
 ------------------
 * Various bug fixes

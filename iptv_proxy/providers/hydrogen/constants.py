@@ -1,7 +1,6 @@
 class HydrogenConstants(object):
     __slots__ = []
 
-    BASE_URL = 'http://m3u.hydr0.io:25461/'
     DB_FILE_NAME = 'hydrogen.db'
     DEFAULT_EPG_SOURCE = 'hydrogen'
     DEFAULT_PLAYLIST_PROTOCOL = 'hls'

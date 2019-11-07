@@ -1,7 +1,6 @@
 class Streams4UsConstants(object):
     __slots__ = []
 
-    BASE_URL = 'http://its.streamsforus.net:8000/'
     DB_FILE_NAME = 'streams4us.db'
     DEFAULT_EPG_SOURCE = 'streams4us'
     DEFAULT_PLAYLIST_PROTOCOL = 'hls'

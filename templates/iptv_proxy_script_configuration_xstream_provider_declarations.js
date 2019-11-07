@@ -8,4 +8,5 @@
     let _{{ provider_name_camel_case }}PlaylistProtocolSelect = null;
     let _{{ provider_name_camel_case }}PlaylistTypeSelect = null;
     let _{{ provider_name_camel_case }}TogglePasswordSpan = null;
+    let _{{ provider_name_camel_case }}UrlInput = null;
     let _{{ provider_name_camel_case }}UsernameInput = null;

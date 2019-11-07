@@ -1,4 +1,5 @@
                                                                       '{{ provider_name_snake_case }}_enabled': _{{ provider_name_camel_case }}EnabledCheckbox.is(':checked'),
+                                                                      '{{ provider_name_snake_case }}_url': _{{ provider_name_camel_case }}UrlInput.val(),
                                                                       '{{ provider_name_snake_case }}_username': _{{ provider_name_camel_case }}UsernameInput.val(),
                                                                       '{{ provider_name_snake_case }}_password': _{{ provider_name_camel_case }}PasswordInput.val(),
                                                                       '{{ provider_name_snake_case }}_playlist_protocol': _{{ provider_name_camel_case }}PlaylistProtocolSelect.val(),

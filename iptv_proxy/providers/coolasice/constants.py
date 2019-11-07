@@ -1,7 +1,6 @@
 class CoolAsIceConstants(object):
     __slots__ = []
 
-    BASE_URL = 'http://bangobongobingo.com/'
     DB_FILE_NAME = 'coolasice.db'
     DEFAULT_EPG_SOURCE = 'coolasice'
     DEFAULT_PLAYLIST_PROTOCOL = 'hls'

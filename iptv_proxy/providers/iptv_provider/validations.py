@@ -1,6 +1,7 @@
 import logging
 
 import requests
+import validators
 
 from iptv_proxy.providers import ProvidersController
 
@@ -22,17 +23,6 @@ class ProviderValidations(object):
             is_valid_epg_source = False
 
         return is_valid_epg_source
-
-    @classmethod
-    def is_valid_epg_url(cls, epg_url):
-        is_valid_epg_url = True
-
-        try:
-            requests.head(epg_url)
-        except requests.RequestException:
-            is_valid_epg_url = False
-
-        return is_valid_epg_url
 
     @classmethod
     def is_valid_password(cls, password):
@@ -81,6 +71,10 @@ class ProviderValidations(object):
             is_valid_service = False
 
         return is_valid_service
+
+    @classmethod
+    def is_valid_url(cls, url):
+        return validators.url(url)
 
     @classmethod
     def is_valid_username(cls, username):

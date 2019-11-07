@@ -18,6 +18,22 @@
                         </div>
                         <div class="w3-cell-row">
                             <div class="w3-cell w3-container w3-half">
+                                <label for="{{ provider_name_camel_case }}UrlInput">URL</label>
+                                <input class="w3-border w3-input"
+                                       id="{{ provider_name_camel_case }}UrlInput"
+                                       name="{{ provider_name_camel_case }}UrlInput"
+                                       oninput="ConfigurationModule.determineResetAndUpdateButtonsState()"
+                                       type="text"
+                                       value="{{ configuration_provider_url }}"/>
+                                <span class="w3-font-red w3-tiny"
+                                      id="{{ provider_name_camel_case }}UrlInputErrorSpan"
+                                      style="color: red;"></span>
+                            </div>
+                            <div class="w3-cell w3-container w3-half">
+                            </div>
+                        </div>
+                        <div class="w3-cell-row">
+                            <div class="w3-cell w3-container w3-half">
                                 <label for="{{ provider_name_camel_case }}UsernameInput">Username</label>
                                 <input class="w3-border w3-input"
                                        id="{{ provider_name_camel_case }}UsernameInput"

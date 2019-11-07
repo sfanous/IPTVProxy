@@ -1,7 +1,6 @@
 class CrystalClearConstants(object):
     __slots__ = []
 
-    BASE_URL = 'http://ccmedia.one:25461/'
     DB_FILE_NAME = 'crystalclear.db'
     DEFAULT_EPG_SOURCE = 'crystalclear'
     DEFAULT_PLAYLIST_PROTOCOL = 'hls'

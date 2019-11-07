@@ -70,6 +70,7 @@ class XtreamCodesProviderHTMLTemplateEngine(ProviderHTMLTemplateEngine):
             provider_name_camel_case='{0}{1}'.format(provider_map_class.constants_class().PROVIDER_NAME[0].lower(),
                                                      provider_map_class.constants_class().PROVIDER_NAME[1:]),
             provider_name_pascal_case=provider_map_class.constants_class().PROVIDER_NAME,
+            configuration_provider_url='',
             configuration_provider_username='',
             configuration_provider_password='',
             configuration_provider_playlist_protocol_hls_selected='',
@@ -83,6 +84,10 @@ class XtreamCodesProviderHTMLTemplateEngine(ProviderHTMLTemplateEngine):
 
         configuration_xstream_provider_template_fields['configuration_provider_active'] = \
             'checked="checked"' if cls._provider_name in active_providers_map_class else ''
+
+        if '{0}_URL'.format(cls._provider_name.upper()) in configuration:
+            configuration_xstream_provider_template_fields['configuration_provider_url'] = \
+                configuration['{0}_URL'.format(cls._provider_name.upper())]
 
         if '{0}_USERNAME'.format(cls._provider_name.upper()) in configuration:
             configuration_xstream_provider_template_fields['configuration_provider_username'] = \

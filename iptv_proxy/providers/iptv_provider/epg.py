@@ -1607,11 +1607,12 @@ class XStreamCodesProviderEPG(ProviderEPG):
     def _request_epg_json(cls, epg_json_file_name, action):
         provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
 
+        url = Configuration.get_configuration_parameter('{0}_URL'.format(cls._provider_name.upper()))
         username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
         password = SecurityManager.decrypt_password(
             Configuration.get_configuration_parameter('{0}_PASSWORD'.format(cls._provider_name.upper()))).decode()
 
-        url = '{0}player_api.php'.format(provider_map_class.constants_class().BASE_URL)
+        target_url = '{0}player_api.php'.format(url)
 
         logger.debug('Downloading {0} {1}\n'
                      'URL => {2}\n'
@@ -1620,14 +1621,14 @@ class XStreamCodesProviderEPG(ProviderEPG):
                      '    password => {4}\n'
                      '    action   => {5}'.format(provider_map_class.constants_class().PROVIDER_NAME,
                                                   epg_json_file_name,
-                                                  url,
+                                                  target_url,
                                                   username,
                                                   '\u2022' * len(password),
                                                   action))
 
         requests_session = requests.Session()
         response = Utility.make_http_request(requests_session.get,
-                                             url,
+                                             target_url,
                                              params={
                                                  'username': username,
                                                  'password': password,
@@ -1652,11 +1653,12 @@ class XStreamCodesProviderEPG(ProviderEPG):
     def _request_epg_xml(cls):
         provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
 
+        url = Configuration.get_configuration_parameter('{0}_URL'.format(cls._provider_name.upper()))
         username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
         password = SecurityManager.decrypt_password(
             Configuration.get_configuration_parameter('{0}_PASSWORD'.format(cls._provider_name.upper()))).decode()
 
-        url = '{0}xmltv.php'.format(provider_map_class.constants_class().BASE_URL)
+        target_url = '{0}xmltv.php'.format(url)
 
         logger.debug(
             'Downloading {0} xmltv_{1}.xml\n'
@@ -1665,12 +1667,12 @@ class XStreamCodesProviderEPG(ProviderEPG):
             '    username => {1}\n'
             '    password => {2}'.format(provider_map_class.constants_class().PROVIDER_NAME,
                                          username,
-                                         url,
+                                         target_url,
                                          '\u2022' * len(password)))
 
         requests_session = requests.Session()
         response = Utility.make_http_request(requests_session.get,
-                                             url,
+                                             target_url,
                                              params={
                                                  'username': username,
                                                  'password': password
@@ -1692,11 +1694,12 @@ class XStreamCodesProviderEPG(ProviderEPG):
     def _request_m3u8_playlist(cls):
         provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
 
+        url = Configuration.get_configuration_parameter('{0}_URL'.format(cls._provider_name.upper()))
         username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
         password = SecurityManager.decrypt_password(
             Configuration.get_configuration_parameter('{0}_PASSWORD'.format(cls._provider_name.upper()))).decode()
 
-        url = '{0}get.php'.format(provider_map_class.constants_class().BASE_URL)
+        target_url = '{0}get.php'.format(url)
 
         logger.debug('Downloading {0} tv_channels_{1}.m3u\n'
                      'URL => {2}\n'
@@ -1706,12 +1709,12 @@ class XStreamCodesProviderEPG(ProviderEPG):
                      '    type     => m3u_plus\n'
                      '    output   => hls'.format(provider_map_class.constants_class().PROVIDER_NAME,
                                                   username,
-                                                  url,
+                                                  target_url,
                                                   '\u2022' * len(password)))
 
         requests_session = requests.Session()
         response = Utility.make_http_request(requests_session.get,
-                                             url,
+                                             target_url,
                                              params={
                                                  'username': username,
                                                  'password': password,
@@ -1773,7 +1776,10 @@ class XStreamCodesProviderEPG(ProviderEPG):
                                         ignored_m3u8_groups,
                                         m3u8_group_map,
                                         parsed_channel_xmltv_id_to_channel)
-                    cls._parse_epg_xml(db_session, parsed_channel_xmltv_id_to_channel)
+                    try:
+                        cls._parse_epg_xml(db_session, parsed_channel_xmltv_id_to_channel)
+                    except Exception:
+                        was_exception_raised = True
 
                 db_session.add(provider_map_class.setting_class()('epg_settings_md5',
                                                                   cls._calculate_epg_settings_md5(**kwargs)))

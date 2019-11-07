@@ -316,13 +316,14 @@ class XtreamCodesProvider(Provider):
         channel_number = kwargs['channel_number']
         playlist_protocol = kwargs['playlist_protocol']
 
+        url = Configuration.get_configuration_parameter('{0}_URL'.format(cls._provider_name.upper()))
         username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
         password = SecurityManager.decrypt_password(
             Configuration.get_configuration_parameter('{0}_PASSWORD'.format(cls._provider_name.upper()))).decode()
 
         track_information.append(
             '{0}{1}{2}/{3}/{4}{5}\n'.format(
-                ProvidersController.get_provider_map_class(cls._provider_name).constants_class().BASE_URL,
+                url,
                 'live/' if playlist_protocol == 'hls'
                 else '',
                 username,
@@ -454,6 +455,7 @@ class XtreamCodesProvider(Provider):
         IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc))
         IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
 
+        url = Configuration.get_configuration_parameter('{0}_URL'.format(cls._provider_name.upper()))
         username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
         password = SecurityManager.decrypt_password(
             Configuration.get_configuration_parameter('{0}_PASSWORD'.format(cls._provider_name.upper()))).decode()
@@ -461,11 +463,7 @@ class XtreamCodesProvider(Provider):
         if protocol == 'hls':
             requests_session = requests.Session()
 
-            target_url = '{0}live/{1}/{2}/{3}.m3u8'.format(
-                ProvidersController.get_provider_map_class(cls._provider_name).constants_class().BASE_URL,
-                username,
-                password,
-                channel_number)
+            target_url = '{0}live/{1}/{2}/{3}.m3u8'.format(url, username, password, channel_number)
 
             logger.debug('Proxying request\n'
                          'Source IP      => {0}\n'
@@ -560,7 +558,7 @@ class XtreamCodesProvider(Provider):
                    '#EXTINF:-1 ,{0}\n' \
                    '{1}live/{2}/{3}/{4}.ts' \
                    ''.format(provider_map_class.epg_class().get_channel_name(int(channel_number)),
-                             provider_map_class.constants_class().BASE_URL,
+                             url,
                              username,
                              password,
                              channel_number)

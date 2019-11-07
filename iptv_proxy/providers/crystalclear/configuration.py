@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class CrystalClearConfiguration(ProviderConfiguration):
     __slots__ = []
 
-    _configuration_schema = {'Provider': ['username', 'password'],
+    _configuration_schema = {'Provider': ['url', 'username', 'password'],
                              'Playlist': ['protocol', 'type'],
                              'EPG': ['source', 'url']}
     _provider_name = CrystalClearConstants.PROVIDER_NAME.lower()

@@ -1,7 +1,6 @@
 class AtomConstants(object):
     __slots__ = []
 
-    BASE_URL = 'http://atom.geekgalaxy.com:83/'
     DB_FILE_NAME = 'atom.db'
     DEFAULT_EPG_SOURCE = 'atom'
     DEFAULT_PLAYLIST_PROTOCOL = 'hls'

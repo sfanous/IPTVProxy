@@ -40,6 +40,10 @@ class ProviderConfiguration(object):
                 configuration_section['server'] = configuration['{0}_SERVER'.format(
                     configuration_parameter_name_prefix)]
 
+            if 'url' in cls._configuration_schema['Provider']:
+                configuration_section['url'] = configuration['{0}_URL'.format(
+                    configuration_parameter_name_prefix)]
+
             if 'username' in cls._configuration_schema['Provider']:
                 configuration_section['username'] = configuration['{0}_USERNAME'.format(
                     configuration_parameter_name_prefix)]
@@ -131,6 +135,26 @@ class ProviderConfiguration(object):
                         ''.format(section_name,
                                   previous_configuration[server_parameter_name],
                                   configuration[server_parameter_name]))
+            # </editor-fold>
+
+            # <editor-fold desc="Detect and handle updates to the URL option">
+            if 'url' in cls._configuration_schema['Provider']:
+                url_parameter_name = '{0}_URL'.format(configuration_parameter_name_prefix)
+
+                if configuration[url_parameter_name] != previous_configuration[url_parameter_name]:
+                    do_reinitialize = True
+                    do_refresh_session = True
+
+                    if message_to_log:
+                        message_to_log.append('')
+
+                    message_to_log.append(
+                        'Detected a change in the url option in the [{0}] section\n'
+                        'Old value => {1}\n'
+                        'New value => {2}\n'
+                        ''.format(section_name,
+                                  previous_configuration[url_parameter_name],
+                                  configuration[url_parameter_name]))
             # </editor-fold>
 
             # <editor-fold desc="Detect and handle updates to the USERNAME option">
@@ -289,6 +313,7 @@ class ProviderConfiguration(object):
 
         service = None
         server = None
+        url = None
         username = None
         password = None
         playlist_protocol = None
@@ -345,6 +370,23 @@ class ProviderConfiguration(object):
                             section_name,
                             '\n'.join(['\u2022 {0}'.format(server)
                                        for server in provider_map_class.constants_class().VALID_SERVER_VALUES])))
+
+            if 'url' in cls._configuration_schema['Provider']:
+                try:
+                    url = provider_section['url']
+
+                    if not provider_map_class.validations_class().is_valid_url(url):
+                        is_valid_section = False
+
+                        error_message_to_log.append(
+                            'The url option in the [{0}] section must be a valid url\n'.format(section_name))
+                    elif url[-1] != '/':
+                        url = '{0}/'.format(url)
+                except KeyError:
+                    is_valid_section = False
+
+                    error_message_to_log.append('Could not find a url option in the [{0}] section\n').format(
+                        section_name)
 
             if 'username' in cls._configuration_schema['Provider']:
                 try:
@@ -463,9 +505,8 @@ class ProviderConfiguration(object):
                             epg_url = epg_section['url']
 
                             if epg_source == provider_map_class.epg_source_enum().OTHER.value and not \
-                                    provider_map_class.validations_class().is_valid_epg_url(epg_url):
+                                    provider_map_class.validations_class().is_valid_url(epg_url):
                                 error_message_to_log.append(
-                                    'Could not find a url option in the [EPG] section\n'
                                     'The url option in the [EPG] section must be a valid url to a XMLTV file')
                         except KeyError:
                             if epg_source == provider_map_class.epg_source_enum().OTHER.value:
@@ -487,6 +528,9 @@ class ProviderConfiguration(object):
 
             if 'server' in cls._configuration_schema['Provider']:
                 configuration['{0}_SERVER'.format(configuration_parameter_name_prefix)] = server
+
+            if 'url' in cls._configuration_schema['Provider']:
+                configuration['{0}_URL'.format(configuration_parameter_name_prefix)] = url
 
             if 'username' in cls._configuration_schema['Provider']:
                 configuration['{0}_USERNAME'.format(configuration_parameter_name_prefix)] = username
@@ -515,12 +559,16 @@ class ProviderConfiguration(object):
                 '{4}'
                 '{5}'
                 '{6}'
-                '{7}'.format(
+                '{7}'
+                '{8}'.format(
                     '{0}_SERVICE           => {1}\n'.format(configuration_parameter_name_prefix,
                                                             service) if service is not None
                     else '',
                     '{0}_SERVER            => {1}\n'.format(configuration_parameter_name_prefix,
                                                             server) if server is not None
+                    else '',
+                    '{0}_URL               => {1}\n'.format(configuration_parameter_name_prefix,
+                                                            url) if url is not None
                     else '',
                     '{0}_USERNAME          => {1}\n'.format(configuration_parameter_name_prefix,
                                                             username) if username is not None
@@ -584,6 +632,14 @@ class ProviderConfiguration(object):
                 except KeyError:
                     errors['{0}Server'.format(errors_parameter_name_prefix)] = 'Must not be an empty value'
 
+            if 'url' in cls._configuration_schema['Provider']:
+                try:
+                    if not provider_map_class.validations_class().is_valid_url(
+                            configuration['{0}_URL'.format(configuration_parameter_name_prefix)]):
+                        errors['{0}Url'.format(errors_parameter_name_prefix)] = 'Must be a valid url'
+                except KeyError:
+                    errors['{0}Username'.format(errors_parameter_name_prefix)] = 'Must not be an empty value'
+
             if 'username' in cls._configuration_schema['Provider']:
                 try:
                     if not provider_map_class.validations_class().is_valid_username(
@@ -636,7 +692,7 @@ class ProviderConfiguration(object):
                     if '{0}_EPG_SOURCE'.format(configuration_parameter_name_prefix) in configuration and \
                             configuration['{0}_EPG_SOURCE'.format(configuration_parameter_name_prefix)] == \
                             provider_map_class.epg_source_enum().OTHER.value and not \
-                            provider_map_class.validations_class().is_valid_epg_url(
+                            provider_map_class.validations_class().is_valid_url(
                                 configuration['{0}_EPG_URL'.format(configuration_parameter_name_prefix)]):
                         errors['{0}EpgUrl'.format(errors_parameter_name_prefix)] = 'Must be a valid url to a XMLTV file'
                 except KeyError:

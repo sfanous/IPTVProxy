@@ -8,4 +8,5 @@
         _{{ provider_name_camel_case }}PlaylistProtocolSelect = $('#{{ provider_name_camel_case }}PlaylistProtocolSelect');
         _{{ provider_name_camel_case }}PlaylistTypeSelect = $('#{{ provider_name_camel_case }}PlaylistTypeSelect');
         _{{ provider_name_camel_case }}TogglePasswordSpan = $('#{{ provider_name_camel_case }}TogglePasswordSpan');
+        _{{ provider_name_camel_case }}UrlInput = $('#{{ provider_name_camel_case }}UrlInput');
         _{{ provider_name_camel_case }}UsernameInput = $('#{{ provider_name_camel_case }}UsernameInput');
