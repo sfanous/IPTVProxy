@@ -16,7 +16,9 @@ Base = declarative_base()
 
 
 @event.listens_for(Engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
+def set_sqlite_pragma(dbapi_connection, _):
+    dbapi_connection.isolation_level = None
+
     cursor = dbapi_connection.cursor()
 
     cursor.execute('PRAGMA cache_size = "-8192"')
