@@ -385,8 +385,8 @@ class ProviderConfiguration(object):
                 except KeyError:
                     is_valid_section = False
 
-                    error_message_to_log.append('Could not find a url option in the [{0}] section\n').format(
-                        section_name)
+                    error_message_to_log.append('Could not find a url option in the [{0}] section\n'.format(
+                        section_name))
 
             if 'username' in cls._configuration_schema['Provider']:
                 try:
@@ -394,8 +394,8 @@ class ProviderConfiguration(object):
                 except KeyError:
                     is_valid_section = False
 
-                    error_message_to_log.append('Could not find a username option in the [{0}] section\n').format(
-                        section_name)
+                    error_message_to_log.append('Could not find a username option in the [{0}] section\n'.format(
+                        section_name))
 
             if 'password' in cls._configuration_schema['Provider']:
                 try:
@@ -403,8 +403,8 @@ class ProviderConfiguration(object):
                 except KeyError:
                     is_valid_section = False
 
-                    error_message_to_log.append('Could not find a password option in the [{0}] section\n').format(
-                        section_name)
+                    error_message_to_log.append('Could not find a password option in the [{0}] section\n'.format(
+                        section_name))
 
             if 'Playlist' in cls._configuration_schema:
                 try:
