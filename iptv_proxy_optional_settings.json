@@ -208,6 +208,7 @@
   "reduce_streams4us_delay": true,
   "reduce_universe_delay": true,
   "reduce_vaderstreams_delay": true,
+  "reduce_vitaltv_delay": true,
   "smoothstreams_channel_name_map": {
   },
   "smoothstreams_epg_update_times": [
@@ -273,6 +274,7 @@
   "use_streams4us_icons": false,
   "use_universe_icons": false,
   "use_vaderstreams_icons": false,
+  "use_vitaltv_icons": false,
   "vaderstreams_channel_name_map": {
   },
   "vaderstreams_epg_update_times": [
@@ -281,5 +283,25 @@
     "12:00:00",
     "18:00:00"
   ],
+  "vitaltv_channel_group_map": {
+    "name": {},
+    "number": {}
+  },
+  "vitaltv_channel_name_map": {
+  },
+  "vitaltv_epg_update_times": [
+    "00:00:00",
+    "06:00:00",
+    "12:00:00",
+    "18:00:00"
+  ],
+  "vitaltv_ignored_channels": {
+    "name": [],
+    "number": []
+  },
+  "vitaltv_ignored_m3u8_groups": [
+  ],
+  "vitaltv_m3u8_group_map": {
+  },
   "wan_connections_require_credentials": true
 }
