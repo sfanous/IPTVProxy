@@ -138,6 +138,10 @@ class SmoothStreams(Provider):
             cls.refresh_session(force_refresh=True)
 
     @classmethod
+    def _initialize_class_variables(cls):
+        pass
+
+    @classmethod
     def _map_nimble_session_id(cls,
                                client_ip_address,
                                channel_number,
@@ -204,9 +208,9 @@ class SmoothStreams(Provider):
                      '    password => {1}\n'
                      '    site     => {2}'.format(url, username, '\u2022' * len(password), site))
 
-        response = Utility.make_http_request(requests_session.get,
+        response = Utility.make_http_request(requests_session.post,
                                              url,
-                                             params={
+                                             data={
                                                  'username': username,
                                                  'password': password,
                                                  'site': site

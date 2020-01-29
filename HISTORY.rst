@@ -2,6 +2,11 @@
 
 Release History
 ===============
+7.7.2.1 (01-29-2020)
+------------------
+* Update SmoothStreams authorization
+* Updated SmoothStreams channel icons
+
 7.7.2 (11-15-2019)
 ------------------
 * Added VitalTV
