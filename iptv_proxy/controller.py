@@ -37,8 +37,8 @@ class Controller(object):
     @classmethod
     def _start_server(cls, is_secure):
         server_port = Configuration.get_configuration_parameter(
-            'SERVER_HTTP{0}_PORT'.format('S' if is_secure
-                                         else ''))
+            'SERVER_HTTP{0}_PORT'.format('S' if is_secure else '')
+        )
 
         server_address = ('', int(server_port))
 
@@ -90,9 +90,11 @@ class Controller(object):
             logger.error(
                 'Failed to start HTTPS Server\n'
                 'Make sure the certificate and key files specified match\n'
-                'Certificate file path => {0}\n'
-                'Key file path         => {1}'.format(SecurityManager.get_certificate_file_path(),
-                                                      SecurityManager.get_key_file_path()))
+                'Certificate file path => %s\n'
+                'Key file path         => %s',
+                SecurityManager.get_certificate_file_path(),
+                SecurityManager.get_key_file_path(),
+            )
         except OSError:
             error_message = ['Failed to start HTTPS Server']
 
@@ -104,37 +106,50 @@ class Controller(object):
                 error_message.append(
                     'SSL file not found\n'
                     'Certificate file path => {0}'.format(
-                        SecurityManager.get_certificate_file_path()))
+                        SecurityManager.get_certificate_file_path()
+                    )
+                )
 
             if not os.path.exists(SecurityManager.get_key_file_path()):
                 if certificate_or_key_file_not_found:
                     error_message[1] = error_message[1].replace('SSL file', 'SSL files')
-                    error_message.append('Key file path         => {0}'.format(
-                        SecurityManager.get_key_file_path()))
+                    error_message.append(
+                        'Key file path         => {0}'.format(
+                            SecurityManager.get_key_file_path()
+                        )
+                    )
                 else:
                     certificate_or_key_file_not_found = True
 
-                    error_message.append('SSL file not found\n'
-                                         'Key file path => {0}'.format(SecurityManager.get_key_file_path()))
+                    error_message.append(
+                        'SSL file not found\n'
+                        'Key file path => {0}'.format(
+                            SecurityManager.get_key_file_path()
+                        )
+                    )
 
             if not certificate_or_key_file_not_found:
                 (status, value_, traceback_) = sys.exc_info()
 
-                error_message.append('\n'.join(traceback.format_exception(status, value_, traceback_)))
+                error_message.append(
+                    '\n'.join(traceback.format_exception(status, value_, traceback_))
+                )
 
             logger.error('\n'.join(error_message))
         finally:
             Privilege.become_unprivileged_user()
 
     @classmethod
-    def start_proxy(cls,
-                    configuration_file_path,
-                    optional_settings_file_path,
-                    db_file_path,
-                    log_file_path,
-                    recordings_directory_path,
-                    certificate_file_path,
-                    key_file_path):
+    def start_proxy(
+        cls,
+        configuration_file_path,
+        optional_settings_file_path,
+        db_file_path,
+        log_file_path,
+        recordings_directory_path,
+        certificate_file_path,
+        key_file_path,
+    ):
         Configuration.set_configuration_file_path(configuration_file_path)
         OptionalSettings.set_optional_settings_file_path(optional_settings_file_path)
         Database.set_database_file_path(db_file_path)

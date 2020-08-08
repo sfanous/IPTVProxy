@@ -36,7 +36,9 @@ class AtomMap(ProviderMap):
         from iptv_proxy.providers.atom.db import AtomDatabase
         from iptv_proxy.providers.atom.enums import AtomEPGSource
         from iptv_proxy.providers.atom.epg import AtomEPG
-        from iptv_proxy.providers.atom.html_template_engine import AtomHTMLTemplateEngine
+        from iptv_proxy.providers.atom.html_template_engine import (
+            AtomHTMLTemplateEngine,
+        )
         from iptv_proxy.providers.atom.json_api import AtomConfigurationJSONAPI
         from iptv_proxy.providers.atom.validations import AtomValidations
 

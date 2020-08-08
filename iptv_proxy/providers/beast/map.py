@@ -36,7 +36,9 @@ class BeastMap(ProviderMap):
         from iptv_proxy.providers.beast.db import BeastDatabase
         from iptv_proxy.providers.beast.enums import BeastEPGSource
         from iptv_proxy.providers.beast.epg import BeastEPG
-        from iptv_proxy.providers.beast.html_template_engine import BeastHTMLTemplateEngine
+        from iptv_proxy.providers.beast.html_template_engine import (
+            BeastHTMLTemplateEngine,
+        )
         from iptv_proxy.providers.beast.json_api import BeastConfigurationJSONAPI
         from iptv_proxy.providers.beast.validations import BeastValidations
 

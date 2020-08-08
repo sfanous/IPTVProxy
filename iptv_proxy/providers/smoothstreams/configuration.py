@@ -10,9 +10,11 @@ logger = logging.getLogger(__name__)
 class SmoothStreamsConfiguration(ProviderConfiguration):
     __slots__ = []
 
-    _configuration_schema = {'Provider': ['service', 'server', 'username', 'password'],
-                             'Playlist': ['protocol', 'type'],
-                             'EPG': ['source', 'url']}
+    _configuration_schema = {
+        'Provider': ['service', 'server', 'username', 'password'],
+        'Playlist': ['protocol', 'type'],
+        'EPG': ['source', 'url'],
+    }
     _provider_name = SmoothStreamsConstants.PROVIDER_NAME.lower()
 
 

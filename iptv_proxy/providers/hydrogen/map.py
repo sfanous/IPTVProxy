@@ -36,7 +36,9 @@ class HydrogenMap(ProviderMap):
         from iptv_proxy.providers.hydrogen.db import HydrogenDatabase
         from iptv_proxy.providers.hydrogen.enums import HydrogenEPGSource
         from iptv_proxy.providers.hydrogen.epg import HydrogenEPG
-        from iptv_proxy.providers.hydrogen.html_template_engine import HydrogenHTMLTemplateEngine
+        from iptv_proxy.providers.hydrogen.html_template_engine import (
+            HydrogenHTMLTemplateEngine,
+        )
         from iptv_proxy.providers.hydrogen.json_api import HydrogenConfigurationJSONAPI
         from iptv_proxy.providers.hydrogen.validations import HydrogenValidations
 

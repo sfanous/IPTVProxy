@@ -1,6 +1,5 @@
 import logging
 
-import requests
 import validators
 
 from iptv_proxy.providers import ProvidersController
@@ -17,9 +16,14 @@ class ProviderValidations(object):
     def is_valid_epg_source(cls, epg_source):
         is_valid_epg_source = True
 
-        provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
+        provider_map_class = ProvidersController.get_provider_map_class(
+            cls._provider_name
+        )
 
-        if epg_source not in provider_map_class.constants_class().VALID_EPG_SOURCE_VALUES:
+        if (
+            epg_source
+            not in provider_map_class.constants_class().VALID_EPG_SOURCE_VALUES
+        ):
             is_valid_epg_source = False
 
         return is_valid_epg_source
@@ -32,9 +36,14 @@ class ProviderValidations(object):
     def is_valid_playlist_protocol(cls, playlist_protocol):
         is_valid_playlist_protocol = True
 
-        provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
+        provider_map_class = ProvidersController.get_provider_map_class(
+            cls._provider_name
+        )
 
-        if playlist_protocol not in provider_map_class.constants_class().VALID_PLAYLIST_PROTOCOL_VALUES:
+        if (
+            playlist_protocol
+            not in provider_map_class.constants_class().VALID_PLAYLIST_PROTOCOL_VALUES
+        ):
             is_valid_playlist_protocol = False
 
         return is_valid_playlist_protocol
@@ -43,9 +52,14 @@ class ProviderValidations(object):
     def is_valid_playlist_type(cls, playlist_type):
         is_valid_playlist_type = True
 
-        provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
+        provider_map_class = ProvidersController.get_provider_map_class(
+            cls._provider_name
+        )
 
-        if playlist_type not in provider_map_class.constants_class().VALID_PLAYLIST_TYPE_VALUES:
+        if (
+            playlist_type
+            not in provider_map_class.constants_class().VALID_PLAYLIST_TYPE_VALUES
+        ):
             is_valid_playlist_type = False
 
         return is_valid_playlist_type
@@ -54,7 +68,9 @@ class ProviderValidations(object):
     def is_valid_server(cls, server):
         is_valid_server = True
 
-        provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
+        provider_map_class = ProvidersController.get_provider_map_class(
+            cls._provider_name
+        )
 
         if server not in provider_map_class.constants_class().VALID_SERVER_VALUES:
             is_valid_server = False
@@ -65,7 +81,9 @@ class ProviderValidations(object):
     def is_valid_service(cls, service):
         is_valid_service = True
 
-        provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
+        provider_map_class = ProvidersController.get_provider_map_class(
+            cls._provider_name
+        )
 
         if service not in provider_map_class.constants_class().VALID_SERVICE_VALUES:
             is_valid_service = False

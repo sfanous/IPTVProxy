@@ -52,8 +52,12 @@ class Database(object):
 
     @classmethod
     def initialize(cls):
-        cls._engine = create_engine('sqlite:///{0}'.format(cls._database_file_path), echo=False, module=sqlite3)
-        cls._session_factory = sessionmaker(cls._engine, autoflush=False, expire_on_commit=False)
+        cls._engine = create_engine(
+            'sqlite:///{0}'.format(cls._database_file_path), echo=False, module=sqlite3
+        )
+        cls._session_factory = sessionmaker(
+            cls._engine, autoflush=False, expire_on_commit=False
+        )
 
         Base.metadata.create_all(cls._engine)
 

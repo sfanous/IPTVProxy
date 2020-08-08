@@ -16,10 +16,32 @@ class SmoothStreamsConstants(object):
     VALID_EPG_SOURCE_VALUES = ['fog', 'other', 'smoothstreams']
     VALID_PLAYLIST_PROTOCOL_VALUES = ['hls', 'mpegts', 'rtmp']
     VALID_PLAYLIST_TYPE_VALUES = ['dynamic', 'static']
-    VALID_SERVER_VALUES = ['dap', 'deu', 'deu-de', 'deu-nl', 'deu-nl1', 'deu-nl2', 'deu-nl3', 'deu-nl4',
-                           'deu-nl5', 'deu-uk', 'deu-uk1', 'deu-uk2', 'dna', 'dnae', 'dnae1', 'dnae2',
-                           'dnae3', 'dnae4', 'dnae6', 'dnaw', 'dnaw1', 'dnaw2', 'dnaw3', 'dnaw4'
-                           ]
+    VALID_SERVER_VALUES = [
+        'dap',
+        'deu',
+        'deu-de',
+        'deu-nl',
+        'deu-nl1',
+        'deu-nl2',
+        'deu-nl3',
+        'deu-nl4',
+        'deu-nl5',
+        'deu-uk',
+        'deu-uk1',
+        'deu-uk2',
+        'dna',
+        'dnae',
+        'dnae1',
+        'dnae2',
+        'dnae3',
+        'dnae4',
+        'dnae6',
+        'dnaw',
+        'dnaw1',
+        'dnaw2',
+        'dnaw3',
+        'dnaw4',
+    ]
     VALID_SERVICE_VALUES = ['view247', 'viewmmasr', 'viewss', 'viewstvn']
 
     _provider_name = PROVIDER_NAME.lower()

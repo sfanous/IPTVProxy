@@ -36,8 +36,10 @@ class VitalTVDatabase(ProviderDatabase):
 
     @classmethod
     def initialize(cls):
-        cls._database_file_path = os.path.join(os.path.dirname(Database.get_database_file_path()),
-                                               VitalTVConstants.DB_FILE_NAME)
+        cls._database_file_path = os.path.join(
+            os.path.dirname(Database.get_database_file_path()),
+            VitalTVConstants.DB_FILE_NAME,
+        )
 
         super().initialize()
 
@@ -45,8 +47,10 @@ class VitalTVDatabase(ProviderDatabase):
 
     @classmethod
     def initialize_temporary(cls):
-        cls._temporary_database_file_path = os.path.join(os.path.dirname(Database.get_database_file_path()),
-                                                         VitalTVConstants.TEMPORARY_DB_FILE_NAME)
+        cls._temporary_database_file_path = os.path.join(
+            os.path.dirname(Database.get_database_file_path()),
+            VitalTVConstants.TEMPORARY_DB_FILE_NAME,
+        )
 
         super().initialize_temporary()
 

@@ -41,10 +41,16 @@ class Privilege(object):
 
             try:
                 username_of_user_invoking_sudo = os.environ['SUDO_USER']
-                password_database_entry_for_user_invoking_sudo = pwd.getpwnam(username_of_user_invoking_sudo)
+                password_database_entry_for_user_invoking_sudo = pwd.getpwnam(
+                    username_of_user_invoking_sudo
+                )
 
-                cls._gid_of_user_invoking_sudo = password_database_entry_for_user_invoking_sudo.pw_gid
-                cls._uid_of_user_invoking_sudo = password_database_entry_for_user_invoking_sudo.pw_uid
+                cls._gid_of_user_invoking_sudo = (
+                    password_database_entry_for_user_invoking_sudo.pw_gid
+                )
+                cls._uid_of_user_invoking_sudo = (
+                    password_database_entry_for_user_invoking_sudo.pw_uid
+                )
             except KeyError:
                 cls._gid_of_user_invoking_sudo = cls._root_user_gid
                 cls._uid_of_user_invoking_sudo = cls._root_user_uid

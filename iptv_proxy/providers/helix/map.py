@@ -36,7 +36,9 @@ class HelixMap(ProviderMap):
         from iptv_proxy.providers.helix.db import HelixDatabase
         from iptv_proxy.providers.helix.enums import HelixEPGSource
         from iptv_proxy.providers.helix.epg import HelixEPG
-        from iptv_proxy.providers.helix.html_template_engine import HelixHTMLTemplateEngine
+        from iptv_proxy.providers.helix.html_template_engine import (
+            HelixHTMLTemplateEngine,
+        )
         from iptv_proxy.providers.helix.json_api import HelixConfigurationJSONAPI
         from iptv_proxy.providers.helix.validations import HelixValidations
 

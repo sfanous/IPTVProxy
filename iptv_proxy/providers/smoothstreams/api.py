@@ -53,18 +53,22 @@ class SmoothStreams(Provider):
     @classmethod
     def _do_refresh_session(cls):
         try:
-            if datetime.now(pytz.utc) < (cls._get_session_parameter('expires_on') - timedelta(minutes=30)):
+            if datetime.now(pytz.utc) < (
+                cls._get_session_parameter('expires_on') - timedelta(minutes=30)
+            ):
                 return False
-            else:
-                logger.debug('SmoothStreams session\n'
-                             'Status => Expired\n'
-                             'Action => Retrieve it')
 
-                return True
+            logger.debug(
+                'SmoothStreams session\nStatus => Expired\nAction => Retrieve it'
+            )
+
+            return True
         except KeyError:
-            logger.error('SmoothStreams session\n'
-                         'Status => Never retrieved\n'
-                         'Action => Retrieve it')
+            logger.error(
+                'SmoothStreams session\n'
+                'Status => Never retrieved\n'
+                'Action => Retrieve it'
+            )
 
             return True
 
@@ -76,16 +80,15 @@ class SmoothStreams(Provider):
 
         track_information.append(
             '{0}://{1}.smoothstreams.tv:{2}/{3}/ch{4:02}q1.stream{5}?wmsAuthSign={6}\n'.format(
-                'https' if playlist_protocol in ['hls', 'mpegts']
-                else 'rtmp',
+                'https' if playlist_protocol in ['hls', 'mpegts'] else 'rtmp',
                 Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVER'),
-                '443' if playlist_protocol in ['hls', 'mpegts']
-                else '3635',
+                '443' if playlist_protocol in ['hls', 'mpegts'] else '3635',
                 Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVICE'),
                 int(channel_number),
-                '/mpeg.2ts' if playlist_protocol == 'mpegts'
-                else '',
-                authorization_token))
+                '/mpeg.2ts' if playlist_protocol == 'mpegts' else '',
+                authorization_token,
+            )
+        )
 
     @classmethod
     def _get_session_parameter(cls, parameter_name):
@@ -98,9 +101,13 @@ class SmoothStreams(Provider):
             return cls._nimble_session_id_map.get(hijacked_nimble_session_id)
 
     @classmethod
-    def _hijack_nimble_session_id(cls, hijacked_nimble_session_id, hijacking_nimble_session_id):
+    def _hijack_nimble_session_id(
+        cls, hijacked_nimble_session_id, hijacking_nimble_session_id
+    ):
         with cls._nimble_session_id_map_lock.writer_lock:
-            cls._nimble_session_id_map[hijacked_nimble_session_id] = hijacking_nimble_session_id
+            cls._nimble_session_id_map[
+                hijacked_nimble_session_id
+            ] = hijacking_nimble_session_id
 
     @classmethod
     def _initialize(cls, **kwargs):
@@ -113,7 +120,9 @@ class SmoothStreams(Provider):
                 db_session = SmoothStreamsDatabase.create_session()
 
                 try:
-                    setting_row = SmoothStreamsDatabaseAccess.query_setting(db_session, 'session')
+                    setting_row = SmoothStreamsDatabaseAccess.query_setting(
+                        db_session, 'session'
+                    )
 
                     if setting_row is not None:
                         cls._session = jsonpickle.decode(setting_row.value)
@@ -121,12 +130,15 @@ class SmoothStreams(Provider):
                         current_date_time_in_utc = datetime.now(pytz.utc)
 
                         if current_date_time_in_utc < cls._session['expires_on']:
-                            logger.debug('Loaded SmoothStreams session\n'
-                                         'Authorization token => {0}\n'
-                                         'Expires on          => {1}'.format(cls._session['authorization_token'],
-                                                                             cls._session['expires_on'].astimezone(
-                                                                                 tzlocal.get_localzone()).strftime(
-                                                                                 '%Y-%m-%d %H:%M:%S%z')))
+                            logger.debug(
+                                'Loaded SmoothStreams session\n'
+                                'Authorization token => %s\n'
+                                'Expires on          => %s',
+                                cls._session['authorization_token'],
+                                cls._session['expires_on']
+                                .astimezone(tzlocal.get_localzone())
+                                .strftime('%Y-%m-%d %H:%M:%S%z'),
+                            )
                         else:
                             do_refresh_session = True
                     else:
@@ -142,46 +154,68 @@ class SmoothStreams(Provider):
         pass
 
     @classmethod
-    def _map_nimble_session_id(cls,
-                               client_ip_address,
-                               channel_number,
-                               client_uuid,
-                               nimble_session_id,
-                               authorization_token):
+    def _map_nimble_session_id(
+        cls,
+        client_ip_address,
+        channel_number,
+        client_uuid,
+        nimble_session_id,
+        authorization_token,
+    ):
         if authorization_token != cls._get_session_parameter('authorization_token'):
-            target_nimble_session_id = cls._get_target_nimble_session_id(nimble_session_id)
+            target_nimble_session_id = cls._get_target_nimble_session_id(
+                nimble_session_id
+            )
 
             if not target_nimble_session_id:
-                logger.debug('SmoothStreams authorization token {0} in request from {1}/{2} expired'.format(
+                logger.debug(
+                    'SmoothStreams authorization token %s in request from %s/%s expired',
                     authorization_token,
                     client_ip_address,
-                    client_uuid))
+                    client_uuid,
+                )
 
                 try:
-                    response_text = cls.download_playlist_m3u8(client_ip_address,
-                                                               client_uuid,
-                                                               '/playlist.m3u8',
-                                                               dict(channel_number=channel_number,
-                                                                    protocol='hls'))
+                    response_text = cls.download_playlist_m3u8(
+                        client_ip_address,
+                        client_uuid,
+                        '/playlist.m3u8',
+                        dict(channel_number=channel_number, protocol='hls'),
+                    )
 
                     m3u8_object = m3u8.loads(response_text)
 
-                    requested_path_with_query_string = '/{0}'.format(m3u8_object.data['playlists'][0]['uri'])
-                    requested_url_components = urllib.parse.urlparse(requested_path_with_query_string)
-                    requested_query_string_parameters = dict(urllib.parse.parse_qsl(requested_url_components.query))
+                    requested_path_with_query_string = '/{0}'.format(
+                        m3u8_object.data['playlists'][0]['uri']
+                    )
+                    requested_url_components = urllib.parse.urlparse(
+                        requested_path_with_query_string
+                    )
+                    requested_query_string_parameters = dict(
+                        urllib.parse.parse_qsl(requested_url_components.query)
+                    )
 
-                    target_nimble_session_id = requested_query_string_parameters.get('nimblesessionid',
-                                                                                     nimble_session_id)
+                    target_nimble_session_id = requested_query_string_parameters.get(
+                        'nimblesessionid', nimble_session_id
+                    )
 
-                    logger.debug('Hijacking SmoothStreams session\n'
-                                 'Expired nimble session ID => {0}\n'
-                                 'Target nimble session ID  => {1}'.format(nimble_session_id, target_nimble_session_id))
-                    cls._hijack_nimble_session_id(nimble_session_id, target_nimble_session_id)
+                    logger.debug(
+                        'Hijacking SmoothStreams session\n'
+                        'Expired nimble session ID => %s\n'
+                        'Target nimble session ID  => %s',
+                        nimble_session_id,
+                        target_nimble_session_id,
+                    )
+                    cls._hijack_nimble_session_id(
+                        nimble_session_id, target_nimble_session_id
+                    )
                 except requests.exceptions.HTTPError:
                     target_nimble_session_id = nimble_session_id
 
                     (type_, value_, traceback_) = sys.exc_info()
-                    logger.error('\n'.join(traceback.format_exception(type_, value_, traceback_)))
+                    logger.error(
+                        '\n'.join(traceback.format_exception(type_, value_, traceback_))
+                    )
         else:
             target_nimble_session_id = nimble_session_id
 
@@ -191,64 +225,84 @@ class SmoothStreams(Provider):
     def _refresh_session(cls):
         requests_session = requests.Session()
 
-        if Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVICE') == 'viewmmasr':
+        if (
+            Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVICE')
+            == 'viewmmasr'
+        ):
             url = 'https://www.mma-tv.net/loginForm.php'
         else:
             url = 'https://auth.smoothstreams.tv/hash_api.php'
 
         username = Configuration.get_configuration_parameter('SMOOTHSTREAMS_USERNAME')
         password = SecurityManager.decrypt_password(
-            Configuration.get_configuration_parameter('SMOOTHSTREAMS_PASSWORD')).decode()
+            Configuration.get_configuration_parameter('SMOOTHSTREAMS_PASSWORD')
+        ).decode()
         site = Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVICE')
 
-        logger.debug('Retrieving SmoothStreams authorization token\n'
-                     'URL => {0}\n'
-                     '  Parameters\n'
-                     '    username => {0}\n'
-                     '    password => {1}\n'
-                     '    site     => {2}'.format(url, username, '\u2022' * len(password), site))
+        logger.debug(
+            'Retrieving SmoothStreams authorization token\n'
+            'URL => %s\n'
+            '  Parameters\n'
+            '    username => %s\n'
+            '    password => %s\n'
+            '    site     => %s',
+            url,
+            username,
+            '\u2022' * len(password),
+            site,
+        )
 
-        response = Utility.make_http_request(requests_session.post,
-                                             url,
-                                             data={
-                                                 'username': username,
-                                                 'password': password,
-                                                 'site': site
-                                             },
-                                             headers=requests_session.headers,
-                                             cookies=requests_session.cookies.get_dict())
+        response = Utility.make_http_request(
+            requests_session.post,
+            url,
+            data={'username': username, 'password': password, 'site': site},
+            headers=requests_session.headers,
+            cookies=requests_session.cookies.get_dict(),
+        )
 
         response_status_code = response.status_code
-        if response_status_code != requests.codes.OK and response_status_code != requests.codes.NOT_FOUND:
+        if response_status_code in (requests.codes.OK, requests.codes.NOT_FOUND):
             logger.error(Utility.assemble_response_from_log_message(response))
 
             response.raise_for_status()
 
-        logger.trace(Utility.assemble_response_from_log_message(response,
-                                                                is_content_json=True,
-                                                                do_print_content=True))
+        logger.trace(
+            Utility.assemble_response_from_log_message(
+                response, is_content_json=True, do_print_content=True
+            )
+        )
 
         authorization_token_response = response.json()
         session = {}
 
         if 'code' in authorization_token_response:
             if authorization_token_response['code'] == '0':
-                logger.error('Failed to retrieve SmoothStreams authorization token\n'
-                             'Error => {0}'.format(authorization_token_response['error']))
+                logger.error(
+                    'Failed to retrieve SmoothStreams authorization token\n'
+                    'Error => %s',
+                    authorization_token_response['error'],
+                )
             elif authorization_token_response['code'] == '1':
                 session['authorization_token'] = authorization_token_response['hash']
                 session['expires_on'] = datetime.now(pytz.utc) + timedelta(
-                    seconds=(authorization_token_response['valid'] * 60))
+                    seconds=(authorization_token_response['valid'] * 60)
+                )
                 session['requests_session'] = requests_session
 
-                logger.info('Retrieved SmoothStreams authorization token\n'
-                            'Hash       => {0}\n'
-                            'Expires On => {1}'.format(session['authorization_token'],
-                                                       session['expires_on'].astimezone(
-                                                           tzlocal.get_localzone()).strftime('%Y-%m-%d %H:%M:%S%z')))
+                logger.info(
+                    'Retrieved SmoothStreams authorization token\n'
+                    'Hash       => %s\n'
+                    'Expires On => %s',
+                    session['authorization_token'],
+                    session['expires_on']
+                    .astimezone(tzlocal.get_localzone())
+                    .strftime('%Y-%m-%d %H:%M:%S%z'),
+                )
         else:
-            logger.error('Failed to retrieve SmoothStreams authorization token\n'
-                         'Error => JSON response contains no [\'code\'] field')
+            logger.error(
+                'Failed to retrieve SmoothStreams authorization token\n'
+                'Error => JSON response contains no [\'code\'] field'
+            )
 
         if response_status_code != requests.codes.OK:
             response.raise_for_status()
@@ -280,21 +334,33 @@ class SmoothStreams(Provider):
         cls.refresh_session(force_refresh=True)
 
     @classmethod
-    def download_chunks_m3u8(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
+    def download_chunks_m3u8(
+        cls,
+        client_ip_address,
+        client_uuid,
+        requested_path,
+        requested_query_string_parameters,
+    ):
         authorization_token = requested_query_string_parameters.get('wmsAuthSign')
         channel_number = requested_query_string_parameters.get('channel_number')
         http_token = requested_query_string_parameters.get('http_token')
         nimble_session_id = requested_query_string_parameters.get('nimblesessionid')
 
-        nimble_session_id = cls._map_nimble_session_id(client_ip_address,
-                                                       channel_number,
-                                                       client_uuid,
-                                                       nimble_session_id,
-                                                       authorization_token)
+        nimble_session_id = cls._map_nimble_session_id(
+            client_ip_address,
+            channel_number,
+            client_uuid,
+            nimble_session_id,
+            authorization_token,
+        )
 
         IPTVProxy.refresh_serviceable_clients(client_uuid, client_ip_address)
-        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc))
-        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
+        IPTVProxy.set_serviceable_client_parameter(
+            client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc)
+        )
+        IPTVProxy.set_serviceable_client_parameter(
+            client_uuid, 'last_requested_channel_number', channel_number
+        )
 
         authorization_token = cls._get_session_parameter('authorization_token')
         requests_session = cls._get_session_parameter('requests_session')
@@ -303,58 +369,79 @@ class SmoothStreams(Provider):
             Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVER'),
             Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVICE'),
             channel_number,
-            re.sub(r'(/.*)?(/.*\.m3u8)', r'\2', requested_path))
+            re.sub(r'(/.*)?(/.*\.m3u8)', r'\2', requested_path),
+        )
 
-        logger.debug('Proxying request\n'
-                     'Source IP      => {0}\n'
-                     'Requested path => {1}\n'
-                     '  Parameters\n'
-                     '    channel_number  => {2}\n'
-                     '    client_uuid     => {3}\n'
-                     'Target path    => {4}\n'
-                     '  Parameters\n'
-                     '    nimblesessionid => {5}\n'
-                     '    wmsAuthSign     => {6}'.format(client_ip_address,
-                                                         requested_path,
-                                                         channel_number,
-                                                         client_uuid,
-                                                         target_url,
-                                                         nimble_session_id,
-                                                         authorization_token))
+        logger.debug(
+            'Proxying request\n'
+            'Source IP      => %s\n'
+            'Requested path => %s\n'
+            '  Parameters\n'
+            '    channel_number  => %s\n'
+            '    client_uuid     => %s\n'
+            'Target path    => %s\n'
+            '  Parameters\n'
+            '    nimblesessionid => %s\n'
+            '    wmsAuthSign     => %s',
+            client_ip_address,
+            requested_path,
+            channel_number,
+            client_uuid,
+            target_url,
+            nimble_session_id,
+            authorization_token,
+        )
 
-        response = Utility.make_http_request(requests_session.get,
-                                             target_url,
-                                             params={
-                                                 'nimblesessionid': nimble_session_id,
-                                                 'wmsAuthSign': authorization_token
-                                             },
-                                             headers=requests_session.headers,
-                                             cookies=requests_session.cookies.get_dict())
+        response = Utility.make_http_request(
+            requests_session.get,
+            target_url,
+            params={
+                'nimblesessionid': nimble_session_id,
+                'wmsAuthSign': authorization_token,
+            },
+            headers=requests_session.headers,
+            cookies=requests_session.cookies.get_dict(),
+        )
 
         if response.status_code == requests.codes.OK:
-            logger.trace(Utility.assemble_response_from_log_message(response,
-                                                                    is_content_text=True,
-                                                                    do_print_content=True))
+            logger.trace(
+                Utility.assemble_response_from_log_message(
+                    response, is_content_text=True, do_print_content=True
+                )
+            )
 
-            return response.text.replace('.ts?', '.ts?channel_number={0}&client_uuid={1}&http_token={2}&'.format(
-                channel_number,
-                client_uuid,
-                urllib.parse.quote(http_token) if http_token
-                else ''))
-        else:
-            logger.error(Utility.assemble_response_from_log_message(response))
+            return response.text.replace(
+                '.ts?',
+                '.ts?channel_number={0}&client_uuid={1}&http_token={2}&'.format(
+                    channel_number,
+                    client_uuid,
+                    urllib.parse.quote(http_token) if http_token else '',
+                ),
+            )
 
-            response.raise_for_status()
+        logger.error(Utility.assemble_response_from_log_message(response))
+
+        response.raise_for_status()
 
     @classmethod
-    def download_playlist_m3u8(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
+    def download_playlist_m3u8(
+        cls,
+        client_ip_address,
+        client_uuid,
+        requested_path,
+        requested_query_string_parameters,
+    ):
         channel_number = requested_query_string_parameters.get('channel_number')
         http_token = requested_query_string_parameters.get('http_token')
         protocol = requested_query_string_parameters.get('protocol')
 
         IPTVProxy.refresh_serviceable_clients(client_uuid, client_ip_address)
-        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc))
-        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
+        IPTVProxy.set_serviceable_client_parameter(
+            client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc)
+        )
+        IPTVProxy.set_serviceable_client_parameter(
+            client_uuid, 'last_requested_channel_number', channel_number
+        )
 
         cls.refresh_session()
 
@@ -366,84 +453,106 @@ class SmoothStreams(Provider):
                 Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVER'),
                 Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVICE'),
                 channel_number,
-                re.sub(r'(/.*)?(/.*\.m3u8)', r'\2', requested_path))
+                re.sub(r'(/.*)?(/.*\.m3u8)', r'\2', requested_path),
+            )
 
-            logger.debug('Proxying request\n'
-                         'Source IP      => {0}\n'
-                         'Requested path => {1}\n'
-                         '  Parameters\n'
-                         '    channel_number => {2}\n'
-                         '    client_uuid    => {3}\n'
-                         '    protocol       => {4}\n'
-                         'Target path    => {5}\n'
-                         '  Parameters\n'
-                         '    wmsAuthSign    => {6}'.format(client_ip_address,
-                                                            requested_path,
-                                                            channel_number,
-                                                            client_uuid,
-                                                            protocol,
-                                                            target_url,
-                                                            authorization_token))
+            logger.debug(
+                'Proxying request\n'
+                'Source IP      => %s\n'
+                'Requested path => %s\n'
+                '  Parameters\n'
+                '    channel_number => %s\n'
+                '    client_uuid    => %s\n'
+                '    protocol       => %s\n'
+                'Target path    => %s\n'
+                '  Parameters\n'
+                '    wmsAuthSign    => %s',
+                client_ip_address,
+                requested_path,
+                channel_number,
+                client_uuid,
+                protocol,
+                target_url,
+                authorization_token,
+            )
 
-            response = Utility.make_http_request(requests_session.get,
-                                                 target_url,
-                                                 params={
-                                                     'wmsAuthSign': authorization_token
-                                                 },
-                                                 headers=requests_session.headers,
-                                                 cookies=requests_session.cookies.get_dict())
+            response = Utility.make_http_request(
+                requests_session.get,
+                target_url,
+                params={'wmsAuthSign': authorization_token},
+                headers=requests_session.headers,
+                cookies=requests_session.cookies.get_dict(),
+            )
 
             if response.status_code == requests.codes.OK:
-                logger.trace(Utility.assemble_response_from_log_message(response,
-                                                                        is_content_text=True,
-                                                                        do_print_content=True))
+                logger.trace(
+                    Utility.assemble_response_from_log_message(
+                        response, is_content_text=True, do_print_content=True
+                    )
+                )
 
-                return response.text.replace('chunks.m3u8?',
-                                             'chunks.m3u8?channel_number={0}&client_uuid={1}&http_token={2}&'.format(
-                                                 channel_number,
-                                                 client_uuid,
-                                                 urllib.parse.quote(http_token) if http_token
-                                                 else ''))
-            else:
-                logger.error(Utility.assemble_response_from_log_message(response))
+                return response.text.replace(
+                    'chunks.m3u8?',
+                    'chunks.m3u8?channel_number={0}&client_uuid={1}&http_token={2}&'.format(
+                        channel_number,
+                        client_uuid,
+                        urllib.parse.quote(http_token) if http_token else '',
+                    ),
+                )
 
-                response.raise_for_status()
+            logger.error(Utility.assemble_response_from_log_message(response))
+
+            response.raise_for_status()
         elif protocol == 'mpegts':
             authorization_token = cls._get_session_parameter('authorization_token')
 
-            return '#EXTM3U\n' \
-                   '#EXTINF:-1 ,{0}\n' \
-                   'https://{1}.smoothstreams.tv:443/{2}/ch{3}q1.stream/mpeg.2ts?' \
-                   'wmsAuthSign={4}'.format(SmoothStreamsEPG.get_channel_name(int(channel_number)),
-                                            Configuration.get_configuration_parameter(
-                                                'SMOOTHSTREAMS_SERVER'),
-                                            Configuration.get_configuration_parameter(
-                                                'SMOOTHSTREAMS_SERVICE'),
-                                            channel_number,
-                                            authorization_token)
+            return (
+                '#EXTM3U\n'
+                '#EXTINF:-1 ,{0}\n'
+                'https://{1}.smoothstreams.tv:443/{2}/ch{3}q1.stream/mpeg.2ts?'
+                'wmsAuthSign={4}'.format(
+                    SmoothStreamsEPG.get_channel_name(int(channel_number)),
+                    Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVER'),
+                    Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVICE'),
+                    channel_number,
+                    authorization_token,
+                )
+            )
         elif protocol == 'rtmp':
             authorization_token = cls._get_session_parameter('authorization_token')
 
-            return '#EXTM3U\n' \
-                   '#EXTINF:-1 ,{0}\n' \
-                   'rtmp://{1}.smoothstreams.tv:3635/{2}/ch{3}q1.stream?' \
-                   'wmsAuthSign={4}'.format(SmoothStreamsEPG.get_channel_name(int(channel_number)),
-                                            Configuration.get_configuration_parameter(
-                                                'SMOOTHSTREAMS_SERVER'),
-                                            Configuration.get_configuration_parameter(
-                                                'SMOOTHSTREAMS_SERVICE'),
-                                            channel_number,
-                                            authorization_token)
+            return (
+                '#EXTM3U\n'
+                '#EXTINF:-1 ,{0}\n'
+                'rtmp://{1}.smoothstreams.tv:3635/{2}/ch{3}q1.stream?'
+                'wmsAuthSign={4}'.format(
+                    SmoothStreamsEPG.get_channel_name(int(channel_number)),
+                    Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVER'),
+                    Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVICE'),
+                    channel_number,
+                    authorization_token,
+                )
+            )
 
     @classmethod
-    def download_ts_file(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
+    def download_ts_file(
+        cls,
+        client_ip_address,
+        client_uuid,
+        requested_path,
+        requested_query_string_parameters,
+    ):
         authorization_token = requested_query_string_parameters.get('wmsAuthSign')
         channel_number = requested_query_string_parameters.get('channel_number')
         nimble_session_id = requested_query_string_parameters.get('nimblesessionid')
 
         IPTVProxy.refresh_serviceable_clients(client_uuid, client_ip_address)
-        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc))
-        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
+        IPTVProxy.set_serviceable_client_parameter(
+            client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc)
+        )
+        IPTVProxy.set_serviceable_client_parameter(
+            client_uuid, 'last_requested_channel_number', channel_number
+        )
 
         requests_session = cls._get_session_parameter('requests_session')
 
@@ -451,49 +560,62 @@ class SmoothStreams(Provider):
             Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVER'),
             Configuration.get_configuration_parameter('SMOOTHSTREAMS_SERVICE'),
             channel_number,
-            re.sub(r'(/.*)?(/.*\.ts)', r'\2', requested_path))
+            re.sub(r'(/.*)?(/.*\.ts)', r'\2', requested_path),
+        )
 
-        logger.debug('Proxying request\n'
-                     'Source IP      => {0}\n'
-                     'Requested path => {1}\n'
-                     '  Parameters\n'
-                     '    channel_number  => {2}\n'
-                     '    client_uuid     => {3}\n'
-                     'Target path    => {4}\n'
-                     '  Parameters\n'
-                     '    nimblesessionid => {5}\n'
-                     '    wmsAuthSign     => {6}'.format(client_ip_address,
-                                                         requested_path,
-                                                         channel_number,
-                                                         client_uuid,
-                                                         target_url,
-                                                         nimble_session_id,
-                                                         authorization_token))
+        logger.debug(
+            'Proxying request\n'
+            'Source IP      => %s\n'
+            'Requested path => %s\n'
+            '  Parameters\n'
+            '    channel_number  => %s\n'
+            '    client_uuid     => %s\n'
+            'Target path    => %s\n'
+            '  Parameters\n'
+            '    nimblesessionid => %s\n'
+            '    wmsAuthSign     => %s',
+            client_ip_address,
+            requested_path,
+            channel_number,
+            client_uuid,
+            target_url,
+            nimble_session_id,
+            authorization_token,
+        )
 
-        response = Utility.make_http_request(requests_session.get,
-                                             target_url,
-                                             params={
-                                                 'nimblesessionid': nimble_session_id,
-                                                 'wmsAuthSign': authorization_token
-                                             },
-                                             headers=requests_session.headers,
-                                             cookies=requests_session.cookies.get_dict())
+        response = Utility.make_http_request(
+            requests_session.get,
+            target_url,
+            params={
+                'nimblesessionid': nimble_session_id,
+                'wmsAuthSign': authorization_token,
+            },
+            headers=requests_session.headers,
+            cookies=requests_session.cookies.get_dict(),
+        )
 
         if response.status_code == requests.codes.OK:
-            logger.trace(Utility.assemble_response_from_log_message(response,
-                                                                    is_content_binary=True))
+            logger.trace(
+                Utility.assemble_response_from_log_message(
+                    response, is_content_binary=True
+                )
+            )
 
             return response.content
-        else:
-            logger.error(Utility.assemble_response_from_log_message(response))
 
-            response.raise_for_status()
+        logger.error(Utility.assemble_response_from_log_message(response))
+
+        response.raise_for_status()
 
     @classmethod
-    def generate_playlist_m3u8_tracks(cls,
-                                      generate_playlist_m3u8_tracks_mapping,
-                                      sort_by=M388PlaylistSortOrder.CHANNEL_NUMBER.value):
-        return super().generate_playlist_m3u8_tracks(generate_playlist_m3u8_tracks_mapping, sort_by=sort_by)
+    def generate_playlist_m3u8_tracks(
+        cls,
+        generate_playlist_m3u8_tracks_mapping,
+        sort_by=M388PlaylistSortOrder.CHANNEL_NUMBER.value,
+    ):
+        return super().generate_playlist_m3u8_tracks(
+            generate_playlist_m3u8_tracks_mapping, sort_by=sort_by
+        )
 
     @classmethod
     def refresh_session(cls, force_refresh=False):
@@ -514,11 +636,21 @@ class SmoothStreams(Provider):
                         db_session = SmoothStreamsDatabase.create_session()
 
                         try:
-                            db_session.merge(SmoothStreamsSetting('session', jsonpickle.encode(cls._session)))
+                            db_session.merge(
+                                SmoothStreamsSetting(
+                                    'session', jsonpickle.encode(cls._session)
+                                )
+                            )
                             db_session.commit()
                         except Exception:
                             (type_, value_, traceback_) = sys.exc_info()
-                            logger.error('\n'.join(traceback.format_exception(type_, value_, traceback_)))
+                            logger.error(
+                                '\n'.join(
+                                    traceback.format_exception(
+                                        type_, value_, traceback_
+                                    )
+                                )
+                            )
 
                             db_session.rollback()
                         finally:
@@ -530,10 +662,15 @@ class SmoothStreams(Provider):
                 do_start_timer = True
 
             if do_start_timer:
-                interval = (cls._get_session_parameter('expires_on') - datetime.now(pytz.utc)).total_seconds() - 1800
+                interval = (
+                    cls._get_session_parameter('expires_on') - datetime.now(pytz.utc)
+                ).total_seconds() - 1800
                 cls._refresh_session_timer = Timer(interval, cls._timed_refresh_session)
                 cls._refresh_session_timer.daemon = True
                 cls._refresh_session_timer.start()
 
-                logger.debug('Started SmoothStreams session refresh timer\n'
-                             'Interval => {0} seconds'.format(interval))
+                logger.debug(
+                    'Started SmoothStreams session refresh timer\n'
+                    'Interval => %s seconds',
+                    interval,
+                )

@@ -32,8 +32,12 @@ class HTTPSession(Base):
     _id = Column('id', String, primary_key=True, autoincrement=False)
     _client_ip_address = Column('client_ip_address', String, nullable=False)
     _user_agent = Column('_user_agent', String, nullable=False)
-    _expiry_date_time_in_utc = Column('expiry_date_time_in_utc', DateTimeUTC(timezone=True), nullable=False)
-    _last_access_date_time_in_utc = Column('last_access_date_time_in_utc', DateTimeUTC(timezone=True), nullable=False)
+    _expiry_date_time_in_utc = Column(
+        'expiry_date_time_in_utc', DateTimeUTC(timezone=True), nullable=False
+    )
+    _last_access_date_time_in_utc = Column(
+        'last_access_date_time_in_utc', DateTimeUTC(timezone=True), nullable=False
+    )
 
     __table_args__ = (Index('http_session_ix_id', _id.asc()),)
 
@@ -95,23 +99,29 @@ class Recording(Base):
     _channel_number = Column('channel_number', Integer, nullable=False)
     _channel_name = Column('channel_name', String, nullable=False)
     _program_title = Column('program_title', String, nullable=False)
-    _start_date_time_in_utc = Column('start', DateTimeUTC(timezone=True), nullable=False)
+    _start_date_time_in_utc = Column(
+        'start', DateTimeUTC(timezone=True), nullable=False
+    )
     _end_date_time_in_utc = Column('stop', DateTimeUTC(timezone=True), nullable=False)
     _status = Column('status', String, nullable=False)
 
-    __table_args__ = (Index('recording_ix_id', _id.asc()),
-                      Index('recording_ix_status', _status.asc()),
-                      UniqueConstraint('provider', 'channel_number', 'start', 'stop'))
+    __table_args__ = (
+        Index('recording_ix_id', _id.asc()),
+        Index('recording_ix_status', _status.asc()),
+        UniqueConstraint('provider', 'channel_number', 'start', 'stop'),
+    )
 
-    def __init__(self,
-                 id_,
-                 provider,
-                 channel_number,
-                 channel_name,
-                 program_title,
-                 start_date_time_in_utc,
-                 end_date_time_in_utc,
-                 status):
+    def __init__(
+        self,
+        id_,
+        provider,
+        channel_number,
+        channel_name,
+        program_title,
+        start_date_time_in_utc,
+        end_date_time_in_utc,
+        status,
+    ):
         self._id = id_
         self._provider = provider
         self._channel_number = channel_number
@@ -195,12 +205,18 @@ class Segment(Base):
     _pickle = Column('pickle', LargeBinary, nullable=False)
     _directory_path = Column('directory_path', String, nullable=False)
 
-    __table_args__ = (Index('segment_ix_id', _id.asc()),
-                      Index('segment_ix_id_name', _id.asc(), _name.asc()),
-                      Index('segment_ix_name_recording_id', _recording_id.asc(), _name.asc()),
-                      Index('segment_ix_recording_id', _recording_id.asc()),
-                      Index('segment_ix_recording_id_directory_path', _recording_id.asc(), _directory_path.asc()),
-                      Index('segment_ix_recording_id_id', _recording_id.asc(), _id.asc()))
+    __table_args__ = (
+        Index('segment_ix_id', _id.asc()),
+        Index('segment_ix_id_name', _id.asc(), _name.asc()),
+        Index('segment_ix_name_recording_id', _recording_id.asc(), _name.asc()),
+        Index('segment_ix_recording_id', _recording_id.asc()),
+        Index(
+            'segment_ix_recording_id_directory_path',
+            _recording_id.asc(),
+            _directory_path.asc(),
+        ),
+        Index('segment_ix_recording_id_id', _recording_id.asc(), _id.asc()),
+    )
 
     def __init__(self, name, recording_id, pickle, directory_path):
         self._name = name

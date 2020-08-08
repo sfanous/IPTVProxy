@@ -11,9 +11,11 @@ class XMLTVActor(object):
 
     def format(self):
         return '    <actor{0}>{1}</actor>'.format(
-            ' role="{0}"'.format(saxutils.escape(self._role)) if self._role is not None
+            ' role="{0}"'.format(saxutils.escape(self._role))
+            if self._role is not None
             else '',
-            saxutils.escape(self._text))
+            saxutils.escape(self._text),
+        )
 
     @property
     def role(self):
@@ -106,9 +108,11 @@ class XMLTVCategory(object):
 
     def format(self):
         return '  <category{0}>{1}</category>'.format(
-            ' lang="{0}"'.format(saxutils.escape(self._language)) if self._language is not None
+            ' lang="{0}"'.format(saxutils.escape(self._language))
+            if self._language is not None
             else '',
-            saxutils.escape(self._text))
+            saxutils.escape(self._text),
+        )
 
     @property
     def language(self):
@@ -128,7 +132,9 @@ class XMLTVCategory(object):
 
 
 class XMLTVChannel(object):
-    def __init__(self, provider, m3u8_group, xmltv_id, number, display_names, icons, urls):
+    def __init__(
+        self, provider, m3u8_group, xmltv_id, number, display_names, icons, urls
+    ):
         self._provider = provider
         self._m3u8_group = m3u8_group
         self._xmltv_id = xmltv_id
@@ -277,9 +283,11 @@ class XMLTVCountry(object):
 
     def format(self):
         return '  <country{0}>{1}</country>'.format(
-            ' lang="{0}"'.format(saxutils.escape(self._language)) if self._language is not None
+            ' lang="{0}"'.format(saxutils.escape(self._language))
+            if self._language is not None
             else '',
-            saxutils.escape(self._text))
+            saxutils.escape(self._text),
+        )
 
     @property
     def language(self):
@@ -291,8 +299,19 @@ class XMLTVCountry(object):
 
 
 class XMLTVCredits(object):
-    def __init__(self, actors, adapters, commentators, composers, directors, editors, guests, presenters, producers,
-                 writers):
+    def __init__(
+        self,
+        actors,
+        adapters,
+        commentators,
+        composers,
+        directors,
+        editors,
+        guests,
+        presenters,
+        producers,
+        writers,
+    ):
         self._actors = actors
         self._adapters = adapters
         self._commentators = commentators
@@ -455,9 +474,11 @@ class XMLTVDescription(object):
 
     def format(self):
         return '  <desc{0}>{1}</desc>'.format(
-            ' lang="{0}"'.format(saxutils.escape(self._language)) if self._language is not None
+            ' lang="{0}"'.format(saxutils.escape(self._language))
+            if self._language is not None
             else '',
-            saxutils.escape(self._text))
+            saxutils.escape(self._text),
+        )
 
     @property
     def language(self):
@@ -499,9 +520,11 @@ class XMLTVDisplayName(object):
 
     def format(self):
         return '  <display-name{0}>{1}</display-name>'.format(
-            ' lang="{0}"'.format(saxutils.escape(self._language)) if self._language is not None
+            ' lang="{0}"'.format(saxutils.escape(self._language))
+            if self._language is not None
             else '',
-            saxutils.escape(self._text))
+            saxutils.escape(self._text),
+        )
 
     @property
     def language(self):
@@ -543,9 +566,11 @@ class XMLTVEpisodeNumber(object):
 
     def format(self):
         return '  <episode-num{0}>{1}</episode-num>'.format(
-            ' system="{0}"'.format(saxutils.escape(self._system)) if self._system is not None
+            ' system="{0}"'.format(saxutils.escape(self._system))
+            if self._system is not None
             else '',
-            saxutils.escape(self._text))
+            saxutils.escape(self._text),
+        )
 
     @property
     def system(self):
@@ -589,10 +614,13 @@ class XMLTVIcon(object):
     def format(self):
         return '  <icon src="{0}"{1}{2} />'.format(
             saxutils.escape(self._source),
-            ' width="{0}"'.format(saxutils.escape(self._width)) if self._width is not None
+            ' width="{0}"'.format(saxutils.escape(self._width))
+            if self._width is not None
             else '',
-            ' height="{0}"'.format(saxutils.escape(self._height)) if self._height is not None
-            else '')
+            ' height="{0}"'.format(saxutils.escape(self._height))
+            if self._height is not None
+            else '',
+        )
 
     @property
     def height(self):
@@ -626,9 +654,11 @@ class XMLTVKeyword(object):
 
     def format(self):
         return '  <keyword{0}>{1}</keyword>'.format(
-            ' lang="{0}"'.format(saxutils.escape(self._language)) if self._language is not None
+            ' lang="{0}"'.format(saxutils.escape(self._language))
+            if self._language is not None
             else '',
-            saxutils.escape(self._text))
+            saxutils.escape(self._text),
+        )
 
     @property
     def language(self):
@@ -646,9 +676,11 @@ class XMLTVLanguage(object):
 
     def format(self):
         return '  <language{0}>{1}</language>'.format(
-            ' lang="{0}"'.format(saxutils.escape(self._language)) if self._language is not None
+            ' lang="{0}"'.format(saxutils.escape(self._language))
+            if self._language is not None
             else '',
-            saxutils.escape(self._text))
+            saxutils.escape(self._text),
+        )
 
     @property
     def language(self):
@@ -666,9 +698,11 @@ class XMLTVLastChance(object):
 
     def format(self):
         return '  <last-chance{0}>{1}</last-chance>'.format(
-            ' lang="{0}"'.format(saxutils.escape(self._language)) if self._language is not None
+            ' lang="{0}"'.format(saxutils.escape(self._language))
+            if self._language is not None
             else '',
-            saxutils.escape(self._text))
+            saxutils.escape(self._text),
+        )
 
     @property
     def language(self):
@@ -685,7 +719,9 @@ class XMLTVLength(object):
         self._text = text
 
     def format(self):
-        return '  <length units="{0}">{1}</length>'.format(saxutils.escape(self._units), saxutils.escape(self._text))
+        return '  <length units="{0}">{1}</length>'.format(
+            saxutils.escape(self._units), saxutils.escape(self._text)
+        )
 
     @property
     def units(self):
@@ -703,9 +739,11 @@ class XMLTVOriginalLanguage(object):
 
     def format(self):
         return '  <orig-language{0}>{1}</orig-language>'.format(
-            ' lang="{0}"'.format(saxutils.escape(self._language)) if self._language is not None
+            ' lang="{0}"'.format(saxutils.escape(self._language))
+            if self._language is not None
             else '',
-            saxutils.escape(self._text))
+            saxutils.escape(self._text),
+        )
 
     @property
     def language(self):
@@ -728,14 +766,13 @@ class XMLTVPremiere(object):
 
     def format(self):
         return '  <premiere{0}{1}>{2}{3}'.format(
-            ' lang="{0}"'.format(saxutils.escape(self._language)) if self._language is not None
+            ' lang="{0}"'.format(saxutils.escape(self._language))
+            if self._language is not None
             else '',
-            '' if self._text is not None
-            else ' /',
-            saxutils.escape(self._text) if self._text is not None
-            else '',
-            '</premiere>' if self._text is not None
-            else '')
+            '' if self._text is not None else ' /',
+            saxutils.escape(self._text) if self._text is not None else '',
+            '</premiere>' if self._text is not None else '',
+        )
 
     @property
     def language(self):
@@ -785,10 +822,13 @@ class XMLTVPreviouslyShown(object):
 
     def format(self):
         return '  <previously-shown{0}{1} />'.format(
-            ' start="{0}"'.format(saxutils.escape(self._start)) if self._start is not None
+            ' start="{0}"'.format(saxutils.escape(self._start))
+            if self._start is not None
             else '',
-            ' channel="{0}"'.format(saxutils.escape(self._channel)) if self._channel is not None
-            else '')
+            ' channel="{0}"'.format(saxutils.escape(self._channel))
+            if self._channel is not None
+            else '',
+        )
 
     @property
     def start(self):
@@ -816,10 +856,42 @@ class XMLTVProducer(object):
 
 
 class XMLTVProgram(object):
-    def __init__(self, provider, start, stop, pdc_start, vps_start, show_view, video_plus, channel_xmltv_id,
-                 clump_index, new, titles, sub_titles, descriptions, credits_, date, categories, keywords, language,
-                 original_language, length, icons, urls, countries, episode_numbers, video, audio, previously_shown,
-                 premiere, last_chance, subtitles, ratings, star_ratings, reviews):
+    def __init__(
+        self,
+        provider,
+        start,
+        stop,
+        pdc_start,
+        vps_start,
+        show_view,
+        video_plus,
+        channel_xmltv_id,
+        clump_index,
+        new,
+        titles,
+        sub_titles,
+        descriptions,
+        credits_,
+        date,
+        categories,
+        keywords,
+        language,
+        original_language,
+        length,
+        icons,
+        urls,
+        countries,
+        episode_numbers,
+        video,
+        audio,
+        previously_shown,
+        premiere,
+        last_chance,
+        subtitles,
+        ratings,
+        star_ratings,
+        reviews,
+    ):
         self._provider = provider
         self._start = start
         self._stop = stop
@@ -855,25 +927,36 @@ class XMLTVProgram(object):
         self._reviews = reviews
 
     def format(self, minimal_xmltv=True):
-        program_element = ['<programme start="{0}"{1}{2}{3}{4}{5} channel="{6}"{7}>'.format(
-            self._start.strftime('%Y%m%d%H%M%S %z'),
-            ' stop="{0}"'.format(self._stop.strftime('%Y%m%d%H%M%S %z')) if self._stop is not None
-            else '',
-            ' pdc-start="{0}"'.format(saxutils.escape(self._pdc_start)) if self._pdc_start is not None
-            else '',
-            ' vps-start="{0}"'.format(saxutils.escape(self._vps_start)) if self._vps_start is not None
-            else '',
-            ' showview="{0}"'.format(saxutils.escape(self._show_view)) if self._show_view is not None
-            else '',
-            ' videoplus="{0}"'.format(saxutils.escape(self._video_plus)) if self._video_plus is not None
-            else '',
-            saxutils.escape(self._channel_xmltv_id),
-            ' clumpidx="{0}"'.format(saxutils.escape(self._clump_index)) if self._clump_index is not None
-            else '')]
+        program_element = [
+            '<programme start="{0}"{1}{2}{3}{4}{5} channel="{6}"{7}>'.format(
+                self._start.strftime('%Y%m%d%H%M%S %z'),
+                ' stop="{0}"'.format(self._stop.strftime('%Y%m%d%H%M%S %z'))
+                if self._stop is not None
+                else '',
+                ' pdc-start="{0}"'.format(saxutils.escape(self._pdc_start))
+                if self._pdc_start is not None
+                else '',
+                ' vps-start="{0}"'.format(saxutils.escape(self._vps_start))
+                if self._vps_start is not None
+                else '',
+                ' showview="{0}"'.format(saxutils.escape(self._show_view))
+                if self._show_view is not None
+                else '',
+                ' videoplus="{0}"'.format(saxutils.escape(self._video_plus))
+                if self._video_plus is not None
+                else '',
+                saxutils.escape(self._channel_xmltv_id),
+                ' clumpidx="{0}"'.format(saxutils.escape(self._clump_index))
+                if self._clump_index is not None
+                else '',
+            )
+        ]
 
         if minimal_xmltv:
             if self._sub_titles and self._sub_titles[0].text is not None:
-                self._titles[0].text = '{0}: {1}'.format(self._titles[0].text, self._sub_titles[0].text)
+                self._titles[0].text = '{0}: {1}'.format(
+                    self._titles[0].text, self._sub_titles[0].text
+                )
 
             program_element.append(self._titles[0].format())
         else:
@@ -914,7 +997,10 @@ class XMLTVProgram(object):
             if self._language is not None and self._language.text is not None:
                 program_element.append(self._language.format())
 
-            if self._original_language is not None and self._original_language.text is not None:
+            if (
+                self._original_language is not None
+                and self._original_language.text is not None
+            ):
                 program_element.append(self._original_language.format())
 
             if self._length is not None and self._length.text is not None:
@@ -936,16 +1022,36 @@ class XMLTVProgram(object):
                 if episode_number.text is not None:
                     program_element.append(episode_number.format())
 
-            if self._video is not None and \
-                    ((self._video.present is not None and self._video.present.text is not None) or
-                     (self._video.colour is not None and self._video.colour.text is not None) or
-                     (self._video.aspect is not None and self._video.aspect.text is not None) or
-                     (self._video.quality is not None and self._video.quality.text is not None)):
+            if self._video is not None and (
+                (
+                    self._video.present is not None
+                    and self._video.present.text is not None
+                )
+                or (
+                    self._video.colour is not None
+                    and self._video.colour.text is not None
+                )
+                or (
+                    self._video.aspect is not None
+                    and self._video.aspect.text is not None
+                )
+                or (
+                    self._video.quality is not None
+                    and self._video.quality.text is not None
+                )
+            ):
                 program_element.append(self._video.format())
 
-            if self._audio is not None and \
-                    ((self._audio.present is not None and self._audio.present.text is not None) or
-                     (self._audio.stereo is not None and self._audio.stereo.text is not None)):
+            if self._audio is not None and (
+                (
+                    self._audio.present is not None
+                    and self._audio.present.text is not None
+                )
+                or (
+                    self._audio.stereo is not None
+                    and self._audio.stereo.text is not None
+                )
+            ):
                 program_element.append(self._audio.format())
 
             if self._previously_shown is not None:
@@ -961,7 +1067,10 @@ class XMLTVProgram(object):
                 program_element.append(self._new.format())
 
             for subtitles in self._subtitles:
-                if subtitles.language is not None and subtitles.language.text is not None:
+                if (
+                    subtitles.language is not None
+                    and subtitles.language.text is not None
+                ):
                     program_element.append(subtitles.format())
 
             for rating in self._ratings:
@@ -1261,8 +1370,12 @@ class XMLTVRating(object):
 
     def format(self):
         rating_element = [
-            '  <rating{0}>'.format(' system="{0}"'.format(saxutils.escape(self._system)) if self._system is not None
-                                   else '')]
+            '  <rating{0}>'.format(
+                ' system="{0}"'.format(saxutils.escape(self._system))
+                if self._system is not None
+                else ''
+            )
+        ]
 
         if self._value is not None:
             rating_element.append(self._value.format())
@@ -1302,7 +1415,7 @@ class XMLTVRating(object):
 
 class XMLTVReview(object):
     def __init__(self, type_, source, reviewer, language, text):
-        self._type = type_,
+        self._type = (type_,)
         self._source = source
         self._reviewer = reviewer
         self._language = language
@@ -1311,13 +1424,17 @@ class XMLTVReview(object):
     def format(self):
         return '  <review type="{0}"{1}{2}{3}>{4}</review>'.format(
             saxutils.escape(self._type),
-            ' source="{0}"'.format(saxutils.escape(self._source)) if self._source is not None
+            ' source="{0}"'.format(saxutils.escape(self._source))
+            if self._source is not None
             else '',
-            ' reviewer="{0}"'.format(saxutils.escape(self._reviewer)) if self._reviewer is not None
+            ' reviewer="{0}"'.format(saxutils.escape(self._reviewer))
+            if self._reviewer is not None
             else '',
-            ' lang="{0}"'.format(saxutils.escape(self._language)) if self._language is not None
+            ' lang="{0}"'.format(saxutils.escape(self._language))
+            if self._language is not None
             else '',
-            saxutils.escape(self._text))
+            saxutils.escape(self._text),
+        )
 
     @property
     def language(self):
@@ -1367,9 +1484,13 @@ class XMLTVStarRating(object):
         self._icons = icons
 
     def format(self):
-        star_rating_element = ['  <star-rating{0}>'.format(
-            ' system="{0}"'.format(saxutils.escape(self._system)) if self._system is not None
-            else '')]
+        star_rating_element = [
+            '  <star-rating{0}>'.format(
+                ' system="{0}"'.format(saxutils.escape(self._system))
+                if self._system is not None
+                else ''
+            )
+        ]
 
         if self._value is not None:
             star_rating_element.append(self._value.format())
@@ -1430,9 +1551,11 @@ class XMLTVSubTitle(object):
 
     def format(self):
         return '  <sub-title{0}>{1}</sub-title>'.format(
-            ' lang="{0}"'.format(saxutils.escape(self._language)) if self._language is not None
+            ' lang="{0}"'.format(saxutils.escape(self._language))
+            if self._language is not None
             else '',
-            saxutils.escape(self._text))
+            saxutils.escape(self._text),
+        )
 
     @property
     def language(self):
@@ -1458,14 +1581,13 @@ class XMLTVSubtitles(object):
 
     def format(self):
         return '  <subtitles{0}{1}>{2}{3}'.format(
-            ' type="{0}"'.format(saxutils.escape(self._type)) if self._type is not None
+            ' type="{0}"'.format(saxutils.escape(self._type))
+            if self._type is not None
             else '',
-            '' if self._language is not None
-            else ' /',
-            self._language.format() if self._language is not None
-            else '',
-            '</subtitles>' if self._language is not None
-            else '')
+            '' if self._language is not None else ' /',
+            self._language.format() if self._language is not None else '',
+            '</subtitles>' if self._language is not None else '',
+        )
 
     @property
     def language(self):
@@ -1491,9 +1613,11 @@ class XMLTVTitle(object):
 
     def format(self):
         return '  <title{0}>{1}</title>'.format(
-            ' lang="{0}"'.format(saxutils.escape(self._language)) if self._language is not None
+            ' lang="{0}"'.format(saxutils.escape(self._language))
+            if self._language is not None
             else '',
-            saxutils.escape(self._text))
+            saxutils.escape(self._text),
+        )
 
     @property
     def language(self):

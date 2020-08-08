@@ -1,7 +1,9 @@
 import logging
 
 from iptv_proxy.providers import ProvidersController
-from iptv_proxy.providers.iptv_provider.html_template_engine import ProviderHTMLTemplateEngine
+from iptv_proxy.providers.iptv_provider.html_template_engine import (
+    ProviderHTMLTemplateEngine,
+)
 from iptv_proxy.providers.smoothstreams.constants import SmoothStreamsConstants
 
 logger = logging.getLogger(__name__)
@@ -13,15 +15,21 @@ class SmoothStreamsHTMLTemplateEngine(ProviderHTMLTemplateEngine):
     _provider_name = SmoothStreamsConstants.PROVIDER_NAME.lower()
 
     @classmethod
-    def render_configuration_template(cls, environment, configuration, active_providers_map_class):
-        provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
+    def render_configuration_template(
+        cls, environment, configuration, active_providers_map_class
+    ):
+        provider_map_class = ProvidersController.get_provider_map_class(
+            cls._provider_name
+        )
 
-        configuration_smoothstreams_template = environment.get_template('configuration_smoothstreams.html')
+        configuration_smoothstreams_template = environment.get_template(
+            'configuration_smoothstreams.html'
+        )
 
         configuration_smoothstreams_template_fields = {
-            'configuration_smoothstreams_active':
-                'checked="checked"' if 'smoothstreams' in active_providers_map_class
-                else '',
+            'configuration_smoothstreams_active': 'checked="checked"'
+            if 'smoothstreams' in active_providers_map_class
+            else '',
             'configuration_view247_selected': '',
             'configuration_viewmmasr_selected': '',
             'configuration_viewss_selected': '',
@@ -63,68 +71,105 @@ class SmoothStreamsHTMLTemplateEngine(ProviderHTMLTemplateEngine):
         }
 
         if 'SMOOTHSTREAMS_SERVICE' in configuration:
-            configuration_smoothstreams_template_fields['configuration_{0}_selected'.format(
-                configuration['SMOOTHSTREAMS_SERVICE'].lower())] = 'selected="selected" '
+            configuration_smoothstreams_template_fields[
+                'configuration_{0}_selected'.format(
+                    configuration['SMOOTHSTREAMS_SERVICE'].lower()
+                )
+            ] = 'selected="selected" '
         if 'SMOOTHSTREAMS_SERVER' in configuration:
-            configuration_smoothstreams_template_fields['configuration_{0}_selected'.format(
-                configuration['SMOOTHSTREAMS_SERVER'].lower().replace('-', '_'))] = 'selected="selected" '
+            configuration_smoothstreams_template_fields[
+                'configuration_{0}_selected'.format(
+                    configuration['SMOOTHSTREAMS_SERVER'].lower().replace('-', '_')
+                )
+            ] = 'selected="selected" '
         if 'SMOOTHSTREAMS_USERNAME' in configuration:
-            configuration_smoothstreams_template_fields['configuration_smoothstreams_username'] = configuration[
-                'SMOOTHSTREAMS_USERNAME']
+            configuration_smoothstreams_template_fields[
+                'configuration_smoothstreams_username'
+            ] = configuration['SMOOTHSTREAMS_USERNAME']
         if 'SMOOTHSTREAMS_PASSWORD' in configuration:
-            configuration_smoothstreams_template_fields['configuration_smoothstreams_password'] = configuration[
-                'SMOOTHSTREAMS_PASSWORD']
+            configuration_smoothstreams_template_fields[
+                'configuration_smoothstreams_password'
+            ] = configuration['SMOOTHSTREAMS_PASSWORD']
         if 'SMOOTHSTREAMS_PLAYLIST_PROTOCOL' in configuration:
             configuration_smoothstreams_template_fields[
                 'configuration_smoothstreams_playlist_protocol_{0}_selected'.format(
-                    configuration['SMOOTHSTREAMS_PLAYLIST_PROTOCOL'].lower())] = 'selected="selected" '
+                    configuration['SMOOTHSTREAMS_PLAYLIST_PROTOCOL'].lower()
+                )
+            ] = 'selected="selected" '
         if 'SMOOTHSTREAMS_PLAYLIST_TYPE' in configuration:
-            configuration_smoothstreams_template_fields['configuration_smoothstreams_playlist_type_{0}_selected'.format(
-                configuration['SMOOTHSTREAMS_PLAYLIST_TYPE'].lower())] = 'selected="selected" '
+            configuration_smoothstreams_template_fields[
+                'configuration_smoothstreams_playlist_type_{0}_selected'.format(
+                    configuration['SMOOTHSTREAMS_PLAYLIST_TYPE'].lower()
+                )
+            ] = 'selected="selected" '
         if 'SMOOTHSTREAMS_EPG_SOURCE' in configuration:
-            configuration_smoothstreams_template_fields['configuration_smoothstreams_epg_source_{0}_selected'.format(
-                configuration['SMOOTHSTREAMS_EPG_SOURCE'].lower())] = 'selected="selected" '
+            configuration_smoothstreams_template_fields[
+                'configuration_smoothstreams_epg_source_{0}_selected'.format(
+                    configuration['SMOOTHSTREAMS_EPG_SOURCE'].lower()
+                )
+            ] = 'selected="selected" '
         if 'SMOOTHSTREAMS_EPG_URL' in configuration:
             if configuration['SMOOTHSTREAMS_EPG_URL'] is None:
-                configuration_smoothstreams_template_fields['configuration_smoothstreams_epg_url'] = ''
+                configuration_smoothstreams_template_fields[
+                    'configuration_smoothstreams_epg_url'
+                ] = ''
             else:
-                configuration_smoothstreams_template_fields['configuration_smoothstreams_epg_url'] = \
-                    configuration['SMOOTHSTREAMS_EPG_URL']
+                configuration_smoothstreams_template_fields[
+                    'configuration_smoothstreams_epg_url'
+                ] = configuration['SMOOTHSTREAMS_EPG_URL']
 
-        return {provider_map_class.constants_class().PROVIDER_NAME: configuration_smoothstreams_template.render(
-            configuration_smoothstreams_template_fields)}
+        return {
+            provider_map_class.constants_class().PROVIDER_NAME: configuration_smoothstreams_template.render(
+                configuration_smoothstreams_template_fields
+            )
+        }
 
     @classmethod
     def render_iptv_proxy_script_configuration_clear_template(cls, environment):
         iptv_proxy_script_configuration_smoothstreams_clear_template = environment.get_template(
-            'iptv_proxy_script_configuration_smoothstreams_clear.js')
+            'iptv_proxy_script_configuration_smoothstreams_clear.js'
+        )
 
-        return iptv_proxy_script_configuration_smoothstreams_clear_template.render().split('\n')
+        return iptv_proxy_script_configuration_smoothstreams_clear_template.render().split(
+            '\n'
+        )
 
     @classmethod
     def render_iptv_proxy_script_configuration_declarations_template(cls, environment):
         iptv_proxy_script_configuration_smoothstreams_declarations_template = environment.get_template(
-            'iptv_proxy_script_configuration_smoothstreams_declarations.js')
+            'iptv_proxy_script_configuration_smoothstreams_declarations.js'
+        )
 
-        return iptv_proxy_script_configuration_smoothstreams_declarations_template.render().split('\n')
+        return iptv_proxy_script_configuration_smoothstreams_declarations_template.render().split(
+            '\n'
+        )
 
     @classmethod
     def render_iptv_proxy_script_configuration_init_template(cls, environment):
         iptv_proxy_script_configuration_smoothstreams_init_template = environment.get_template(
-            'iptv_proxy_script_configuration_smoothstreams_init.js')
+            'iptv_proxy_script_configuration_smoothstreams_init.js'
+        )
 
-        return iptv_proxy_script_configuration_smoothstreams_init_template.render().split('\n')
+        return iptv_proxy_script_configuration_smoothstreams_init_template.render().split(
+            '\n'
+        )
 
     @classmethod
     def render_iptv_proxy_script_configuration_reset_template(cls, environment):
         iptv_proxy_script_configuration_smoothstreams_reset_template = environment.get_template(
-            'iptv_proxy_script_configuration_smoothstreams_reset.js')
+            'iptv_proxy_script_configuration_smoothstreams_reset.js'
+        )
 
-        return iptv_proxy_script_configuration_smoothstreams_reset_template.render().split('\n')
+        return iptv_proxy_script_configuration_smoothstreams_reset_template.render().split(
+            '\n'
+        )
 
     @classmethod
     def render_iptv_proxy_script_configuration_update_template(cls, environment):
         iptv_proxy_script_configuration_smoothstreams_update_template = environment.get_template(
-            'iptv_proxy_script_configuration_smoothstreams_update.js')
+            'iptv_proxy_script_configuration_smoothstreams_update.js'
+        )
 
-        return iptv_proxy_script_configuration_smoothstreams_update_template.render().split('\n')
+        return iptv_proxy_script_configuration_smoothstreams_update_template.render().split(
+            '\n'
+        )

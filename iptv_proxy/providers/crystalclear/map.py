@@ -26,19 +26,31 @@ class CrystalClearMap(ProviderMap):
     @classmethod
     def initialize(cls):
         from iptv_proxy.providers.crystalclear.api import CrystalClear
-        from iptv_proxy.providers.crystalclear.configuration import CrystalClearConfiguration
-        from iptv_proxy.providers.crystalclear.configuration import CrystalClearOptionalSettings
+        from iptv_proxy.providers.crystalclear.configuration import (
+            CrystalClearConfiguration,
+        )
+        from iptv_proxy.providers.crystalclear.configuration import (
+            CrystalClearOptionalSettings,
+        )
         from iptv_proxy.providers.crystalclear.constants import CrystalClearConstants
-        from iptv_proxy.providers.crystalclear.data_access import CrystalClearDatabaseAccess
+        from iptv_proxy.providers.crystalclear.data_access import (
+            CrystalClearDatabaseAccess,
+        )
         from iptv_proxy.providers.crystalclear.data_model import CrystalClearChannel
         from iptv_proxy.providers.crystalclear.data_model import CrystalClearProgram
         from iptv_proxy.providers.crystalclear.data_model import CrystalClearSetting
         from iptv_proxy.providers.crystalclear.db import CrystalClearDatabase
         from iptv_proxy.providers.crystalclear.enums import CrystalClearEPGSource
         from iptv_proxy.providers.crystalclear.epg import CrystalClearEPG
-        from iptv_proxy.providers.crystalclear.html_template_engine import CrystalClearHTMLTemplateEngine
-        from iptv_proxy.providers.crystalclear.json_api import CrystalClearConfigurationJSONAPI
-        from iptv_proxy.providers.crystalclear.validations import CrystalClearValidations
+        from iptv_proxy.providers.crystalclear.html_template_engine import (
+            CrystalClearHTMLTemplateEngine,
+        )
+        from iptv_proxy.providers.crystalclear.json_api import (
+            CrystalClearConfigurationJSONAPI,
+        )
+        from iptv_proxy.providers.crystalclear.validations import (
+            CrystalClearValidations,
+        )
 
         cls._api_class = CrystalClear
         cls._channel_class = CrystalClearChannel

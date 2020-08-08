@@ -26,8 +26,12 @@ class Streams4UsMap(ProviderMap):
     @classmethod
     def initialize(cls):
         from iptv_proxy.providers.streams4us.api import Streams4Us
-        from iptv_proxy.providers.streams4us.configuration import Streams4UsConfiguration
-        from iptv_proxy.providers.streams4us.configuration import Streams4UsOptionalSettings
+        from iptv_proxy.providers.streams4us.configuration import (
+            Streams4UsConfiguration,
+        )
+        from iptv_proxy.providers.streams4us.configuration import (
+            Streams4UsOptionalSettings,
+        )
         from iptv_proxy.providers.streams4us.constants import Streams4UsConstants
         from iptv_proxy.providers.streams4us.data_access import Streams4UsDatabaseAccess
         from iptv_proxy.providers.streams4us.data_model import Streams4UsChannel
@@ -36,8 +40,12 @@ class Streams4UsMap(ProviderMap):
         from iptv_proxy.providers.streams4us.db import Streams4UsDatabase
         from iptv_proxy.providers.streams4us.enums import Streams4UsEPGSource
         from iptv_proxy.providers.streams4us.epg import Streams4UsEPG
-        from iptv_proxy.providers.streams4us.html_template_engine import Streams4UsHTMLTemplateEngine
-        from iptv_proxy.providers.streams4us.json_api import Streams4UsConfigurationJSONAPI
+        from iptv_proxy.providers.streams4us.html_template_engine import (
+            Streams4UsHTMLTemplateEngine,
+        )
+        from iptv_proxy.providers.streams4us.json_api import (
+            Streams4UsConfigurationJSONAPI,
+        )
         from iptv_proxy.providers.streams4us.validations import Streams4UsValidations
 
         cls._api_class = Streams4Us

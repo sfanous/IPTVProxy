@@ -1,7 +1,11 @@
-*.pyc
+__pycache__/
 .idea/*
-Python*/
-TODO.rst
+.pylintrc
+.vscode
+*.pyc
 conf/
 dist/
 iptv_proxy_logging_configuration.json
+IPTVProxy.code-workspace
+Python*/
+TODO.rst

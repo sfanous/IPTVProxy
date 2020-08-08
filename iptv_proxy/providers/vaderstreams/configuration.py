@@ -10,9 +10,11 @@ logger = logging.getLogger(__name__)
 class VaderStreamsConfiguration(ProviderConfiguration):
     __slots__ = []
 
-    _configuration_schema = {'Provider': ['server', 'username', 'password'],
-                             'Playlist': ['protocol', 'type'],
-                             'EPG': ['source', 'url']}
+    _configuration_schema = {
+        'Provider': ['server', 'username', 'password'],
+        'Playlist': ['protocol', 'type'],
+        'EPG': ['source', 'url'],
+    }
     _provider_name = VaderStreamsConstants.PROVIDER_NAME.lower()
 
 

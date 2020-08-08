@@ -36,7 +36,9 @@ class KingMap(ProviderMap):
         from iptv_proxy.providers.king.db import KingDatabase
         from iptv_proxy.providers.king.enums import KingEPGSource
         from iptv_proxy.providers.king.epg import KingEPG
-        from iptv_proxy.providers.king.html_template_engine import KingHTMLTemplateEngine
+        from iptv_proxy.providers.king.html_template_engine import (
+            KingHTMLTemplateEngine,
+        )
         from iptv_proxy.providers.king.json_api import KingConfigurationJSONAPI
         from iptv_proxy.providers.king.validations import KingValidations
 

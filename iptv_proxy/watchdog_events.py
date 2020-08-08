@@ -26,10 +26,12 @@ class FileSystemEventHandler(FileSystemEventHandler_):
                 do_process_on_modified_event = True
 
                 self._last_file_version_md5_checksum = hashlib.md5(
-                    Utility.read_file(self._file_path, in_binary=True)).hexdigest()
+                    Utility.read_file(self._file_path, in_binary=True)
+                ).hexdigest()
             else:
                 configuration_md5_checksum = hashlib.md5(
-                    Utility.read_file(self._file_path, in_binary=True)).hexdigest()
+                    Utility.read_file(self._file_path, in_binary=True)
+                ).hexdigest()
                 if configuration_md5_checksum != self._last_file_version_md5_checksum:
                     do_process_on_modified_event = True
 

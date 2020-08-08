@@ -26,19 +26,31 @@ class VaderStreamsMap(ProviderMap):
     @classmethod
     def initialize(cls):
         from iptv_proxy.providers.vaderstreams.api import VaderStreams
-        from iptv_proxy.providers.vaderstreams.configuration import VaderStreamsConfiguration
-        from iptv_proxy.providers.vaderstreams.configuration import VaderStreamsOptionalSettings
+        from iptv_proxy.providers.vaderstreams.configuration import (
+            VaderStreamsConfiguration,
+        )
+        from iptv_proxy.providers.vaderstreams.configuration import (
+            VaderStreamsOptionalSettings,
+        )
         from iptv_proxy.providers.vaderstreams.constants import VaderStreamsConstants
-        from iptv_proxy.providers.vaderstreams.data_access import VaderStreamsDatabaseAccess
+        from iptv_proxy.providers.vaderstreams.data_access import (
+            VaderStreamsDatabaseAccess,
+        )
         from iptv_proxy.providers.vaderstreams.data_model import VaderStreamsChannel
         from iptv_proxy.providers.vaderstreams.data_model import VaderStreamsProgram
         from iptv_proxy.providers.vaderstreams.data_model import VaderStreamsSetting
         from iptv_proxy.providers.vaderstreams.db import VaderStreamsDatabase
         from iptv_proxy.providers.vaderstreams.enums import VaderStreamsEPGSource
         from iptv_proxy.providers.vaderstreams.epg import VaderStreamsEPG
-        from iptv_proxy.providers.vaderstreams.html_template_engine import VaderStreamsHTMLTemplateEngine
-        from iptv_proxy.providers.vaderstreams.json_api import VaderStreamsConfigurationJSONAPI
-        from iptv_proxy.providers.vaderstreams.validations import VaderStreamsValidations
+        from iptv_proxy.providers.vaderstreams.html_template_engine import (
+            VaderStreamsHTMLTemplateEngine,
+        )
+        from iptv_proxy.providers.vaderstreams.json_api import (
+            VaderStreamsConfigurationJSONAPI,
+        )
+        from iptv_proxy.providers.vaderstreams.validations import (
+            VaderStreamsValidations,
+        )
 
         cls._api_class = VaderStreams
         cls._channel_class = VaderStreamsChannel

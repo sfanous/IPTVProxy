@@ -27,7 +27,9 @@ class CoolAsIceMap(ProviderMap):
     def initialize(cls):
         from iptv_proxy.providers.coolasice.api import CoolAsIce
         from iptv_proxy.providers.coolasice.configuration import CoolAsIceConfiguration
-        from iptv_proxy.providers.coolasice.configuration import CoolAsIceOptionalSettings
+        from iptv_proxy.providers.coolasice.configuration import (
+            CoolAsIceOptionalSettings,
+        )
         from iptv_proxy.providers.coolasice.constants import CoolAsIceConstants
         from iptv_proxy.providers.coolasice.data_access import CoolAsIceDatabaseAccess
         from iptv_proxy.providers.coolasice.data_model import CoolAsIceChannel
@@ -36,8 +38,12 @@ class CoolAsIceMap(ProviderMap):
         from iptv_proxy.providers.coolasice.db import CoolAsIceDatabase
         from iptv_proxy.providers.coolasice.enums import CoolAsIceEPGSource
         from iptv_proxy.providers.coolasice.epg import CoolAsIceEPG
-        from iptv_proxy.providers.coolasice.html_template_engine import CoolAsIceHTMLTemplateEngine
-        from iptv_proxy.providers.coolasice.json_api import CoolAsIceConfigurationJSONAPI
+        from iptv_proxy.providers.coolasice.html_template_engine import (
+            CoolAsIceHTMLTemplateEngine,
+        )
+        from iptv_proxy.providers.coolasice.json_api import (
+            CoolAsIceConfigurationJSONAPI,
+        )
         from iptv_proxy.providers.coolasice.validations import CoolAsIceValidations
 
         cls._api_class = CoolAsIce

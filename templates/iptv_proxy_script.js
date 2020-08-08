@@ -146,7 +146,6 @@ const ResizeModule = (function () {
                         });
         _contentDiv.show();
 
-        // noinspection JSValidateTypes
         _contentDiv.children().each(function () {
             $(this).css('max-height', contentDivMaximumHeight + 'px');
         });
@@ -269,7 +268,6 @@ const ResizeModule = (function () {
 const CommonModule = (function () {
     const resetAlertDiv = function (alertDivId) {
         const alertDiv = $('#' + alertDivId);
-        // noinspection JSValidateTypes
         const alertDivChildren = alertDiv.children();
         const alertSpan = alertDivChildren.filter('span');
         const alertHeader = alertDivChildren.filter('h3');
@@ -949,7 +947,6 @@ const VideoPlayerModule = (function () {
 
         _constructOverlays(null);
 
-        // noinspection JSUnresolvedFunction
         _videoPlayer.overlay({overlays: _overlays});
     };
 
@@ -981,7 +978,6 @@ const VideoPlayerModule = (function () {
             const mediaInfoInnerHTML = '<span>' + videoDetails + ' (' + protocol + ')</span>';
             _constructOverlays(mediaInfoInnerHTML);
 
-            // noinspection JSUnresolvedFunction
             _videoPlayer.overlay({
                                      overlays: _overlays
                                  });

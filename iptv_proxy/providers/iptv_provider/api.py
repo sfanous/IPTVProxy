@@ -46,20 +46,22 @@ class Provider(ABC):
         pass
 
     @classmethod
-    def _reduce_hls_stream_delay(cls, chunks_m3u8, client_uuid, channel_number, number_of_segments_to_keep=3):
+    def _reduce_hls_stream_delay(
+        cls, chunks_m3u8, client_uuid, channel_number, number_of_segments_to_keep=3
+    ):
         do_reduce_hls_stream_delay = False
 
         try:
             last_requested_channel_number = IPTVProxy.get_serviceable_client_parameter(
-                client_uuid,
-                'last_requested_channel_number')
+                client_uuid, 'last_requested_channel_number'
+            )
 
             if channel_number != last_requested_channel_number:
                 do_reduce_hls_stream_delay = True
             else:
                 last_requested_ts_file_path = IPTVProxy.get_serviceable_client_parameter(
-                    client_uuid,
-                    'last_requested_ts_file_path')
+                    client_uuid, 'last_requested_ts_file_path'
+                )
 
                 m3u8_object = m3u8.loads(chunks_m3u8)
 
@@ -72,7 +74,7 @@ class Provider(ABC):
                         break
 
                 if delete_segments_up_to_index:
-                    for i in range(delete_segments_up_to_index + 1):
+                    for _ in range(delete_segments_up_to_index + 1):
                         m3u8_object.segments.pop(0)
 
                         m3u8_object.media_sequence += 1
@@ -84,7 +86,7 @@ class Provider(ABC):
         if do_reduce_hls_stream_delay:
             m3u8_object = m3u8.loads(chunks_m3u8)
 
-            for i in range(len(m3u8_object.segments) - number_of_segments_to_keep):
+            for _ in range(len(m3u8_object.segments) - number_of_segments_to_keep):
                 m3u8_object.segments.pop(0)
 
                 m3u8_object.media_sequence += 1
@@ -105,61 +107,96 @@ class Provider(ABC):
 
     @classmethod
     @abstractmethod
-    def download_chunks_m3u8(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
+    def download_chunks_m3u8(
+        cls,
+        client_ip_address,
+        client_uuid,
+        requested_path,
+        requested_query_string_parameters,
+    ):
         pass
 
     @classmethod
     @abstractmethod
-    def download_playlist_m3u8(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
+    def download_playlist_m3u8(
+        cls,
+        client_ip_address,
+        client_uuid,
+        requested_path,
+        requested_query_string_parameters,
+    ):
         pass
 
     @classmethod
     @abstractmethod
-    def download_ts_file(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
+    def download_ts_file(
+        cls,
+        client_ip_address,
+        client_uuid,
+        requested_path,
+        requested_query_string_parameters,
+    ):
         pass
 
     @classmethod
-    def generate_playlist_m3u8(cls,
-                               is_server_secure,
-                               client_ip_address,
-                               client_uuid,
-                               requested_query_string_parameters):
+    def generate_playlist_m3u8(
+        cls,
+        is_server_secure,
+        client_ip_address,
+        client_uuid,
+        requested_query_string_parameters,
+    ):
         http_token = requested_query_string_parameters.get('http_token')
         playlist_protocol = requested_query_string_parameters.get('protocol')
         playlist_type = requested_query_string_parameters.get('type')
 
         try:
-            client_ip_address_type = Utility.determine_ip_address_type(client_ip_address)
+            client_ip_address_type = Utility.determine_ip_address_type(
+                client_ip_address
+            )
             server_hostname = Configuration.get_configuration_parameter(
-                'SERVER_HOSTNAME_{0}'.format(client_ip_address_type.value))
+                'SERVER_HOSTNAME_{0}'.format(client_ip_address_type.value)
+            )
             server_port = Configuration.get_configuration_parameter(
-                'SERVER_HTTP{0}_PORT'.format('S' if is_server_secure
-                                             else ''))
+                'SERVER_HTTP{0}_PORT'.format('S' if is_server_secure else '')
+            )
 
-            playlist_m3u8 = ['#EXTM3U x-tvg-url="{0}://{1}:{2}/live/{3}/epg.xml"\n'.format(
-                'https' if is_server_secure
-                else 'http',
-                server_hostname,
-                server_port,
-                cls._provider_name)]
+            playlist_m3u8 = [
+                '#EXTM3U x-tvg-url="{0}://{1}:{2}/live/{3}/epg.xml"\n'.format(
+                    'https' if is_server_secure else 'http',
+                    server_hostname,
+                    server_port,
+                    cls._provider_name,
+                )
+            ]
 
-            generate_playlist_m3u8_tracks_mapping = dict(client_uuid=client_uuid,
-                                                         http_token=http_token,
-                                                         is_server_secure=is_server_secure,
-                                                         playlist_protocol=playlist_protocol,
-                                                         playlist_type=playlist_type,
-                                                         server_hostname=server_hostname,
-                                                         server_port=server_port)
+            generate_playlist_m3u8_tracks_mapping = dict(
+                client_uuid=client_uuid,
+                http_token=http_token,
+                is_server_secure=is_server_secure,
+                playlist_protocol=playlist_protocol,
+                playlist_type=playlist_type,
+                server_hostname=server_hostname,
+                server_port=server_port,
+            )
 
-            playlist_m3u8.append(''.join(cls.generate_playlist_m3u8_tracks(generate_playlist_m3u8_tracks_mapping)))
+            playlist_m3u8.append(
+                ''.join(
+                    cls.generate_playlist_m3u8_tracks(
+                        generate_playlist_m3u8_tracks_mapping
+                    )
+                )
+            )
 
-            logger.debug('Generated live {0} playlist.m3u8'.format(cls.__name__))
+            logger.debug('Generated live %s playlist.m3u8', cls.__name__)
 
             return ''.join(playlist_m3u8)
         except (KeyError, ValueError):
             (status, value_, traceback_) = sys.exc_info()
 
-            logger.error('\n'.join(traceback.format_exception(status, value_, traceback_)))
+            logger.error(
+                '\n'.join(traceback.format_exception(status, value_, traceback_))
+            )
 
     @classmethod
     def generate_playlist_m3u8_track_url(cls, generate_playlist_m3u8_track_url_mapping):
@@ -167,29 +204,35 @@ class Provider(ABC):
         client_uuid = generate_playlist_m3u8_track_url_mapping['client_uuid']
         http_token = generate_playlist_m3u8_track_url_mapping['http_token']
         is_server_secure = generate_playlist_m3u8_track_url_mapping['is_server_secure']
-        playlist_protocol = generate_playlist_m3u8_track_url_mapping['playlist_protocol']
+        playlist_protocol = generate_playlist_m3u8_track_url_mapping[
+            'playlist_protocol'
+        ]
         server_hostname = generate_playlist_m3u8_track_url_mapping['server_hostname']
         server_port = generate_playlist_m3u8_track_url_mapping['server_port']
 
-        return '{0}://{1}:{2}/live/{3}/playlist.m3u8?' \
-               'channel_number={4:02}&' \
-               'client_uuid={5}&' \
-               'http_token={6}&' \
-               'protocol={7}'.format('https' if is_server_secure
-                                     else 'http',
-                                     server_hostname,
-                                     server_port,
-                                     cls._provider_name,
-                                     int(channel_number),
-                                     client_uuid,
-                                     urllib.parse.quote(http_token) if http_token
-                                     else '',
-                                     playlist_protocol)
+        return (
+            '{0}://{1}:{2}/live/{3}/playlist.m3u8?'
+            'channel_number={4:02}&'
+            'client_uuid={5}&'
+            'http_token={6}&'
+            'protocol={7}'.format(
+                'https' if is_server_secure else 'http',
+                server_hostname,
+                server_port,
+                cls._provider_name,
+                int(channel_number),
+                client_uuid,
+                urllib.parse.quote(http_token) if http_token else '',
+                playlist_protocol,
+            )
+        )
 
     @classmethod
-    def generate_playlist_m3u8_tracks(cls,
-                                      generate_playlist_m3u8_tracks_mapping,
-                                      sort_by=M388PlaylistSortOrder.CHANNEL_NAME.value):
+    def generate_playlist_m3u8_tracks(
+        cls,
+        generate_playlist_m3u8_tracks_mapping,
+        sort_by=M388PlaylistSortOrder.CHANNEL_NAME.value,
+    ):
         client_uuid = generate_playlist_m3u8_tracks_mapping['client_uuid']
         http_token = generate_playlist_m3u8_tracks_mapping['http_token']
         is_server_secure = generate_playlist_m3u8_tracks_mapping['is_server_secure']
@@ -198,14 +241,25 @@ class Provider(ABC):
         server_hostname = generate_playlist_m3u8_tracks_mapping['server_hostname']
         server_port = generate_playlist_m3u8_tracks_mapping['server_port']
 
-        provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
+        provider_map_class = ProvidersController.get_provider_map_class(
+            cls._provider_name
+        )
 
-        if playlist_protocol not in provider_map_class.constants_class().VALID_PLAYLIST_PROTOCOL_VALUES:
+        if (
+            playlist_protocol
+            not in provider_map_class.constants_class().VALID_PLAYLIST_PROTOCOL_VALUES
+        ):
             playlist_protocol = Configuration.get_configuration_parameter(
-                '{0}_PLAYLIST_PROTOCOL'.format(cls.__name__.upper()))
+                '{0}_PLAYLIST_PROTOCOL'.format(cls.__name__.upper())
+            )
 
-        if playlist_type not in provider_map_class.constants_class().VALID_PLAYLIST_TYPE_VALUES:
-            playlist_type = Configuration.get_configuration_parameter('{0}_PLAYLIST_TYPE'.format(cls.__name__.upper()))
+        if (
+            playlist_type
+            not in provider_map_class.constants_class().VALID_PLAYLIST_TYPE_VALUES
+        ):
+            playlist_type = Configuration.get_configuration_parameter(
+                '{0}_PLAYLIST_TYPE'.format(cls.__name__.upper())
+            )
 
         authorization_token = None
 
@@ -215,7 +269,11 @@ class Provider(ABC):
             db_session = provider_map_class.database_class().create_session()
 
             try:
-                for channel_row in provider_map_class.database_access_class().query_channels_pickle(db_session):
+                for (
+                    channel_row
+                ) in provider_map_class.database_access_class().query_channels_pickle(
+                    db_session
+                ):
                     channel = pickle.loads(channel_row.pickle)
 
                     track_information = [
@@ -227,53 +285,79 @@ class Provider(ABC):
                             channel.m3u8_group,
                             channel.xmltv_id,
                             channel.display_names[0].text,
-                            channel.icons[0].source.format('s' if is_server_secure
-                                                           else '',
-                                                           server_hostname,
-                                                           server_port,
-                                                           '?http_token={0}'.format(
-                                                               urllib.parse.quote(http_token)) if http_token
-                                                           else '').replace(' ', '%20'),
-                            channel.number)]
+                            channel.icons[0]
+                            .source.format(
+                                's' if is_server_secure else '',
+                                server_hostname,
+                                server_port,
+                                '?http_token={0}'.format(urllib.parse.quote(http_token))
+                                if http_token
+                                else '',
+                            )
+                            .replace(' ', '%20'),
+                            channel.number,
+                        )
+                    ]
 
                     if playlist_type == 'dynamic':
-                        generate_playlist_m3u8_track_url_mapping = dict(channel_number=channel.number,
-                                                                        client_uuid=client_uuid,
-                                                                        http_token=http_token,
-                                                                        is_server_secure=is_server_secure,
-                                                                        playlist_protocol=playlist_protocol,
-                                                                        server_hostname=server_hostname,
-                                                                        server_port=server_port)
+                        generate_playlist_m3u8_track_url_mapping = dict(
+                            channel_number=channel.number,
+                            client_uuid=client_uuid,
+                            http_token=http_token,
+                            is_server_secure=is_server_secure,
+                            playlist_protocol=playlist_protocol,
+                            server_hostname=server_hostname,
+                            server_port=server_port,
+                        )
 
-                        track_information.append('{0}\n'.format(
-                            cls.generate_playlist_m3u8_track_url(generate_playlist_m3u8_track_url_mapping)))
+                        track_information.append(
+                            '{0}\n'.format(
+                                cls.generate_playlist_m3u8_track_url(
+                                    generate_playlist_m3u8_track_url_mapping
+                                )
+                            )
+                        )
                     elif playlist_type == 'static':
                         if authorization_token is None:
-                            authorization_token = cls._retrieve_fresh_authorization_token()
+                            authorization_token = (
+                                cls._retrieve_fresh_authorization_token()
+                            )
 
-                        cls._generate_playlist_m3u8_static_track_url(track_information,
-                                                                     channel_number=channel.number,
-                                                                     playlist_protocol=playlist_protocol,
-                                                                     authorization_token=authorization_token)
+                        cls._generate_playlist_m3u8_static_track_url(
+                            track_information,
+                            channel_number=channel.number,
+                            playlist_protocol=playlist_protocol,
+                            authorization_token=authorization_token,
+                        )
 
                     if sort_by == M388PlaylistSortOrder.CHANNEL_NAME.value:
-                        tracks['{0} {1} {2}'.format(channel.m3u8_group,
-                                                    channel.display_names[0].text,
-                                                    channel.number)] = ''.join(track_information)
+                        tracks[
+                            '{0} {1} {2}'.format(
+                                channel.m3u8_group,
+                                channel.display_names[0].text,
+                                channel.number,
+                            )
+                        ] = ''.join(track_information)
                     elif sort_by == M388PlaylistSortOrder.CHANNEL_NUMBER.value:
                         tracks[channel.number] = ''.join(track_information)
             finally:
                 db_session.close()
 
         if not sort_by:
-            return [tracks[channel_name] for channel_name in sorted(tracks,
-                                                                    key=lambda channel_name_: channel_name_.lower())]
-        else:
-            return [tracks[channel_number] for channel_number in sorted(tracks)]
+            return [
+                tracks[channel_name]
+                for channel_name in sorted(
+                    tracks, key=lambda channel_name_: channel_name_.lower()
+                )
+            ]
+
+        return [tracks[channel_number] for channel_number in sorted(tracks)]
 
     @classmethod
     def get_supported_protocols(cls):
-        provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
+        provider_map_class = ProvidersController.get_provider_map_class(
+            cls._provider_name
+        )
 
         return provider_map_class.constants_class().VALID_PLAYLIST_PROTOCOL_VALUES
 
@@ -316,21 +400,28 @@ class XtreamCodesProvider(Provider):
         channel_number = kwargs['channel_number']
         playlist_protocol = kwargs['playlist_protocol']
 
-        url = Configuration.get_configuration_parameter('{0}_URL'.format(cls._provider_name.upper()))
-        username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
+        url = Configuration.get_configuration_parameter(
+            '{0}_URL'.format(cls._provider_name.upper())
+        )
+        username = Configuration.get_configuration_parameter(
+            '{0}_USERNAME'.format(cls._provider_name.upper())
+        )
         password = SecurityManager.decrypt_password(
-            Configuration.get_configuration_parameter('{0}_PASSWORD'.format(cls._provider_name.upper()))).decode()
+            Configuration.get_configuration_parameter(
+                '{0}_PASSWORD'.format(cls._provider_name.upper())
+            )
+        ).decode()
 
         track_information.append(
             '{0}{1}{2}/{3}/{4}{5}\n'.format(
                 url,
-                'live/' if playlist_protocol == 'hls'
-                else '',
+                'live/' if playlist_protocol == 'hls' else '',
                 username,
                 password,
                 channel_number,
-                '.m3u8' if playlist_protocol == 'hls'
-                else '.ts'))
+                '.m3u8' if playlist_protocol == 'hls' else '.ts',
+            )
+        )
 
     @classmethod
     def _initialize(cls, **kwargs):
@@ -340,7 +431,10 @@ class XtreamCodesProvider(Provider):
     def _initialize_class_variables(cls):
         try:
             cls.set_do_reduce_hls_stream_delay(
-                OptionalSettings.get_optional_settings_parameter('reduce_{0}_delay'.format(cls._provider_name)))
+                OptionalSettings.get_optional_settings_parameter(
+                    'reduce_{0}_delay'.format(cls._provider_name)
+                )
+            )
         except KeyError:
             pass
 
@@ -353,8 +447,16 @@ class XtreamCodesProvider(Provider):
         pass
 
     @classmethod
-    def download_chunks_m3u8(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
-        authorization_token = requested_query_string_parameters.get('authorization_token')
+    def download_chunks_m3u8(
+        cls,
+        client_ip_address,
+        client_uuid,
+        requested_path,
+        requested_query_string_parameters,
+    ):
+        authorization_token = requested_query_string_parameters.get(
+            'authorization_token'
+        )
         channel_number = requested_query_string_parameters.get('channel_number')
         client_uuid = requested_query_string_parameters.get('client_uuid')
         hostname = requested_query_string_parameters.get('hostname')
@@ -363,209 +465,286 @@ class XtreamCodesProvider(Provider):
         scheme = requested_query_string_parameters.get('scheme')
 
         IPTVProxy.refresh_serviceable_clients(client_uuid, client_ip_address)
-        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc))
-        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
+        IPTVProxy.set_serviceable_client_parameter(
+            client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc)
+        )
+        IPTVProxy.set_serviceable_client_parameter(
+            client_uuid, 'last_requested_channel_number', channel_number
+        )
 
-        username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
+        username = Configuration.get_configuration_parameter(
+            '{0}_USERNAME'.format(cls._provider_name.upper())
+        )
         password = SecurityManager.decrypt_password(
-            Configuration.get_configuration_parameter('{0}_PASSWORD'.format(cls._provider_name.upper()))).decode()
+            Configuration.get_configuration_parameter(
+                '{0}_PASSWORD'.format(cls._provider_name.upper())
+            )
+        ).decode()
 
         requests_session = requests.Session()
 
-        target_url = '{0}://{1}{2}/live/{3}/{4}/{5}.m3u8'.format(scheme,
-                                                                 hostname,
-                                                                 port,
-                                                                 username,
-                                                                 password,
-                                                                 channel_number)
+        target_url = '{0}://{1}{2}/live/{3}/{4}/{5}.m3u8'.format(
+            scheme, hostname, port, username, password, channel_number
+        )
 
-        logger.debug('Proxying request\n'
-                     'Source IP      => {0}\n'
-                     'Requested path => {1}\n'
-                     '  Parameters\n'
-                     '    authorization_token => {2}\n'
-                     '    channel_number  => {3}\n'
-                     '    client_uuid     => {4}\n'
-                     '    hostname        => {5}\n'
-                     '    port            => {6}\n'
-                     '    scheme          => {7}\n'
-                     'Target path    => {8}\n'
-                     '  Parameters\n'
-                     '    token => {2}'.format(client_ip_address,
-                                               requested_path,
-                                               authorization_token,
-                                               channel_number,
-                                               client_uuid,
-                                               hostname,
-                                               port,
-                                               scheme,
-                                               target_url))
+        logger.debug(
+            'Proxying request\n'
+            'Source IP      => %s\n'
+            'Requested path => %s\n'
+            '  Parameters\n'
+            '    authorization_token => %s\n'
+            '    channel_number  => %s\n'
+            '    client_uuid     => %s\n'
+            '    hostname        => %s\n'
+            '    port            => %s\n'
+            '    scheme          => %s\n'
+            'Target path    => %s\n'
+            '  Parameters\n'
+            '    token => %s',
+            client_ip_address,
+            requested_path,
+            authorization_token,
+            channel_number,
+            client_uuid,
+            hostname,
+            port,
+            scheme,
+            target_url,
+            authorization_token,
+        )
 
-        response = Utility.make_http_request(requests_session.get,
-                                             target_url,
-                                             params={
-                                                 'token': authorization_token
-                                             },
-                                             headers=requests_session.headers,
-                                             cookies=requests_session.cookies.get_dict())
+        response = Utility.make_http_request(
+            requests_session.get,
+            target_url,
+            params={'token': authorization_token},
+            headers=requests_session.headers,
+            cookies=requests_session.cookies.get_dict(),
+        )
 
         if response.status_code == requests.codes.OK:
-            logger.trace(Utility.assemble_response_from_log_message(response,
-                                                                    is_content_text=True,
-                                                                    do_print_content=True))
+            logger.trace(
+                Utility.assemble_response_from_log_message(
+                    response, is_content_text=True, do_print_content=True
+                )
+            )
 
             with cls._do_reduce_hls_stream_delay_lock.reader_lock:
                 if cls._do_reduce_hls_stream_delay:
-                    chunks_m3u8 = cls._reduce_hls_stream_delay(response.text,
-                                                               client_uuid,
-                                                               channel_number,
-                                                               number_of_segments_to_keep=2)
+                    chunks_m3u8 = cls._reduce_hls_stream_delay(
+                        response.text,
+                        client_uuid,
+                        channel_number,
+                        number_of_segments_to_keep=2,
+                    )
                 else:
                     chunks_m3u8 = response.text
 
-                return re.sub(r'/hlsr/(.*)/(.*)/(.*)/(.*)/(.*)/(.*).ts',
-                              r'\6.ts?'
-                              r'authorization_token=\1&'
-                              'channel_number={0}&'
-                              'client_uuid={1}&'
-                              'hostname={2}&'
-                              'http_token={3}&'
-                              r'leaf_directory=\5&'
-                              'port={4}&'
-                              'scheme={5}'.format(channel_number,
-                                                  client_uuid,
-                                                  urllib.parse.quote(hostname),
-                                                  urllib.parse.quote(http_token) if http_token
-                                                  else '',
-                                                  urllib.parse.quote(port),
-                                                  scheme),
-                              chunks_m3u8)
+                return re.sub(
+                    r'/hlsr/(.*)/(.*)/(.*)/(.*)/(.*)/(.*).ts',
+                    r'\6.ts?'
+                    r'authorization_token=\1&'
+                    'channel_number={0}&'
+                    'client_uuid={1}&'
+                    'hostname={2}&'
+                    'http_token={3}&'
+                    r'leaf_directory=\5&'
+                    'port={4}&'
+                    'scheme={5}'.format(
+                        channel_number,
+                        client_uuid,
+                        urllib.parse.quote(hostname),
+                        urllib.parse.quote(http_token) if http_token else '',
+                        urllib.parse.quote(port),
+                        scheme,
+                    ),
+                    chunks_m3u8,
+                )
         else:
             logger.error(Utility.assemble_response_from_log_message(response))
 
             response.raise_for_status()
 
     @classmethod
-    def download_playlist_m3u8(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
+    def download_playlist_m3u8(
+        cls,
+        client_ip_address,
+        client_uuid,
+        requested_path,
+        requested_query_string_parameters,
+    ):
         channel_number = requested_query_string_parameters.get('channel_number')
         http_token = requested_query_string_parameters.get('http_token')
         protocol = requested_query_string_parameters.get('protocol')
 
         IPTVProxy.refresh_serviceable_clients(client_uuid, client_ip_address)
-        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc))
-        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_requested_channel_number', channel_number)
+        IPTVProxy.set_serviceable_client_parameter(
+            client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc)
+        )
+        IPTVProxy.set_serviceable_client_parameter(
+            client_uuid, 'last_requested_channel_number', channel_number
+        )
 
-        url = Configuration.get_configuration_parameter('{0}_URL'.format(cls._provider_name.upper()))
-        username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
+        url = Configuration.get_configuration_parameter(
+            '{0}_URL'.format(cls._provider_name.upper())
+        )
+        username = Configuration.get_configuration_parameter(
+            '{0}_USERNAME'.format(cls._provider_name.upper())
+        )
         password = SecurityManager.decrypt_password(
-            Configuration.get_configuration_parameter('{0}_PASSWORD'.format(cls._provider_name.upper()))).decode()
+            Configuration.get_configuration_parameter(
+                '{0}_PASSWORD'.format(cls._provider_name.upper())
+            )
+        ).decode()
 
         if protocol == 'hls':
             requests_session = requests.Session()
 
-            target_url = '{0}live/{1}/{2}/{3}.m3u8'.format(url, username, password, channel_number)
+            target_url = '{0}live/{1}/{2}/{3}.m3u8'.format(
+                url, username, password, channel_number
+            )
 
-            logger.debug('Proxying request\n'
-                         'Source IP      => {0}\n'
-                         'Requested path => {1}\n'
-                         '  Parameters\n'
-                         '    channel_number => {2}\n'
-                         '    client_uuid    => {3}\n'
-                         '    protocol       => {4}\n'
-                         'Target path    => {5}'.format(client_ip_address,
-                                                        requested_path,
-                                                        channel_number,
-                                                        client_uuid,
-                                                        protocol,
-                                                        target_url))
+            logger.debug(
+                'Proxying request\n'
+                'Source IP      => %s\n'
+                'Requested path => %s\n'
+                '  Parameters\n'
+                '    channel_number => %s\n'
+                '    client_uuid    => %s\n'
+                '    protocol       => %s\n'
+                'Target path    => %s',
+                client_ip_address,
+                requested_path,
+                channel_number,
+                client_uuid,
+                protocol,
+                target_url,
+            )
 
-            response = Utility.make_http_request(requests_session.get,
-                                                 target_url,
-                                                 headers=requests_session.headers,
-                                                 cookies=requests_session.cookies.get_dict())
+            response = Utility.make_http_request(
+                requests_session.get,
+                target_url,
+                headers=requests_session.headers,
+                cookies=requests_session.cookies.get_dict(),
+            )
 
             if response.status_code == requests.codes.OK:
-                logger.trace(Utility.assemble_response_from_log_message(response,
-                                                                        is_content_text=True,
-                                                                        do_print_content=True))
+                logger.trace(
+                    Utility.assemble_response_from_log_message(
+                        response, is_content_text=True, do_print_content=True
+                    )
+                )
 
                 with cls._do_reduce_hls_stream_delay_lock.reader_lock:
                     if cls._do_reduce_hls_stream_delay:
-                        chunks_m3u8 = cls._reduce_hls_stream_delay(response.text,
-                                                                   client_uuid,
-                                                                   channel_number,
-                                                                   number_of_segments_to_keep=2)
+                        chunks_m3u8 = cls._reduce_hls_stream_delay(
+                            response.text,
+                            client_uuid,
+                            channel_number,
+                            number_of_segments_to_keep=2,
+                        )
                     else:
                         chunks_m3u8 = response.text
 
                 parsed_url = urllib.parse.urlparse(response.request.url)
                 scheme = parsed_url.scheme
                 hostname = parsed_url.hostname
-                port = ':{0}'.format(parsed_url.port) if parsed_url.port is not None else ''
+                port = (
+                    ':{0}'.format(parsed_url.port)
+                    if parsed_url.port is not None
+                    else ''
+                )
 
-                return re.sub(r'/hls/(.*)/(.*)/(.*)/(.*)/(.*).ts',
-                              r'\5.ts?'
-                              'authorization_token=&'
-                              'channel_number={0}&'
-                              'client_uuid={1}&'
-                              'hostname={2}&'
-                              'http_token={3}&'
-                              r'leaf_directory=\4&'
-                              'port={4}&'
-                              'scheme={5}'.format(channel_number,
-                                                  client_uuid,
-                                                  urllib.parse.quote(hostname),
-                                                  urllib.parse.quote(http_token) if http_token
-                                                  else '',
-                                                  urllib.parse.quote(port),
-                                                  scheme),
-                              chunks_m3u8)
+                return re.sub(
+                    r'/hls/(.*)/(.*)/(.*)/(.*)/(.*).ts',
+                    r'\5.ts?'
+                    'authorization_token=&'
+                    'channel_number={0}&'
+                    'client_uuid={1}&'
+                    'hostname={2}&'
+                    'http_token={3}&'
+                    r'leaf_directory=\4&'
+                    'port={4}&'
+                    'scheme={5}'.format(
+                        channel_number,
+                        client_uuid,
+                        urllib.parse.quote(hostname),
+                        urllib.parse.quote(http_token) if http_token else '',
+                        urllib.parse.quote(port),
+                        scheme,
+                    ),
+                    chunks_m3u8,
+                )
             elif response.status_code == requests.codes.FOUND:
-                logger.trace(Utility.assemble_response_from_log_message(response,
-                                                                        is_content_text=False,
-                                                                        do_print_content=False))
+                logger.trace(
+                    Utility.assemble_response_from_log_message(
+                        response, is_content_text=False, do_print_content=False
+                    )
+                )
 
                 parsed_url = urllib.parse.urlparse(response.headers['Location'])
                 scheme = parsed_url.scheme
                 hostname = parsed_url.hostname
-                port = ':{0}'.format(parsed_url.port) if parsed_url.port is not None else ''
+                port = (
+                    ':{0}'.format(parsed_url.port)
+                    if parsed_url.port is not None
+                    else ''
+                )
 
-                return '#EXTM3U\n' \
-                       '#EXT-X-VERSION:3\n' \
-                       '#EXT-X-STREAM-INF:BANDWIDTH=8388608\n' \
-                       'chunks.m3u8?authorization_token={0}&' \
-                       'channel_number={1}&' \
-                       'client_uuid={2}&' \
-                       'hostname={3}&' \
-                       'http_token={4}&' \
-                       'port={5}&' \
-                       'scheme={6}'.format(dict(urllib.parse.parse_qsl(parsed_url.query))['token'],
-                                           channel_number,
-                                           client_uuid,
-                                           urllib.parse.quote(hostname),
-                                           urllib.parse.quote(http_token) if http_token
-                                           else '',
-                                           urllib.parse.quote(port),
-                                           scheme)
-            else:
-                logger.error(Utility.assemble_response_from_log_message(response))
+                return (
+                    '#EXTM3U\n'
+                    '#EXT-X-VERSION:3\n'
+                    '#EXT-X-STREAM-INF:BANDWIDTH=8388608\n'
+                    'chunks.m3u8?authorization_token={0}&'
+                    'channel_number={1}&'
+                    'client_uuid={2}&'
+                    'hostname={3}&'
+                    'http_token={4}&'
+                    'port={5}&'
+                    'scheme={6}'.format(
+                        dict(urllib.parse.parse_qsl(parsed_url.query))['token'],
+                        channel_number,
+                        client_uuid,
+                        urllib.parse.quote(hostname),
+                        urllib.parse.quote(http_token) if http_token else '',
+                        urllib.parse.quote(port),
+                        scheme,
+                    )
+                )
 
-                response.raise_for_status()
+            logger.error(Utility.assemble_response_from_log_message(response))
+
+            response.raise_for_status()
         elif protocol == 'mpegts':
-            provider_map_class = ProvidersController.get_provider_map_class(cls._provider_name)
+            provider_map_class = ProvidersController.get_provider_map_class(
+                cls._provider_name
+            )
 
-            return '#EXTM3U\n' \
-                   '#EXTINF:-1 ,{0}\n' \
-                   '{1}live/{2}/{3}/{4}.ts' \
-                   ''.format(provider_map_class.epg_class().get_channel_name(int(channel_number)),
-                             url,
-                             username,
-                             password,
-                             channel_number)
+            return (
+                '#EXTM3U\n'
+                '#EXTINF:-1 ,{0}\n'
+                '{1}live/{2}/{3}/{4}.ts'
+                ''.format(
+                    provider_map_class.epg_class().get_channel_name(
+                        int(channel_number)
+                    ),
+                    url,
+                    username,
+                    password,
+                    channel_number,
+                )
+            )
 
     @classmethod
-    def download_ts_file(cls, client_ip_address, client_uuid, requested_path, requested_query_string_parameters):
-        authorization_token = requested_query_string_parameters.get('authorization_token')
+    def download_ts_file(
+        cls,
+        client_ip_address,
+        client_uuid,
+        requested_path,
+        requested_query_string_parameters,
+    ):
+        authorization_token = requested_query_string_parameters.get(
+            'authorization_token'
+        )
         channel_number = requested_query_string_parameters.get('channel_number')
         hostname = requested_query_string_parameters.get('hostname')
         leaf_directory = requested_query_string_parameters.get('leaf_directory')
@@ -573,65 +752,77 @@ class XtreamCodesProvider(Provider):
         scheme = requested_query_string_parameters.get('scheme')
 
         IPTVProxy.refresh_serviceable_clients(client_uuid, client_ip_address)
-        IPTVProxy.set_serviceable_client_parameter(client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc))
+        IPTVProxy.set_serviceable_client_parameter(
+            client_uuid, 'last_request_date_time_in_utc', datetime.now(pytz.utc)
+        )
 
-        username = Configuration.get_configuration_parameter('{0}_USERNAME'.format(cls._provider_name.upper()))
+        username = Configuration.get_configuration_parameter(
+            '{0}_USERNAME'.format(cls._provider_name.upper())
+        )
         password = SecurityManager.decrypt_password(
-            Configuration.get_configuration_parameter('{0}_PASSWORD'.format(cls._provider_name.upper()))).decode()
+            Configuration.get_configuration_parameter(
+                '{0}_PASSWORD'.format(cls._provider_name.upper())
+            )
+        ).decode()
 
         requests_session = requests.Session()
 
-        target_url = '{0}://{1}{2}/hls{3}{4}/{5}/{6}/{7}/{8}{9}'.format(scheme,
-                                                                        hostname,
-                                                                        port,
-                                                                        'r' if authorization_token
-                                                                        else '',
-                                                                        '/{0}'.format(
-                                                                            authorization_token) if authorization_token
-                                                                        else '',
-                                                                        username,
-                                                                        password,
-                                                                        channel_number,
-                                                                        leaf_directory,
-                                                                        re.sub(r'(/.*)?(/.*\.ts)',
-                                                                               r'\2',
-                                                                               requested_path))
+        target_url = '{0}://{1}{2}/hls{3}{4}/{5}/{6}/{7}/{8}{9}'.format(
+            scheme,
+            hostname,
+            port,
+            'r' if authorization_token else '',
+            '/{0}'.format(authorization_token) if authorization_token else '',
+            username,
+            password,
+            channel_number,
+            leaf_directory,
+            re.sub(r'(/.*)?(/.*\.ts)', r'\2', requested_path),
+        )
 
-        logger.debug('Proxying request\n'
-                     'Source IP      => {0}\n'
-                     'Requested path => {1}\n'
-                     '  Parameters\n'
-                     '    channel_number => {2}\n'
-                     '    client_uuid    => {3}\n'
-                     '    hostname       => {4}\n'
-                     '    port           => {5}\n'
-                     '    scheme         => {6}\n'
-                     'Target path    => {7}'.format(client_ip_address,
-                                                    requested_path,
-                                                    channel_number,
-                                                    client_uuid,
-                                                    hostname,
-                                                    port,
-                                                    scheme,
-                                                    target_url))
+        logger.debug(
+            'Proxying request\n'
+            'Source IP      => %s\n'
+            'Requested path => %s\n'
+            '  Parameters\n'
+            '    channel_number => %s\n'
+            '    client_uuid    => %s\n'
+            '    hostname       => %s\n'
+            '    port           => %s\n'
+            '    scheme         => %s\n'
+            'Target path    => %s',
+            client_ip_address,
+            requested_path,
+            channel_number,
+            client_uuid,
+            hostname,
+            port,
+            scheme,
+            target_url,
+        )
 
-        response = Utility.make_http_request(requests_session.get,
-                                             target_url,
-                                             headers=requests_session.headers,
-                                             cookies=requests_session.cookies.get_dict())
+        response = Utility.make_http_request(
+            requests_session.get,
+            target_url,
+            headers=requests_session.headers,
+            cookies=requests_session.cookies.get_dict(),
+        )
 
         if response.status_code == requests.codes.OK:
-            logger.trace(Utility.assemble_response_from_log_message(response,
-                                                                    is_content_binary=True))
+            logger.trace(
+                Utility.assemble_response_from_log_message(
+                    response, is_content_binary=True
+                )
+            )
 
-            IPTVProxy.set_serviceable_client_parameter(client_uuid,
-                                                       'last_requested_ts_file_path',
-                                                       re.sub(r'(/.*)?(/.*\.ts)',
-                                                              r'\2',
-                                                              requested_path)[1:])
+            IPTVProxy.set_serviceable_client_parameter(
+                client_uuid,
+                'last_requested_ts_file_path',
+                re.sub(r'(/.*)?(/.*\.ts)', r'\2', requested_path)[1:],
+            )
 
             return response.content
-        else:
-            logger.error(Utility.assemble_response_from_log_message(response))
 
-            response.raise_for_status()
+        logger.error(Utility.assemble_response_from_log_message(response))
+
+        response.raise_for_status()

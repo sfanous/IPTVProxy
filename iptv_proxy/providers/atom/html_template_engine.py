@@ -1,7 +1,9 @@
 import logging
 
 from iptv_proxy.providers.atom.constants import AtomConstants
-from iptv_proxy.providers.iptv_provider.html_template_engine import XtreamCodesProviderHTMLTemplateEngine
+from iptv_proxy.providers.iptv_provider.html_template_engine import (
+    XtreamCodesProviderHTMLTemplateEngine,
+)
 
 logger = logging.getLogger(__name__)
 

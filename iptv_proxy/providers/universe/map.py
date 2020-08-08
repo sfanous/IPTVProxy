@@ -36,7 +36,9 @@ class UniverseMap(ProviderMap):
         from iptv_proxy.providers.universe.db import UniverseDatabase
         from iptv_proxy.providers.universe.enums import UniverseEPGSource
         from iptv_proxy.providers.universe.epg import UniverseEPG
-        from iptv_proxy.providers.universe.html_template_engine import UniverseHTMLTemplateEngine
+        from iptv_proxy.providers.universe.html_template_engine import (
+            UniverseHTMLTemplateEngine,
+        )
         from iptv_proxy.providers.universe.json_api import UniverseConfigurationJSONAPI
         from iptv_proxy.providers.universe.validations import UniverseValidations
 

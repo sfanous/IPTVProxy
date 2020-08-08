@@ -36,7 +36,9 @@ class VitalTVMap(ProviderMap):
         from iptv_proxy.providers.vitaltv.db import VitalTVDatabase
         from iptv_proxy.providers.vitaltv.enums import VitalTVEPGSource
         from iptv_proxy.providers.vitaltv.epg import VitalTVEPG
-        from iptv_proxy.providers.vitaltv.html_template_engine import VitalTVHTMLTemplateEngine
+        from iptv_proxy.providers.vitaltv.html_template_engine import (
+            VitalTVHTMLTemplateEngine,
+        )
         from iptv_proxy.providers.vitaltv.json_api import VitalTVConfigurationJSONAPI
         from iptv_proxy.providers.vitaltv.validations import VitalTVValidations
 

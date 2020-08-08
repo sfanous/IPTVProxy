@@ -44,7 +44,9 @@ class Logging(object):
             cls.set_logging_configuration()
         except Exception:
             logging_configuration = copy.copy(DEFAULT_LOGGING_CONFIGURATION)
-            logging_configuration['handlers']['rotating_file']['filename'] = log_file_path
+            logging_configuration['handlers']['rotating_file'][
+                'filename'
+            ] = log_file_path
 
             cls.set_logging_configuration(logging_configuration)
 
@@ -56,13 +58,17 @@ class Logging(object):
     def set_logging_configuration(cls, configuration=None):
         if configuration is None:
             try:
-                with open(LOGGING_CONFIGURATION_FILE_PATH, 'r') as logging_configuration_file:
+                with open(
+                    LOGGING_CONFIGURATION_FILE_PATH, 'r'
+                ) as logging_configuration_file:
                     logging.config.dictConfig(json.load(logging_configuration_file))
             except FileNotFoundError:
                 raise
             except Exception:
                 (type_, value_, traceback_) = sys.exc_info()
-                logger.error('\n'.join(traceback.format_exception(type_, value_, traceback_)))
+                logger.error(
+                    '\n'.join(traceback.format_exception(type_, value_, traceback_))
+                )
 
                 raise
         else:
@@ -83,12 +89,16 @@ class Logging(object):
 
     @classmethod
     def start_logging_configuration_file_watchdog_observer(cls):
-        logging_configuration_event_handler = LoggingConfigurationEventHandler(LOGGING_CONFIGURATION_FILE_PATH)
+        logging_configuration_event_handler = LoggingConfigurationEventHandler(
+            LOGGING_CONFIGURATION_FILE_PATH
+        )
 
         cls._logging_configuration_file_watchdog_observer = Observer()
-        cls._logging_configuration_file_watchdog_observer.schedule(logging_configuration_event_handler,
-                                                                   os.path.dirname(LOGGING_CONFIGURATION_FILE_PATH),
-                                                                   recursive=False)
+        cls._logging_configuration_file_watchdog_observer.schedule(
+            logging_configuration_event_handler,
+            os.path.dirname(LOGGING_CONFIGURATION_FILE_PATH),
+            recursive=False,
+        )
         cls._logging_configuration_file_watchdog_observer.start()
 
     @classmethod
@@ -104,10 +114,14 @@ class LoggingConfigurationEventHandler(FileSystemEventHandler):
         with self._lock:
             if os.path.normpath(event.src_path) == os.path.normpath(self._file_path):
                 self._last_file_version_md5_checksum = hashlib.md5(
-                    Utility.read_file(self._file_path, in_binary=True)).hexdigest()
+                    Utility.read_file(self._file_path, in_binary=True)
+                ).hexdigest()
 
-                logger.debug('Detected creation of logging configuration file\n'
-                             'Logging configuration file path => {0}'.format(self._file_path))
+                logger.debug(
+                    'Detected creation of logging configuration file\n'
+                    'Logging configuration file path => %s',
+                    self._file_path,
+                )
 
                 Logging.set_logging_configuration()
 
@@ -116,18 +130,26 @@ class LoggingConfigurationEventHandler(FileSystemEventHandler):
             if os.path.normpath(event.src_path) == os.path.normpath(self._file_path):
                 self._last_file_version_md5_checksum = None
 
-                logger.debug('Detected deletion of logging configuration file\n'
-                             'Logging configuration file path => {0}'.format(self._file_path))
+                logger.debug(
+                    'Detected deletion of logging configuration file\n'
+                    'Logging configuration file path => %s',
+                    self._file_path,
+                )
 
                 logging_configuration = copy.copy(DEFAULT_LOGGING_CONFIGURATION)
-                logging_configuration['handlers']['rotating_file']['filename'] = Logging.get_log_file_path()
+                logging_configuration['handlers']['rotating_file'][
+                    'filename'
+                ] = Logging.get_log_file_path()
 
                 Logging.set_logging_configuration(logging_configuration)
 
     def on_modified(self, event):
         with self._lock:
             if self._do_process_on_modified_event(event):
-                logger.debug('Detected changes in logging configuration file\n'
-                             'Logging configuration file path => {0}'.format(self._file_path))
+                logger.debug(
+                    'Detected changes in logging configuration file\n'
+                    'Logging configuration file path => %s',
+                    self._file_path,
+                )
 
                 Logging.set_logging_configuration()

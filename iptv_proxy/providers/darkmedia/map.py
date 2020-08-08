@@ -27,7 +27,9 @@ class DarkMediaMap(ProviderMap):
     def initialize(cls):
         from iptv_proxy.providers.darkmedia.api import DarkMedia
         from iptv_proxy.providers.darkmedia.configuration import DarkMediaConfiguration
-        from iptv_proxy.providers.darkmedia.configuration import DarkMediaOptionalSettings
+        from iptv_proxy.providers.darkmedia.configuration import (
+            DarkMediaOptionalSettings,
+        )
         from iptv_proxy.providers.darkmedia.constants import DarkMediaConstants
         from iptv_proxy.providers.darkmedia.data_access import DarkMediaDatabaseAccess
         from iptv_proxy.providers.darkmedia.data_model import DarkMediaChannel
@@ -36,8 +38,12 @@ class DarkMediaMap(ProviderMap):
         from iptv_proxy.providers.darkmedia.db import DarkMediaDatabase
         from iptv_proxy.providers.darkmedia.enums import DarkMediaEPGSource
         from iptv_proxy.providers.darkmedia.epg import DarkMediaEPG
-        from iptv_proxy.providers.darkmedia.html_template_engine import DarkMediaHTMLTemplateEngine
-        from iptv_proxy.providers.darkmedia.json_api import DarkMediaConfigurationJSONAPI
+        from iptv_proxy.providers.darkmedia.html_template_engine import (
+            DarkMediaHTMLTemplateEngine,
+        )
+        from iptv_proxy.providers.darkmedia.json_api import (
+            DarkMediaConfigurationJSONAPI,
+        )
         from iptv_proxy.providers.darkmedia.validations import DarkMediaValidations
 
         cls._api_class = DarkMedia

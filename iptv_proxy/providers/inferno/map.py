@@ -36,7 +36,9 @@ class InfernoMap(ProviderMap):
         from iptv_proxy.providers.inferno.db import InfernoDatabase
         from iptv_proxy.providers.inferno.enums import InfernoEPGSource
         from iptv_proxy.providers.inferno.epg import InfernoEPG
-        from iptv_proxy.providers.inferno.html_template_engine import InfernoHTMLTemplateEngine
+        from iptv_proxy.providers.inferno.html_template_engine import (
+            InfernoHTMLTemplateEngine,
+        )
         from iptv_proxy.providers.inferno.json_api import InfernoConfigurationJSONAPI
         from iptv_proxy.providers.inferno.validations import InfernoValidations
 

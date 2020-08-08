@@ -70,8 +70,12 @@ class ProviderDatabase(ABC):
 
     @classmethod
     def initialize(cls):
-        cls._engine = create_engine('sqlite:///{0}'.format(cls._database_file_path), echo=False, module=sqlite3)
-        cls._session_factory = sessionmaker(cls._engine, autoflush=False, expire_on_commit=False)
+        cls._engine = create_engine(
+            'sqlite:///{0}'.format(cls._database_file_path), echo=False, module=sqlite3
+        )
+        cls._session_factory = sessionmaker(
+            cls._engine, autoflush=False, expire_on_commit=False
+        )
 
         cls._access_lock.exclusive_lock = cls._access_lock.writer_lock
         cls._access_lock.shared_lock = cls._access_lock.reader_lock
@@ -83,10 +87,14 @@ class ProviderDatabase(ABC):
         except Exception:
             pass
 
-        cls._temporary_engine = create_engine('sqlite:///{0}'.format(cls._temporary_database_file_path),
-                                              echo=False,
-                                              module=sqlite3)
-        cls._temporary_session_factory = sessionmaker(cls._temporary_engine, autoflush=False, expire_on_commit=False)
+        cls._temporary_engine = create_engine(
+            'sqlite:///{0}'.format(cls._temporary_database_file_path),
+            echo=False,
+            module=sqlite3,
+        )
+        cls._temporary_session_factory = sessionmaker(
+            cls._temporary_engine, autoflush=False, expire_on_commit=False
+        )
 
     @classmethod
     def migrate(cls):
@@ -106,7 +114,9 @@ class ProviderDatabase(ABC):
                 shutil.rmtree(cls._temporary_database_file_path)
 
                 (type_, value_, traceback_) = sys.exc_info()
-                logger.error('\n'.join(traceback.format_exception(type_, value_, traceback_)))
+                logger.error(
+                    '\n'.join(traceback.format_exception(type_, value_, traceback_))
+                )
 
                 raise
             finally:

@@ -2,8 +2,14 @@
 
 Release History
 ===============
-7.7.2.1 (01-29-2020)
+7.7.3 (08-07-2020)
 ------------------
+* Migrate from PyCharm to VSCode
+* Code refactoring and cleanup using Black and Pylint
+* Various bug fixes
+
+7.7.2.1 (01-29-2020)
+--------------------
 * Update SmoothStreams authorization
 * Updated SmoothStreams channel icons
 
@@ -12,7 +18,7 @@ Release History
 * Added VitalTV
 
 7.7.1.1 (11-08-2019)
-------------------
+--------------------
 * Various bug fixes
 
 7.7.1 (11-07-2019)
@@ -25,11 +31,11 @@ Release History
 * Various bug fixes
 
 7.6.11 (09-19-2019)
-------------------
+-------------------
 * Various bug fixes
 
 7.6.10 (09-18-2019)
-------------------
+-------------------
 * Various bug fixes
 
 7.6.9 (09-08-2019)

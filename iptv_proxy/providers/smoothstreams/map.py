@@ -26,19 +26,31 @@ class SmoothStreamsMap(ProviderMap):
     @classmethod
     def initialize(cls):
         from iptv_proxy.providers.smoothstreams.api import SmoothStreams
-        from iptv_proxy.providers.smoothstreams.configuration import SmoothStreamsConfiguration
-        from iptv_proxy.providers.smoothstreams.configuration import SmoothStreamsOptionalSettings
+        from iptv_proxy.providers.smoothstreams.configuration import (
+            SmoothStreamsConfiguration,
+        )
+        from iptv_proxy.providers.smoothstreams.configuration import (
+            SmoothStreamsOptionalSettings,
+        )
         from iptv_proxy.providers.smoothstreams.constants import SmoothStreamsConstants
-        from iptv_proxy.providers.smoothstreams.data_access import SmoothStreamsDatabaseAccess
+        from iptv_proxy.providers.smoothstreams.data_access import (
+            SmoothStreamsDatabaseAccess,
+        )
         from iptv_proxy.providers.smoothstreams.data_model import SmoothStreamsChannel
         from iptv_proxy.providers.smoothstreams.data_model import SmoothStreamsProgram
         from iptv_proxy.providers.smoothstreams.data_model import SmoothStreamsSetting
         from iptv_proxy.providers.smoothstreams.db import SmoothStreamsDatabase
         from iptv_proxy.providers.smoothstreams.enums import SmoothStreamsEPGSource
         from iptv_proxy.providers.smoothstreams.epg import SmoothStreamsEPG
-        from iptv_proxy.providers.smoothstreams.html_template_engine import SmoothStreamsHTMLTemplateEngine
-        from iptv_proxy.providers.smoothstreams.json_api import SmoothStreamsConfigurationJSONAPI
-        from iptv_proxy.providers.smoothstreams.validations import SmoothStreamsValidations
+        from iptv_proxy.providers.smoothstreams.html_template_engine import (
+            SmoothStreamsHTMLTemplateEngine,
+        )
+        from iptv_proxy.providers.smoothstreams.json_api import (
+            SmoothStreamsConfigurationJSONAPI,
+        )
+        from iptv_proxy.providers.smoothstreams.validations import (
+            SmoothStreamsValidations,
+        )
 
         cls._api_class = SmoothStreams
         cls._channel_class = SmoothStreamsChannel

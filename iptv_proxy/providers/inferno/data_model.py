@@ -27,14 +27,20 @@ class InfernoChannel(Base):
     _complete_xmltv = Column('complete_xmltv', String, nullable=False)
     _minimal_xmltv = Column('minimal_xmltv', String, nullable=False)
 
-    __table_args__ = (Index('{0}_channel_ix_id'.format(_provider_name), _id.asc()),
-                      Index('{0}_channel_ix_m3u8_group'.format(_provider_name), _m3u8_group.asc()),
-                      Index('{0}_channel_ix_m3u8_group_&_number'.format(_provider_name),
-                            _m3u8_group.asc(),
-                            _number.asc()),
-                      Index('{0}_channel_ix_number'.format(_provider_name), _number.asc()))
+    __table_args__ = (
+        Index('{0}_channel_ix_id'.format(_provider_name), _id.asc()),
+        Index('{0}_channel_ix_m3u8_group'.format(_provider_name), _m3u8_group.asc()),
+        Index(
+            '{0}_channel_ix_m3u8_group_&_number'.format(_provider_name),
+            _m3u8_group.asc(),
+            _number.asc(),
+        ),
+        Index('{0}_channel_ix_number'.format(_provider_name), _number.asc()),
+    )
 
-    def __init__(self, id_, m3u8_group, number, name, pickle, complete_xmltv, minimal_xmltv):
+    def __init__(
+        self, id_, m3u8_group, number, name, pickle, complete_xmltv, minimal_xmltv
+    ):
         self._id = id_
         self._m3u8_group = m3u8_group
         self._number = number
@@ -116,23 +122,36 @@ class InfernoProgram(Base):
 
     __table_args__ = (
         Index('{0}_program_ix_id'.format(_provider_name), _id.asc()),
-        Index('{0}_program_ix_channel_number_&_start'.format(_provider_name), _channel_number.asc(), _start.asc()),
-        Index('{0}_program_ix_channel_xmltv_id_&_start'.format(_provider_name), _channel_xmltv_id.asc(), _start.asc()),
-        Index('{0}_program_ix_channel_xmltv_id_&_start_&_stop'.format(_provider_name),
-              _channel_xmltv_id.asc(),
-              _start.asc(),
-              _stop.asc()),
-        Index('{0}_program_ix_start'.format(_provider_name), _start.asc()))
+        Index(
+            '{0}_program_ix_channel_number_&_start'.format(_provider_name),
+            _channel_number.asc(),
+            _start.asc(),
+        ),
+        Index(
+            '{0}_program_ix_channel_xmltv_id_&_start'.format(_provider_name),
+            _channel_xmltv_id.asc(),
+            _start.asc(),
+        ),
+        Index(
+            '{0}_program_ix_channel_xmltv_id_&_start_&_stop'.format(_provider_name),
+            _channel_xmltv_id.asc(),
+            _start.asc(),
+            _stop.asc(),
+        ),
+        Index('{0}_program_ix_start'.format(_provider_name), _start.asc()),
+    )
 
-    def __init__(self,
-                 id_,
-                 start,
-                 stop,
-                 channel_xmltv_id,
-                 channel_number,
-                 pickle,
-                 complete_xmltv,
-                 minimal_xmltv):
+    def __init__(
+        self,
+        id_,
+        start,
+        stop,
+        channel_xmltv_id,
+        channel_number,
+        pickle,
+        complete_xmltv,
+        minimal_xmltv,
+    ):
         self._id = id_
         self._start = start
         self._stop = stop
