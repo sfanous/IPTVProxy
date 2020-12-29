@@ -79,4 +79,4 @@ TEMPLATES_BYTECODE_CACHE_DIRECTORY_PATH = os.path.join(
 )
 TEMPLATES_DIRECTORY_PATH = os.path.join(directory_containing_script, 'templates')
 TRACE = 5
-VERSION = '7.7.3'
+VERSION = '7.7.4'

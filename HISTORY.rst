@@ -2,6 +2,10 @@
 
 Release History
 ===============
+7.7.4 (12-29-2020)
+------------------
+* Various bug fixes
+
 7.7.3 (08-07-2020)
 ------------------
 * Migrate from PyCharm to VSCode

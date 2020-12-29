@@ -261,7 +261,7 @@ class SmoothStreams(Provider):
         )
 
         response_status_code = response.status_code
-        if response_status_code in (requests.codes.OK, requests.codes.NOT_FOUND):
+        if response_status_code not in (requests.codes.OK, requests.codes.NOT_FOUND):
             logger.error(Utility.assemble_response_from_log_message(response))
 
             response.raise_for_status()
